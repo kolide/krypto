@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
   s.files = Dir["{lib}/**/*"] + ["LICENSE", "README.md"]
   s.require_paths = ["lib"]
 
-  s.required_ruby_version = ">= 3.1.2"
+  s.required_ruby_version = "~> 3.1"
 
   s.add_runtime_dependency "openssl"
   s.add_development_dependency "msgpack", "~> 1.5"
