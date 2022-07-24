@@ -5,6 +5,7 @@ require 'openssl'
 module Krypto
   module Aes
     ALGORITHM = 'aes-256-gcm'
+
     def encrypt(key, auth_data, plaintext)
       cipher = OpenSSL::Cipher.new(ALGORITHM)
       cipher.encrypt
@@ -17,16 +18,16 @@ module Krypto
       ciphertext += cipher.final
 
       # Check sizes on the iv and MAC (auth_tag)
-      raise "Bad Authentication Tag" unless cipher.auth_tag.size == 16
-      raise "Bad IV" unless iv.size == 12
+      raise 'Bad Authentication Tag' unless cipher.auth_tag.size == 16
+      raise 'Bad IV' unless iv.size == 12
 
       # It's customary to append the MAC, and go assumes that. It is also
       # customary to prepend the iv.
-      return (iv.bytes + ciphertext.bytes + cipher.auth_tag.bytes).pack('c*')
+      (iv.bytes + ciphertext.bytes + cipher.auth_tag.bytes).pack('c*')
     end
     module_function :encrypt
 
-    def decrypt(key, auth_data, ciphertext)
+    def decrypt(key, _auth_data, ciphertext)
       decipher = OpenSSL::Cipher.new(ALGORITHM)
       decipher.decrypt
 
