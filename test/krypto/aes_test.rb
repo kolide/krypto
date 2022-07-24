@@ -17,7 +17,6 @@ class TestAes < Minitest::Test
     rand255: SecureRandom.bytes(255),
     rand256: SecureRandom.bytes(256),
     rand257: SecureRandom.bytes(257),
-
   }.freeze
 
   def setup
