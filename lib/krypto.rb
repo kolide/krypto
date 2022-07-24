@@ -2,3 +2,4 @@
 
 require 'krypto/aes'
 require 'krypto/rsa'
+require 'krypto/version'

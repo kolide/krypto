@@ -6,6 +6,11 @@ module Krypto
   module Rsa
     SIGN_OPTS = { rsa_padding_mode: 'pss' }.freeze
 
+    def random_key
+      OpenSSL::PKey::RSA.generate(2048)
+    end
+    module_function :random_key
+
     def encrypt(key, message)
       key.encrypt(message, rsa_padding_mode: 'oaep')
     end

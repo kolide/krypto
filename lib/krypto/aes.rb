@@ -6,6 +6,11 @@ module Krypto
   module Aes
     ALGORITHM = 'aes-256-gcm'
 
+    def random_key
+      OpenSSL::Cipher.new(ALGORITHM).random_key
+    end
+    module_function :random_key
+
     def encrypt(key, auth_data, plaintext)
       cipher = OpenSSL::Cipher.new(ALGORITHM)
       cipher.encrypt
@@ -27,7 +32,7 @@ module Krypto
     end
     module_function :encrypt
 
-    def decrypt(key, _auth_data, ciphertext)
+    def decrypt(key, auth_data, ciphertext)
       decipher = OpenSSL::Cipher.new(ALGORITHM)
       decipher.decrypt
 
@@ -37,6 +42,8 @@ module Krypto
       decipher.iv = ciphertext.byteslice(0, 12)
       decipher.auth_tag = ciphertext.byteslice(-16, 16)
       sliced = ciphertext.byteslice(12, ciphertext.bytesize - 12 - 16)
+
+      decipher.auth_data = auth_data if auth_data
 
       decipher.update(sliced) + decipher.final
     end
