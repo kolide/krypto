@@ -1,6 +1,6 @@
-require 'test_helper'
+require "test_helper"
 
-require 'securerandom'
+require "securerandom"
 
 class TestAes < Minitest::Test
   KEY1 = Krypto::Aes.random_key.freeze
@@ -16,7 +16,7 @@ class TestAes < Minitest::Test
     rand254: SecureRandom.bytes(254),
     rand255: SecureRandom.bytes(255),
     rand256: SecureRandom.bytes(256),
-    rand257: SecureRandom.bytes(257),
+    rand257: SecureRandom.bytes(257)
   }.freeze
 
   def setup
@@ -26,25 +26,25 @@ class TestAes < Minitest::Test
     define_method("test_encryption_roundtrip: #{name}") do
       ciphertext = Krypto::Aes.encrypt(KEY1, nil, message)
       plaintext = Krypto::Aes.decrypt(KEY1, nil, ciphertext)
-    
+
       assert_equal(message, plaintext)
       refute_equal(plaintext, ciphertext)
 
-      assert_raises {Krypto::Aes.decrypt(KEY1, "wrong", ciphertext)}
-      assert_raises {Krypto::Aes.decrypt(KEY2, nil, ciphertext)}
+      assert_raises { Krypto::Aes.decrypt(KEY1, "wrong", ciphertext) }
+      assert_raises { Krypto::Aes.decrypt(KEY2, nil, ciphertext) }
     end
 
     define_method("test_encryption_roundtrip_with_auth: #{name}") do
       auth_data = SecureRandom.bytes(32)
       ciphertext = Krypto::Aes.encrypt(KEY1, auth_data, message)
       plaintext = Krypto::Aes.decrypt(KEY1, auth_data, ciphertext)
-    
+
       assert_equal(message, plaintext)
       refute_equal(plaintext, ciphertext)
 
-      assert_raises {Krypto::Aes.decrypt(KEY1, "wrong", ciphertext)}
-      assert_raises {Krypto::Aes.decrypt(KEY1, nil, ciphertext)}
-      assert_raises {Krypto::Aes.decrypt(KEY2, nil, ciphertext)}
+      assert_raises { Krypto::Aes.decrypt(KEY1, "wrong", ciphertext) }
+      assert_raises { Krypto::Aes.decrypt(KEY1, nil, ciphertext) }
+      assert_raises { Krypto::Aes.decrypt(KEY2, nil, ciphertext) }
     end
   end
 end

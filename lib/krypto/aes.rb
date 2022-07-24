@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require 'openssl'
+require "openssl"
 
 module Krypto
   module Aes
-    ALGORITHM = 'aes-256-gcm'
+    ALGORITHM = "aes-256-gcm"
 
     def random_key
       OpenSSL::Cipher.new(ALGORITHM).random_key
@@ -23,12 +23,12 @@ module Krypto
       ciphertext += cipher.final
 
       # Check sizes on the iv and MAC (auth_tag)
-      raise 'Bad Authentication Tag' unless cipher.auth_tag.size == 16
-      raise 'Bad IV' unless iv.size == 12
+      raise "Bad Authentication Tag" unless cipher.auth_tag.size == 16
+      raise "Bad IV" unless iv.size == 12
 
       # It's customary to append the MAC, and go assumes that. It is also
       # customary to prepend the iv.
-      (iv.bytes + ciphertext.bytes + cipher.auth_tag.bytes).pack('c*')
+      (iv.bytes + ciphertext.bytes + cipher.auth_tag.bytes).pack("c*")
     end
     module_function :encrypt
 
