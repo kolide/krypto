@@ -18,6 +18,6 @@ Gem::Specification.new do |s|
   s.required_ruby_version = "~> 3.1"
 
   s.add_runtime_dependency "openssl"
-  s.add_development_dependency "msgpack", "~> 1.5"
+  s.add_runtime_dependency "msgpack", "~> 1.5"
   s.metadata["rubygems_mfa_required"] = "true"
 end
