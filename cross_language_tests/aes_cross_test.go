@@ -22,7 +22,7 @@ type aesCrossTestCase struct {
 }
 
 var (
-	aesRB = path.Join("/Users/seph/checkouts/kolide/krypto/cross_language_tests", "aes.rb")
+	aesRB = "./aes.rb"
 )
 
 func TestAesRuby(t *testing.T) {

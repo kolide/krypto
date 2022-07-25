@@ -26,7 +26,7 @@ type rsaCrossTestCase struct {
 }
 
 var (
-	rsaRB = path.Join("/Users/seph/checkouts/kolide/krypto/cross_language_tests", "rsa.rb")
+	rsaRB = "./rsa.rb"
 )
 
 func TestRsaRuby(t *testing.T) {
