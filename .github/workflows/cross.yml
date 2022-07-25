@@ -15,6 +15,7 @@ jobs:
       matrix:
         go:
           - '1.16'
+          - '1.18'
         ruby:
           - '3.1.2'
     steps:
