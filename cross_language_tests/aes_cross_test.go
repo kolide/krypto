@@ -40,6 +40,7 @@ func TestAesRuby(t *testing.T) {
 		{AuthData: mkrand(t, 32), Plaintext: mkrand(t, 1024)},
 	}
 
+	//#nosec G306 -- Need readable files
 	for _, tt := range tests {
 		tt := tt
 		t.Run("", func(t *testing.T) {
@@ -63,7 +64,7 @@ func TestAesRuby(t *testing.T) {
 			})
 
 			t.Run("ruby decrypt go", func(t *testing.T) {
-				ctx, cancel := context.WithTimeout(context.Background(), time.Duration(2*time.Second))
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
 
 				cmd := exec.CommandContext(ctx, aesRB, "decrypt", testfile, path.Join(dir, "ruby-decrypt-go"))
@@ -79,7 +80,7 @@ func TestAesRuby(t *testing.T) {
 			})
 
 			t.Run("go decrypt ruby", func(t *testing.T) {
-				ctx, cancel := context.WithTimeout(context.Background(), time.Duration(2*time.Second))
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
 
 				cmd := exec.CommandContext(ctx, aesRB, "encrypt", testfile, path.Join(dir, "ruby-encrypted"))

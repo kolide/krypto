@@ -4,7 +4,7 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1"
+	"crypto/sha1" //#nosec G505 -- Need compatibility
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
@@ -13,10 +13,12 @@ import (
 )
 
 func RsaEncrypt(key *rsa.PublicKey, secretMessage []byte) ([]byte, error) {
+	//#nosec G401 -- Need compatibility
 	return rsa.EncryptOAEP(sha1.New(), rand.Reader, key, secretMessage, nil)
 }
 
 func RsaDecrypt(key *rsa.PrivateKey, ciphertext []byte) ([]byte, error) {
+	//#nosec G401 -- Need compatibility
 	return rsa.DecryptOAEP(sha1.New(), rand.Reader, key, ciphertext, nil)
 }
 
