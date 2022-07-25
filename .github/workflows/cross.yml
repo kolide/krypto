@@ -31,8 +31,6 @@ jobs:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: true
     - name: Cross Language Tests
-      env:
-        GO111MODULE: on
-      run: |
-        find ./ 
-        go test ./cross_language_tests/...
+      # ruby bundler leaves a `vendor` director here, which confuses go mod
+      run:
+        go test ./cross_language_tests/... -mod=mod
