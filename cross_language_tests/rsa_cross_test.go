@@ -38,6 +38,7 @@ func TestRsaRuby(t *testing.T) {
 		{Plaintext: mkrand(t, 128)},
 	}
 
+	//#nosec G306 -- Need readable files
 	for _, tt := range tests {
 		tt := tt
 		t.Run("", func(t *testing.T) {
@@ -62,7 +63,7 @@ func TestRsaRuby(t *testing.T) {
 			t.Run("go encrypt ruby decrypt", func(t *testing.T) {
 				t.Parallel()
 
-				ctx, cancel := context.WithTimeout(context.Background(), time.Duration(2*time.Second))
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
 
 				ciphertext, err := krypto.RsaEncrypt(&key.PublicKey, tt.Plaintext)
@@ -88,7 +89,7 @@ func TestRsaRuby(t *testing.T) {
 			t.Run("ruby encrypt go decrypt", func(t *testing.T) {
 				t.Parallel()
 
-				ctx, cancel := context.WithTimeout(context.Background(), time.Duration(2*time.Second))
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
 
 				b, err := msgpack.Marshal(tt)
@@ -112,7 +113,7 @@ func TestRsaRuby(t *testing.T) {
 			t.Run("go sign ruby verify", func(t *testing.T) {
 				t.Parallel()
 
-				ctx, cancel := context.WithTimeout(context.Background(), time.Duration(2*time.Second))
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
 
 				sig, err := krypto.RsaSign(key, tt.Plaintext)
@@ -143,7 +144,7 @@ func TestRsaRuby(t *testing.T) {
 			t.Run("ruby sign go verify", func(t *testing.T) {
 				t.Parallel()
 
-				ctx, cancel := context.WithTimeout(context.Background(), time.Duration(2*time.Second))
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
 
 				b, err := msgpack.Marshal(tt)
