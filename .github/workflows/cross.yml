@@ -33,4 +33,6 @@ jobs:
     - name: Cross Language Tests
       env:
         GO111MODULE: on
-      run: go test ./cross_language_tests/...
+      run: |
+        find ./ 
+        go test ./cross_language_tests/...
