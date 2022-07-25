@@ -32,27 +32,27 @@ func TestAesRandomRoundTrips(t *testing.T) {
 		tt := tt
 		t.Run(fmt.Sprintf("size %d", len(tt.in)), func(t *testing.T) {
 			t.Parallel()
-			key, err := aesRandomKey()
+			key, err := AesRandomKey()
 			require.NoError(t, err)
 
-			ciphertext, err := aesEncrypt(key, tt.authdata, tt.in)
+			ciphertext, err := AesEncrypt(key, tt.authdata, tt.in)
 			require.NoError(t, err)
 			require.NotEqual(t, tt.in, ciphertext)
 
-			decrypted, err := aesDecrypt(key, tt.authdata, ciphertext)
+			decrypted, err := AesDecrypt(key, tt.authdata, ciphertext)
 			require.NoError(t, err)
 			require.Equal(t, tt.in, decrypted)
 
 			t.Run("broken ciphertext", func(t *testing.T) {
 				t.Parallel()
-				broken, err := aesDecrypt(key, tt.authdata, ciphertext[2:])
+				broken, err := AesDecrypt(key, tt.authdata, ciphertext[2:])
 				require.Error(t, err)
 				require.Nil(t, broken)
 			})
 
 			t.Run("broken key", func(t *testing.T) {
 				t.Parallel()
-				broken, err := aesDecrypt(key[2:], tt.authdata, ciphertext)
+				broken, err := AesDecrypt(key[2:], tt.authdata, ciphertext)
 				require.Error(t, err)
 				require.Nil(t, broken)
 
@@ -97,20 +97,20 @@ func TestAesDecryptCompatibility(t *testing.T) {
 			authdata := base64Decode(t, tt.authdata)
 			ciphertext := base64Decode(t, tt.ciphertext)
 
-			actual, err := aesDecrypt(key, authdata, ciphertext)
+			actual, err := AesDecrypt(key, authdata, ciphertext)
 			require.NoError(t, err)
 			require.Equal(t, tt.plaintext, string(actual))
 
 			t.Run("broken ciphertext", func(t *testing.T) {
 				t.Parallel()
-				broken, err := aesDecrypt(key, authdata, ciphertext[2:])
+				broken, err := AesDecrypt(key, authdata, ciphertext[2:])
 				require.Error(t, err)
 				require.Nil(t, broken)
 			})
 
 			t.Run("broken key", func(t *testing.T) {
 				t.Parallel()
-				broken, err := aesDecrypt(key[2:], authdata, ciphertext)
+				broken, err := AesDecrypt(key[2:], authdata, ciphertext)
 				require.Error(t, err)
 				require.Nil(t, broken)
 

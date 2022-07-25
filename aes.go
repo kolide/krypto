@@ -23,7 +23,7 @@ import (
 // - https://crypto.stackexchange.com/questions/25249
 // - https://pkg.go.dev/crypto/cipher
 
-func aesEncrypt(key, authData, plaintext []byte) ([]byte, error) {
+func AesEncrypt(key, authData, plaintext []byte) ([]byte, error) {
 	iv := make([]byte, 12)
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 		return nil, fmt.Errorf("generating iv: %w", err)
@@ -42,7 +42,7 @@ func aesEncrypt(key, authData, plaintext []byte) ([]byte, error) {
 	return aesgcm.Seal(iv, iv, plaintext, authData), nil
 }
 
-func aesDecrypt(key, authData, ciphertext []byte) ([]byte, error) {
+func AesDecrypt(key, authData, ciphertext []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, fmt.Errorf("new aes: %w", err)
@@ -63,7 +63,7 @@ func aesDecrypt(key, authData, ciphertext []byte) ([]byte, error) {
 	return aesgcm.Open(nil, iv, cutCiphertext, authData)
 }
 
-func aesRandomKey() ([]byte, error) {
+func AesRandomKey() ([]byte, error) {
 	key := make([]byte, 32)
 	if _, err := io.ReadFull(rand.Reader, key); err != nil {
 		return nil, err

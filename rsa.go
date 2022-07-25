@@ -9,15 +9,15 @@ import (
 	"fmt"
 )
 
-func rsaEncrypt(key *rsa.PublicKey, secretMessage []byte) ([]byte, error) {
+func RsaEncrypt(key *rsa.PublicKey, secretMessage []byte) ([]byte, error) {
 	return rsa.EncryptOAEP(sha1.New(), rand.Reader, key, secretMessage, nil)
 }
 
-func rsaDecrypt(key *rsa.PrivateKey, ciphertext []byte) ([]byte, error) {
+func RsaDecrypt(key *rsa.PrivateKey, ciphertext []byte) ([]byte, error) {
 	return rsa.DecryptOAEP(sha1.New(), rand.Reader, key, ciphertext, nil)
 }
 
-func rsaSign(key *rsa.PrivateKey, message []byte) ([]byte, error) {
+func RsaSign(key *rsa.PrivateKey, message []byte) ([]byte, error) {
 	hasher := sha256.New()
 	if _, err := hasher.Write(message); err != nil {
 		return nil, fmt.Errorf("hashing message: %w", err)
@@ -27,7 +27,7 @@ func rsaSign(key *rsa.PrivateKey, message []byte) ([]byte, error) {
 	return rsa.SignPSS(rand.Reader, key, crypto.SHA256, digest, nil)
 }
 
-func rsaVerify(key *rsa.PublicKey, message []byte, sig []byte) error {
+func RsaVerify(key *rsa.PublicKey, message []byte, sig []byte) error {
 	hasher := sha256.New()
 	if _, err := hasher.Write(message); err != nil {
 		return fmt.Errorf("hashing message: %w", err)
@@ -37,6 +37,6 @@ func rsaVerify(key *rsa.PublicKey, message []byte, sig []byte) error {
 	return rsa.VerifyPSS(key, crypto.SHA256, digest, sig, nil)
 }
 
-func rsaRandomKey() (*rsa.PrivateKey, error) {
+func RsaRandomKey() (*rsa.PrivateKey, error) {
 	return rsa.GenerateKey(rand.Reader, 2048)
 }
