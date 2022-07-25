@@ -32,11 +32,11 @@ jobs:
         bundler-cache: true
     - name: debug?
       run: |
-      which ruby
-      ruby --version
-      which gem
-      gem list
+        which ruby
+        ruby --version
+        which gem
+        gem list
     - name: Cross Language Tests
-      # ruby bundler leaves a `vendor` director here, which confuses go mod
+      # ruby bundler leaves a `vendor` director here, which confuses go mod, so we need to explicitly disable it.
       run:
-        go test ./cross_language_tests/... -mod=mod
+        bundle exec go test ./cross_language_tests/... -mod=mod
