@@ -37,6 +37,6 @@ func rsaVerify(key *rsa.PublicKey, message []byte, sig []byte) error {
 	return rsa.VerifyPSS(key, crypto.SHA256, digest, sig, nil)
 }
 
-func rsaRandomKey() ( *rsa.PrivateKey, error {
-		return rsa.GenerateKey(rand.Reader, 2048)
+func rsaRandomKey() (*rsa.PrivateKey, error) {
+	return rsa.GenerateKey(rand.Reader, 2048)
 }
