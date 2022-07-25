@@ -59,7 +59,7 @@ func TestAesRuby(t *testing.T) {
 
 				b, err := msgpack.Marshal(tt)
 				require.NoError(t, err)
-				os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644)
+				require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 			})
 
 			t.Run("ruby decrypt go", func(t *testing.T) {
@@ -93,7 +93,7 @@ func TestAesRuby(t *testing.T) {
 				require.NoError(t, msgpack.Unmarshal(base64Decode(t, string(testcaseRaw)), &testcase))
 
 				plaintext, err := krypto.AesDecrypt(testcase.Key, testcase.AuthData, testcase.Ciphertext)
-
+				require.NoError(t, err)
 				require.Equal(t, string(tt.Plaintext), string(plaintext))
 			})
 

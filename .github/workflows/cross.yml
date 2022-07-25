@@ -33,7 +33,7 @@ jobs:
       matrix:
         go:
           - '1.16'
-          - '1.19'
+          - '1.18'
     steps:
     - uses: actions/checkout@v3
     - name: Set up Go
@@ -41,7 +41,9 @@ jobs:
       with:
         go-version: ${{ matrix.go }}
         cache: true
-    - name: Run Tests
+    - name: Lint
+      uses: golangci/golangci-lint-action@v3
+    - name: Test
       run: go test $(go list ./... | grep -v cross_language_tests) -race
 
 
@@ -52,7 +54,7 @@ jobs:
       matrix:
         go:
           - '1.16'
-          - '1.19'
+          - '1.18'
         ruby:
           - '3.1.2'
     steps:
