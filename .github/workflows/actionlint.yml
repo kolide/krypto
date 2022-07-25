@@ -21,4 +21,4 @@ jobs:
       - name: actionlint
         run: |
           echo "::add-matcher::.github/actionlint-matcher.json"
-          actionlint -color
+          actionlint -color -ignore SC2046
