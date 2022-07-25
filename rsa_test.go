@@ -1,11 +1,9 @@
 package krypto
 
 import (
-	"crypto/rand"
 	"crypto/rsa"
 	"testing"
 
-	"github.com/kolide/kit/ulid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,12 +11,12 @@ import (
 func TestEncryption(t *testing.T) {
 	t.Parallel()
 
-	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	key, err := rsaRandomKey()
 	require.NoError(t, err)
 	pub, ok := key.Public().(*rsa.PublicKey)
 	require.True(t, ok)
 
-	message := []byte(ulid.New())
+	message := []byte(randomString(t, 64))
 
 	ciphertext, err := rsaEncrypt(pub, message)
 	require.NoError(t, err)
@@ -42,12 +40,12 @@ func TestEncryption(t *testing.T) {
 func TestSigning(t *testing.T) {
 	t.Parallel()
 
-	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	key, err := rsaRandomKey()
 	require.NoError(t, err)
 	pub, ok := key.Public().(*rsa.PublicKey)
 	require.True(t, ok)
 
-	message := []byte(ulid.New())
+	message := []byte(randomString(t, 64))
 
 	sig, err := rsaSign(key, message)
 	require.NoError(t, err)

@@ -1,11 +1,8 @@
 package krypto
 
 import (
-	"crypto/rand"
 	_ "embed"
-	"encoding/base64"
 	"fmt"
-	"io"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -35,7 +32,8 @@ func TestAesRandomRoundTrips(t *testing.T) {
 		tt := tt
 		t.Run(fmt.Sprintf("size %d", len(tt.in)), func(t *testing.T) {
 			t.Parallel()
-			key := mkrand(t, 32)
+			key, err := aesRandomKey()
+			require.NoError(t, err)
 
 			ciphertext, err := aesEncrypt(key, tt.authdata, tt.in)
 			require.NoError(t, err)
@@ -59,10 +57,8 @@ func TestAesRandomRoundTrips(t *testing.T) {
 				require.Nil(t, broken)
 
 			})
-
 		})
 	}
-
 }
 
 func TestAesDecryptCompatibility(t *testing.T) {
@@ -119,20 +115,6 @@ func TestAesDecryptCompatibility(t *testing.T) {
 				require.Nil(t, broken)
 
 			})
-
 		})
 	}
-}
-
-func mkrand(t *testing.T, size int) []byte {
-	r := make([]byte, size)
-	_, err := io.ReadFull(rand.Reader, r)
-	require.NoError(t, err)
-	return r
-}
-
-func base64Decode(t *testing.T, raw string) []byte {
-	d, err := base64.StdEncoding.DecodeString(raw)
-	require.NoError(t, err)
-	return d
 }
