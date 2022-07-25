@@ -2,6 +2,7 @@ PATH
   remote: .
   specs:
     krypto (0.1.0)
+      msgpack (~> 1.5)
       openssl
 
 GEM
@@ -54,7 +55,6 @@ PLATFORMS
 DEPENDENCIES
   krypto!
   minitest (~> 5.0)
-  msgpack (~> 1.5)
   rake (~> 13.0)
   simplecov (~> 0.16)
   standard (~> 1.3)

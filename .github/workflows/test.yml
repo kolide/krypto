@@ -1,0 +1,83 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  ruby:
+    name: Ruby ${{ matrix.ruby }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ruby:
+          - '3.1.2'
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby }}
+        bundler-cache: true
+    - name: Lint
+      run: bundle exec rake standard
+    - name: Test
+      run: bundle exec rake test
+
+  go:
+    name: Go ${{ matrix.go }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go:
+          - '1.16'
+          - '1.18'
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: ${{ matrix.go }}
+        cache: true
+    - name: Lint
+      uses: golangci/golangci-lint-action@v3
+    - name: Test
+      run: go test $(go list ./... | grep -v cross_language_tests) -race
+
+  cross:
+    name: Cross -- Go ${{ matrix.go }} Ruby ${{ matrix.ruby }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go:
+          - '1.16'
+          - '1.18'
+        ruby:
+          - '3.1.2'
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: ${{ matrix.go }}
+        cache: true
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby }}
+        bundler-cache: true
+    - name: Cross Language Tests
+      # ruby bundler leaves a `vendor` director here, which confuses go mod, so we need to explicitly disable it.
+      run:
+        bundle exec go test ./cross_language_tests/... -mod=mod
+
+  mergeable:
+    runs-on: ubuntu-latest
+    steps:
+      - run: true
+    needs:
+      - ruby
+      - go
+      - cross

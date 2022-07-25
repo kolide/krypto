@@ -16,7 +16,8 @@ import (
 // (Or even https://go.dev/src/crypto/cipher/example_test.go).
 // However, much betteris to use GCM mode.
 //
-// There are some notable differences. Ruby returns the MAC (or auth_tag or auth data) seperately, where as the go library appends it. Easy enough to deal with.
+// There are some notable differences. Ruby returns the MAC (or auth_tag or auth data) separately,
+// where as the go library appends it. Easy enough to deal with.
 // Some URLs I found helpful:
 // - https://stackoverflow.com/questions/68040875/
 // - https://stackoverflow.com/questions/68350301
