@@ -46,7 +46,6 @@ jobs:
     - name: Test
       run: go test $(go list ./... | grep -v cross_language_tests) -race
 
-
   cross:
     name: Cross -- Go ${{ matrix.go }} Ruby ${{ matrix.ruby }}
     runs-on: ubuntu-latest
