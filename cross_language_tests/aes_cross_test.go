@@ -2,7 +2,6 @@ package cross_language_tests
 
 import (
 	"context"
-	_ "embed"
 	"encoding/base64"
 	"os"
 	"os/exec"
@@ -26,7 +25,7 @@ var (
 	aesRB = path.Join("/Users/seph/checkouts/kolide/krypto/cross_language_tests", "aes.rb")
 )
 
-func TestAesRubyNew(t *testing.T) {
+func TestAesRuby(t *testing.T) {
 	t.Parallel()
 
 	tests := []aesCrossTestCase{

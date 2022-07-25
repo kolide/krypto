@@ -6,7 +6,10 @@ import (
 	"crypto/rsa"
 	"crypto/sha1"
 	"crypto/sha256"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
+	"io"
 )
 
 func RsaEncrypt(key *rsa.PublicKey, secretMessage []byte) ([]byte, error) {
@@ -39,4 +42,25 @@ func RsaVerify(key *rsa.PublicKey, message []byte, sig []byte) error {
 
 func RsaRandomKey() (*rsa.PrivateKey, error) {
 	return rsa.GenerateKey(rand.Reader, 2048)
+}
+
+func RsaPrivateKeyToPem(key *rsa.PrivateKey, out io.Writer) error {
+	privASN1 := x509.MarshalPKCS1PrivateKey(key)
+
+	return pem.Encode(out, &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: privASN1,
+	})
+}
+
+func RsaPublicKeyToPem(key *rsa.PrivateKey, out io.Writer) error {
+	pubASN1, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
+	if err != nil {
+		return fmt.Errorf("pkix marshalling: %w")
+	}
+
+	return pem.Encode(out, &pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: pubASN1,
+	})
 }
