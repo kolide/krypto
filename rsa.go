@@ -8,21 +8,34 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io"
 )
 
 func RsaEncrypt(key *rsa.PublicKey, secretMessage []byte) ([]byte, error) {
+	if key == nil {
+		return nil, errors.New("Cannot encrypt with a nil key")
+	}
+
 	//#nosec G401 -- Need compatibility
 	return rsa.EncryptOAEP(sha1.New(), rand.Reader, key, secretMessage, nil)
 }
 
 func RsaDecrypt(key *rsa.PrivateKey, ciphertext []byte) ([]byte, error) {
+	if key == nil {
+		return nil, errors.New("Cannot decrypt with a nil key")
+	}
+
 	//#nosec G401 -- Need compatibility
 	return rsa.DecryptOAEP(sha1.New(), rand.Reader, key, ciphertext, nil)
 }
 
 func RsaSign(key *rsa.PrivateKey, message []byte) ([]byte, error) {
+	if key == nil {
+		return nil, errors.New("Cannot sign with a nil key")
+	}
+
 	hasher := sha256.New()
 	if _, err := hasher.Write(message); err != nil {
 		return nil, fmt.Errorf("hashing message: %w", err)
@@ -33,6 +46,10 @@ func RsaSign(key *rsa.PrivateKey, message []byte) ([]byte, error) {
 }
 
 func RsaVerify(key *rsa.PublicKey, message []byte, sig []byte) error {
+	if key == nil {
+		return errors.New("Cannot verify with a nil key")
+	}
+
 	hasher := sha256.New()
 	if _, err := hasher.Write(message); err != nil {
 		return fmt.Errorf("hashing message: %w", err)

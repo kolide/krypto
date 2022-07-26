@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-kit/kit/log"
-	_ "github.com/go-kit/kit/log/level"
 	"github.com/kolide/kit/ulid"
 	"github.com/vmihailenco/msgpack/v5"
 )
@@ -30,15 +28,13 @@ type innerBox struct {
 type boxMaker struct {
 	key          *rsa.PrivateKey
 	counterparty *rsa.PublicKey
-	logger       log.Logger
 }
 
-func New(logger log.Logger, key *rsa.PrivateKey, counterparty *rsa.PublicKey) (boxMaker, error) {
+func NewBoxer(key *rsa.PrivateKey, counterparty *rsa.PublicKey) boxMaker {
 	return boxMaker{
 		key:          key,
 		counterparty: counterparty,
-		logger:       logger,
-	}, nil
+	}
 }
 
 func (boxer boxMaker) Encode(inResponseTo string, data []byte) ([]byte, error) {
