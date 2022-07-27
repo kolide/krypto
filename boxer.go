@@ -23,7 +23,7 @@ type innerBox struct {
 	Key        []byte `msgpack:"key"`
 	Ciphertext []byte `msgpack:"ciphertext"`
 	RequestId  string `msgpack:"requestid"`
-	ResponseTo string `msgpack:"responseid"`
+	ResponseTo string `msgpack:"responseto"`
 }
 
 type boxMaker struct {

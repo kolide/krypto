@@ -9,6 +9,7 @@ require "base64"
 module Krypto
   class Boxer
     def initialize(key, counterparty = nil)
+      raise "Missing key" unless key
       @key = key
       @counterparty = counterparty
     end
