@@ -20,30 +20,25 @@ class TestKryptoBoxer < Minitest::Test
     rand256: SecureRandom.bytes(256),
     rand4096: SecureRandom.bytes(4096),
   }.freeze
-  MESSAGEBOXES = {}
-  
-  def setup
-  end
 
-  MESSAGES.each do |name, message|
-
-    define_method("test_encryption: #{name}") do
-      MESSAGEBOXES[name] = ALICEBOX.encode(SecureRandom.uuid, message)
-    end
-    
+  MESSAGES.each do |name, message|    
     define_method("test_can_decode: #{name}") do
-      assert_equal(message, BOBBOX.decode(MESSAGEBOXES[name]))
-      assert_equal(message, BOBBOX.decode_unverified(MESSAGEBOXES[name]))
-      assert_equal(message, BARE_BOBBOX.decode_unverified(MESSAGEBOXES[name]))
+      box = ALICEBOX.encode(SecureRandom.uuid, message)
+      
+      assert_equal(message, BOBBOX.decode(box))
+      assert_equal(message, BOBBOX.decode_unverified(box))
+      assert_equal(message, BARE_BOBBOX.decode_unverified(box))
     end
 
     define_method("test_cannot_decode: #{name}") do
-      assert_raises { BARE_BOBBOX.decode(MESSAGEBOXES[name]) }
+      box = ALICEBOX.encode(SecureRandom.uuid, message)
 
-      assert_raises { MALLORYBOX.decode(MESSAGEBOXES[name]) }
-      assert_raises { MALLORYBOX.decode_unverified(MESSAGEBOXES[name]) }
-      assert_raises { BARE_MALLORYBOX.decode(MESSAGEBOXES[name]) }
-      assert_raises { BARE_MALLORYBOX.decode_unverified(MESSAGEBOXES[name]) }
+      assert_raises { BARE_BOBBOX.decode(box) }
+
+      assert_raises { MALLORYBOX.decode(box) }
+      assert_raises { MALLORYBOX.decode_unverified(box) }
+      assert_raises { BARE_MALLORYBOX.decode(box) }
+      assert_raises { BARE_MALLORYBOX.decode_unverified(box) }
     end
   end
 end
