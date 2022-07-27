@@ -7,7 +7,7 @@ require "securerandom"
 
 module Krypto
   class Boxer
-    def initialize(key, counterparty=nil)
+    def initialize(key, counterparty = nil)
       @key = key
       @counterparty = counterparty
     end
@@ -24,7 +24,7 @@ module Krypto
           key: aeskey_enc,
           ciphertext: ciphertext,
           requestid: SecureRandom.uuid,
-          responseto: in_response_to,
+          responseto: in_response_to
         )
       )
 
@@ -32,7 +32,7 @@ module Krypto
         Outer.new(
           inner: inner,
           signature: ::Krypto::Rsa.sign(@key, inner),
-          sender: "me",
+          sender: "me"
         )
       )
     end
@@ -60,18 +60,17 @@ module Krypto
     end
 
     class Inner < Struct.new(*%i[version timestamp key ciphertext requestid responseto], keyword_init: true)
-      def to_msgpack(out='')
-        self.to_h.to_msgpack(out)
+      def to_msgpack(out = "")
+        to_h.to_msgpack(out)
       end
     end
     private_constant :Inner
-    
+
     class Outer < Struct.new(*%i[inner signature sender], keyword_init: true)
-      def to_msgpack(out='')
-        self.to_h.to_msgpack(out)
+      def to_msgpack(out = "")
+        to_h.to_msgpack(out)
       end
     end
     private_constant :Outer
-    
   end
 end
