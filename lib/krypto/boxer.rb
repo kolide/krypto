@@ -4,6 +4,7 @@ require "krypto/rsa"
 require "krypto/aes"
 require "msgpack"
 require "securerandom"
+require "base64"
 
 module Krypto
   class Boxer
@@ -28,22 +29,24 @@ module Krypto
         )
       )
 
-      MessagePack.pack(
-        Outer.new(
-          inner: inner,
-          signature: ::Krypto::Rsa.sign(@key, inner),
-          sender: "me"
+      Base64.strict_encode64(
+        MessagePack.pack(
+          Outer.new(
+            inner: inner,
+            signature: ::Krypto::Rsa.sign(@key, inner),
+            sender: "me"
+          )
         )
       )
     end
 
     def decode_unverified(data)
-      outer = Outer.new(MessagePack.unpack(data))
+      outer = Outer.new(MessagePack.unpack(Base64.strict_decode64(data)))
       decode_inner(outer.inner)
     end
 
     def decode(data)
-      outer = Outer.new(MessagePack.unpack(data))
+      outer = Outer.new(MessagePack.unpack(Base64.strict_decode64(data)))
 
       raise "Bag Signature" unless ::Krypto::Rsa.verify(@counterparty, outer.signature, outer.inner)
 

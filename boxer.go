@@ -2,6 +2,7 @@ package krypto
 
 import (
 	"crypto/rsa"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"time"
@@ -37,7 +38,16 @@ func NewBoxer(key *rsa.PrivateKey, counterparty *rsa.PublicKey) boxMaker {
 	}
 }
 
-func (boxer boxMaker) Encode(inResponseTo string, data []byte) ([]byte, error) {
+func (boxer boxMaker) Encode(inResponseTo string, data []byte) (string, error) {
+	raw, err := boxer.EncodeRaw(inResponseTo, data)
+	if err != nil {
+		return "", fmt.Errorf("encoding base64: %w", err)
+	}
+
+	return base64.StdEncoding.EncodeToString(raw), nil
+}
+
+func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error) {
 	aeskey, err := AesRandomKey()
 	if err != nil {
 		return nil, fmt.Errorf("generating DEK: %w", err)
@@ -86,7 +96,16 @@ func (boxer boxMaker) Encode(inResponseTo string, data []byte) ([]byte, error) {
 	return outerPacked, nil
 }
 
-func (boxer boxMaker) DecodeUnverified(data []byte) ([]byte, error) {
+func (boxer boxMaker) DecodeUnverified(b64 string) ([]byte, error) {
+	data, err := base64.StdEncoding.DecodeString(b64)
+	if err != nil {
+		return nil, fmt.Errorf("decoding base64: %w", err)
+	}
+
+	return boxer.DecodeRawUnverified(data)
+}
+
+func (boxer boxMaker) DecodeRawUnverified(data []byte) ([]byte, error) {
 	var outer outerBox
 	if err := msgpack.Unmarshal(data, &outer); err != nil {
 		return nil, fmt.Errorf("unmarshalling outer: %w", err)
@@ -95,7 +114,16 @@ func (boxer boxMaker) DecodeUnverified(data []byte) ([]byte, error) {
 	return boxer.decodeInner(outer.Inner)
 }
 
-func (boxer boxMaker) Decode(data []byte) ([]byte, error) {
+func (boxer boxMaker) Decode(b64 string) ([]byte, error) {
+	data, err := base64.StdEncoding.DecodeString(b64)
+	if err != nil {
+		return nil, fmt.Errorf("decoding base64: %w", err)
+	}
+
+	return boxer.DecodeRaw(data)
+}
+
+func (boxer boxMaker) DecodeRaw(data []byte) ([]byte, error) {
 	var outer outerBox
 	if err := msgpack.Unmarshal(data, &outer); err != nil {
 		return nil, fmt.Errorf("unmarshalling outer: %w", err)

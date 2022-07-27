@@ -40,7 +40,7 @@ func TestBoxRandomRoundTrips(t *testing.T) {
 
 	var testFuncs = []struct {
 		name      string
-		fn        func([]byte) ([]byte, error)
+		fn        func(string) ([]byte, error)
 		expectErr bool
 	}{
 		{name: "bob can decode", fn: bobBoxer.Decode},
