@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -44,9 +43,6 @@ func TestRsaRuby(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			t.Parallel()
 
-			dir := t.TempDir()
-			testfile := path.Join(dir, "testcase.msgpack")
-
 			key, err := krypto.RsaRandomKey()
 			require.NoError(t, err)
 
@@ -62,9 +58,13 @@ func TestRsaRuby(t *testing.T) {
 
 			t.Run("go encrypt ruby decrypt", func(t *testing.T) {
 				t.Parallel()
+				tt := tt
 
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
+
+				dir := t.TempDir()
+				testfile := path.Join(dir, "testcase.msgpack")
 
 				ciphertext, err := krypto.RsaEncrypt(&key.PublicKey, tt.Plaintext)
 				require.NoError(t, err)
@@ -88,9 +88,13 @@ func TestRsaRuby(t *testing.T) {
 
 			t.Run("ruby encrypt go decrypt", func(t *testing.T) {
 				t.Parallel()
+				tt := tt
 
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
+
+				dir := t.TempDir()
+				testfile := path.Join(dir, "testcase.msgpack")
 
 				b, err := msgpack.Marshal(tt)
 				require.NoError(t, err)
@@ -112,9 +116,13 @@ func TestRsaRuby(t *testing.T) {
 
 			t.Run("go sign ruby verify", func(t *testing.T) {
 				t.Parallel()
+				tt := tt
 
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
+
+				dir := t.TempDir()
+				testfile := path.Join(dir, "testcase.msgpack")
 
 				sig, err := krypto.RsaSign(key, tt.Plaintext)
 				require.NoError(t, err)
@@ -134,18 +142,18 @@ func TestRsaRuby(t *testing.T) {
 				var actual rsaCrossTestCase
 				require.NoError(t, msgpack.Unmarshal(base64Decode(t, string(res)), &actual))
 
-				fmt.Println("SEPH")
-				fmt.Println(testfile)
-				fmt.Println(path.Join(dir, "ruby-verify"))
-				//time.Sleep(120 * time.Second)
 				require.Equal(t, true, actual.Verified)
 			})
 
 			t.Run("ruby sign go verify", func(t *testing.T) {
 				t.Parallel()
+				tt := tt
 
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
+
+				dir := t.TempDir()
+				testfile := path.Join(dir, "testcase.msgpack")
 
 				b, err := msgpack.Marshal(tt)
 				require.NoError(t, err)
