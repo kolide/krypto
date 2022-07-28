@@ -20,11 +20,8 @@ counterparty = if testcase["Counterparty"]
 boxer = Krypto::Boxer.new(key, counterparty)
 
 case cmd
-when nil, ""
-  puts "What are we doing here?"
-  exit(1)
 when "encode"
-  testcase["Ciphertext"] = box.encode(testcase["ResponseTo"], testcase["Plaintext"])
+  testcase["Ciphertext"] = boxer.encode(testcase["ResponseTo"], testcase["Plaintext"])
   File.write(outfile, Base64.strict_encode64(MessagePack.pack(testcase)))
 when "decode"
   testcase["Plaintext"] = boxer.decode(testcase["Ciphertext"])
@@ -34,4 +31,7 @@ when "decodeunverified"
   File.write(outfile, Base64.strict_encode64(MessagePack.pack(testcase)))
 when "spew"
   pp testcase
+else
+  puts "What are we doing here?"
+  exit(1)
 end

@@ -22,7 +22,7 @@ type boxerCrossTestCase struct {
 	Counterparty []byte
 	Plaintext    []byte
 	Ciphertext   string
-	name         string
+	ResponseTo   string
 	expectErr    bool
 	cmd          string
 }
@@ -53,6 +53,9 @@ func TestBoxerRuby(t *testing.T) {
 	require.NoError(t, krypto.RsaPrivateKeyToPem(malloryKey, &malloryPem))
 
 	aliceBoxer := krypto.NewBoxer(aliceKey, bobKey.Public().(*rsa.PublicKey))
+	bareAliceBoxer := krypto.NewBoxer(aliceKey, nil)
+	malloryBoxer := krypto.NewBoxer(malloryKey, aliceKey.Public().(*rsa.PublicKey))
+	bareMalloryBoxer := krypto.NewBoxer(malloryKey, nil)
 
 	testMessages := [][]byte{
 		[]byte("a"),
@@ -64,73 +67,151 @@ func TestBoxerRuby(t *testing.T) {
 		mkrand(t, 4096),
 	}
 
+	// Ruby Decrypt Tests
 	for _, message := range testMessages {
 		message := message
-		responseTo := ulid.New()
-		ciphertext, err := aliceBoxer.Encode(responseTo, message)
-		require.NoError(t, err)
-
-		tests := []boxerCrossTestCase{
-			// Go encoded, ruby successfully decode
-			{Key: bobPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: ciphertext, cmd: "decode"},
-			{Key: bobPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: ciphertext, cmd: "decodeunverified"},
-			{Key: bobPem.Bytes(), Ciphertext: ciphertext, cmd: "decodeunverified"},
-
-			// Go encoded, ruby cannot decode with wrong keys
-			{Key: bobPem.Bytes(), cmd: "decode", expectErr: true},
-			{Key: malloryPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: ciphertext, cmd: "decode", expectErr: true},
-			{Key: malloryPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: ciphertext, cmd: "decodeunverified", expectErr: true},
-			{Key: malloryPem.Bytes(), Ciphertext: ciphertext, cmd: "decode", expectErr: true},
-			{Key: malloryPem.Bytes(), Ciphertext: ciphertext, cmd: "decodeunverified", expectErr: true},
-
-			// Ruby encoded
-			//{Key: aliceKey, Counterparty: bobKey.Public().(*rsa.PublicKey), cmd: "encode"},
-		}
 
 		//#nosec G306 -- Need readable files
-		for _, tt := range tests {
-			tt := tt
+		t.Run("ruby encrypt go decrypt", func(t *testing.T) {
+			t.Parallel()
 
-			t.Run("", func(t *testing.T) {
-				t.Parallel()
+			var ciphertext string
 
+			t.Run("ruby encrypt", func(t *testing.T) {
 				dir := t.TempDir()
-				testfile := path.Join(dir, ulid.New()) //"testcase.msgpack")
-				rubyout := path.Join(dir, ulid.New())  //"ruby-out")
+				rubyInFile := path.Join(dir, "testcase.msgpack")
+				rubyOutFile := path.Join(dir, "ruby-out")
 
-				//
-				// Setup
-				//
-				b, err := msgpack.Marshal(tt)
+				rubyCommand := boxerCrossTestCase{
+					Key:          bobPem.Bytes(),
+					Counterparty: alicePubPem.Bytes(),
+					Plaintext:    message,
+					ResponseTo:   ulid.New(),
+				}
+
+				b, err := msgpack.Marshal(rubyCommand)
 				require.NoError(t, err)
-				require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
+				require.NoError(t, os.WriteFile(rubyInFile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
 
-				cmd := exec.CommandContext(ctx, boxerRB, tt.cmd, testfile, rubyout)
+				cmd := exec.CommandContext(ctx, boxerRB, "encode", rubyInFile, rubyOutFile)
+
 				out, err := cmd.CombinedOutput()
-
-				//
-				// Check
-				//
-				if tt.expectErr {
-					require.Error(t, err)
-					return
-				}
-
 				require.NoError(t, err, string(out))
 
-				rubyResult, err := os.ReadFile(rubyout)
+				rubyResult, err := os.ReadFile(rubyOutFile)
 				require.NoError(t, err)
 
-				var actual boxerCrossTestCase
-				require.NoError(t, msgpack.Unmarshal(base64Decode(t, string(rubyResult)), &actual))
+				var unpacked boxerCrossTestCase
+				require.NoError(t, msgpack.Unmarshal(base64Decode(t, string(rubyResult)), &unpacked))
 
-				require.Equal(t, message, actual.Plaintext, "plaintext matches")
-
+				require.NotEmpty(t, unpacked.Ciphertext)
+				ciphertext = unpacked.Ciphertext
 			})
-		}
+
+			var testFuncs = []struct {
+				name       string
+				fn         func(string) ([]byte, error)
+				expectErr  bool
+				ciphertext string
+			}{
+				{name: "alice can decode", ciphertext: ciphertext, fn: aliceBoxer.Decode},
+				{name: "alice can decode unverified", ciphertext: ciphertext, fn: aliceBoxer.DecodeUnverified},
+				{name: "bare alice can decode unverified", ciphertext: ciphertext, fn: bareAliceBoxer.DecodeUnverified},
+
+				{name: "mallory cannot decode", ciphertext: ciphertext, fn: malloryBoxer.Decode, expectErr: true},
+				{name: "mallory cannot decode unverified", ciphertext: ciphertext, fn: malloryBoxer.DecodeUnverified, expectErr: true},
+				{name: "bare mallory cannot decode", ciphertext: ciphertext, fn: bareMalloryBoxer.Decode, expectErr: true},
+				{name: "bare mallory cannot decode unverified", ciphertext: ciphertext, fn: bareMalloryBoxer.DecodeUnverified, expectErr: true},
+				{name: "bare alice cannot verify and decode", ciphertext: ciphertext, fn: bareAliceBoxer.Decode, expectErr: true},
+			}
+
+			for _, tf := range testFuncs {
+				tf := tf
+
+				t.Run(tf.name, func(t *testing.T) {
+					t.Parallel()
+					if tf.expectErr {
+						plaintext, err := tf.fn(tf.ciphertext)
+						require.Error(t, err)
+						require.Empty(t, plaintext)
+					} else {
+						plaintext, err := tf.fn(tf.ciphertext)
+						require.NoError(t, err)
+						require.Equal(t, message, plaintext, "decoded matches")
+					}
+				})
+			}
+
+		})
+
+		t.Run("go encrypt ruby decrypt", func(t *testing.T) {
+			t.Parallel()
+			responseTo := ulid.New()
+			ciphertext, err := aliceBoxer.Encode(responseTo, message)
+			require.NoError(t, err)
+
+			tests := []boxerCrossTestCase{
+				// Go encoded, ruby successfully decode
+				{Key: bobPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: ciphertext, cmd: "decode"},
+				{Key: bobPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: ciphertext, cmd: "decodeunverified"},
+				{Key: bobPem.Bytes(), Ciphertext: ciphertext, cmd: "decodeunverified"},
+
+				// Go encoded, ruby cannot decode with wrong keys
+				{Key: bobPem.Bytes(), cmd: "decode", expectErr: true},
+				{Key: malloryPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: ciphertext, cmd: "decode", expectErr: true},
+				{Key: malloryPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: ciphertext, cmd: "decodeunverified", expectErr: true},
+				{Key: malloryPem.Bytes(), Ciphertext: ciphertext, cmd: "decode", expectErr: true},
+				{Key: malloryPem.Bytes(), Ciphertext: ciphertext, cmd: "decodeunverified", expectErr: true},
+			}
+
+			//#nosec G306 -- Need readable files
+			for _, tt := range tests {
+				tt := tt
+
+				t.Run("", func(t *testing.T) {
+					t.Parallel()
+
+					dir := t.TempDir()
+					testfile := path.Join(dir, "testcase.msgpack")
+					rubyout := path.Join(dir, "ruby-out")
+
+					//
+					// Setup
+					//
+					b, err := msgpack.Marshal(tt)
+					require.NoError(t, err)
+					require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
+
+					ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+					defer cancel()
+
+					//#nosec G204 -- No taint on hardcoded input
+					cmd := exec.CommandContext(ctx, boxerRB, tt.cmd, testfile, rubyout)
+					out, err := cmd.CombinedOutput()
+
+					//
+					// Check
+					//
+					if tt.expectErr {
+						require.Error(t, err)
+						return
+					}
+
+					require.NoError(t, err, string(out))
+
+					rubyResult, err := os.ReadFile(rubyout)
+					require.NoError(t, err)
+
+					var actual boxerCrossTestCase
+					require.NoError(t, msgpack.Unmarshal(base64Decode(t, string(rubyResult)), &actual))
+
+					require.Equal(t, message, actual.Plaintext, "plaintext matches")
+				})
+			}
+		})
 
 	}
 }
