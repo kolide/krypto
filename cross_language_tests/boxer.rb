@@ -13,10 +13,8 @@ outfile = args.shift
 
 key = OpenSSL::PKey::RSA.new(testcase["Key"])
 counterparty = if testcase["Counterparty"]
-                 OpenSSL::PKey::RSA.new(testcase["Counterparty"])
-               else
-                 nil
-               end
+  OpenSSL::PKey::RSA.new(testcase["Counterparty"])
+end
 boxer = Krypto::Boxer.new(key, counterparty)
 
 case cmd
