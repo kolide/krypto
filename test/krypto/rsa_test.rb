@@ -35,4 +35,19 @@ class TestRsa < Minitest::Test
       refute(Krypto::Rsa.verify(KEY2, message, signature))
     end
   end
+
+  FINGERPRINTS = {
+    "public.pem": "80:61:16:6c:86:e8:9f:a2:91:49:b4:75:f8:46:1a:ae:9d:a6:72:e9:dd:4a:c4:f5:b3:07:d1:3a:99:ba:d7:71",
+    "private.pem": "80:61:16:6c:86:e8:9f:a2:91:49:b4:75:f8:46:1a:ae:9d:a6:72:e9:dd:4a:c4:f5:b3:07:d1:3a:99:ba:d7:71"
+  }.freeze
+
+  FINGERPRINTS.each do |filename, expected|
+    define_method("test_fingerprint: #{filename}") do
+      filepath = File.expand_path("../../test-data/#{filename}", __dir__)
+      key = Krypto::Rsa.key_from_pem(filepath)
+      actual = Krypto::Rsa.fingerprint(key)
+
+      assert_equal(expected, actual)
+    end
+  end
 end

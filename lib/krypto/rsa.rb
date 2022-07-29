@@ -30,5 +30,16 @@ module Krypto
       key.verify("SHA256", signature, data, SIGN_OPTS)
     end
     module_function :verify
+
+    def fingerprint(key)
+      der = key.public_key.to_der
+      OpenSSL::Digest::SHA256.hexdigest(der).scan(/../).join(":")
+    end
+    module_function :fingerprint
+
+    def key_from_pem(infile)
+      OpenSSL::PKey::RSA.new(File.read(infile))
+    end
+    module_function :key_from_pem
   end
 end
