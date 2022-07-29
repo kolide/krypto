@@ -11,6 +11,7 @@ module Krypto
     def initialize(key, counterparty = nil)
       raise "Missing key" unless key
       @key = key
+      @fingerprint = ::Krypto::Rsa.fingerprint(key)
       @counterparty = counterparty
     end
 
@@ -35,7 +36,7 @@ module Krypto
           Outer.new(
             inner: inner,
             signature: ::Krypto::Rsa.sign(@key, inner),
-            sender: "me"
+            sender: @fingerprint
           )
         )
       )

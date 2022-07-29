@@ -14,7 +14,7 @@ import (
 type outerBox struct {
 	Inner     []byte `msgpack:"inner"`
 	Signature []byte `msgpack:"signature"`
-	Sender    []byte `msgpack:"sender"`
+	Sender    string `msgpack:"sender"`
 }
 
 type innerBox struct {
@@ -82,10 +82,15 @@ func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error
 		return nil, fmt.Errorf("signing inner: %w", err)
 	}
 
+	fingerprint, err := RsaFingerprint(boxer.key)
+	if err != nil {
+		return nil, fmt.Errorf("unable to fingerprint: %w", err)
+	}
+
 	outer := outerBox{
 		Inner:     innerPacked,
 		Signature: innerSig,
-		Sender:    []byte("Me"),
+		Sender:    fingerprint,
 	}
 
 	outerPacked, err := msgpack.Marshal(outer)
