@@ -40,7 +40,7 @@ func TestBoxerRuby(t *testing.T) {
 	aliceKey, err := krypto.RsaRandomKey()
 	require.NoError(t, err)
 	var alicePubPem bytes.Buffer
-	require.NoError(t, krypto.RsaPrivateKeyToPem(aliceKey, &alicePubPem))
+	require.NoError(t, krypto.RsaPublicKeyToPem(aliceKey, &alicePubPem))
 
 	bobKey, err := krypto.RsaRandomKey()
 	require.NoError(t, err)

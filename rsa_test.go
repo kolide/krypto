@@ -2,6 +2,8 @@ package krypto
 
 import (
 	"crypto/rsa"
+	"os"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -105,4 +107,42 @@ func TestRsaSign(t *testing.T) {
 
 	_, err := RsaSign(nil, []byte("hello"))
 	require.Error(t, err)
+}
+
+func TestRsaFingerprint(t *testing.T) {
+	t.Parallel()
+
+	var tests = []struct {
+		infile   string
+		expected string
+	}{
+		{
+			infile:   path.Join("test-data", "public.pem"),
+			expected: "80:61:16:6c:86:e8:9f:a2:91:49:b4:75:f8:46:1a:ae:9d:a6:72:e9:dd:4a:c4:f5:b3:07:d1:3a:99:ba:d7:71",
+		},
+		{
+			infile:   path.Join("test-data", "private.pem"),
+			expected: "80:61:16:6c:86:e8:9f:a2:91:49:b4:75:f8:46:1a:ae:9d:a6:72:e9:dd:4a:c4:f5:b3:07:d1:3a:99:ba:d7:71",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.infile, func(t *testing.T) {
+			t.Parallel()
+
+			contents, err := os.ReadFile(tt.infile)
+			require.NoError(t, err)
+
+			key, err := KeyFromPem(contents)
+			require.NoError(t, err)
+
+			actual, err := RsaFingerprint(key)
+			require.NoError(t, err)
+
+			require.Equal(t, tt.expected, actual)
+
+		})
+	}
 }
