@@ -61,7 +61,9 @@ func RsaVerify(key *rsa.PublicKey, message []byte, sig []byte) error {
 
 // RsaFingerprint returns the SHA256 fingerprint. This is calculated
 // by hashing the DER representation of the public key. It is
-// analogous to `openssl rsa -in key.pem -pubout -outform DER | openssl sha256 -c``
+// analogous to various openssl commands:
+//   - openssl rsa -in private.pem -pubout -outform DER | openssl sha256 -c
+//   - openssl pkey -pubin -in public.pem -pubout -outform der | openssl sha256 -c
 func RsaFingerprint(keyRaw interface{}) (string, error) {
 	var pub *rsa.PublicKey
 
