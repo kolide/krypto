@@ -22,6 +22,7 @@ type boxerCrossTestCase struct {
 	Counterparty []byte
 	Plaintext    []byte
 	Ciphertext   string
+	PngFile      string
 	ResponseTo   string
 	expectErr    bool
 	cmd          string
@@ -147,36 +148,48 @@ func TestBoxerRuby(t *testing.T) {
 
 		})
 
+		//#nosec G306 -- Need readable files
 		t.Run("go encrypt ruby decrypt", func(t *testing.T) {
 			t.Parallel()
+			dir := t.TempDir()
+
 			responseTo := ulid.New()
 			ciphertext, err := aliceBoxer.Encode(responseTo, message)
 			require.NoError(t, err)
+
+			var png bytes.Buffer
+			pngFile := path.Join(dir, ulid.New()+".png")
+			require.NoError(t, aliceBoxer.EncodePng(responseTo, message, &png))
+			require.NoError(t, os.WriteFile(pngFile, png.Bytes(), 0644))
 
 			tests := []boxerCrossTestCase{
 				// Go encoded, ruby successfully decode
 				{Key: bobPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: ciphertext, cmd: "decode"},
 				{Key: bobPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: ciphertext, cmd: "decodeunverified"},
 				{Key: bobPem.Bytes(), Ciphertext: ciphertext, cmd: "decodeunverified"},
+				{Key: bobPem.Bytes(), Counterparty: alicePubPem.Bytes(), PngFile: pngFile, cmd: "decodepng"},
+
+				// Cannot use decode method on png
+				{Key: bobPem.Bytes(), PngFile: pngFile, cmd: "decode", expectErr: true},
+
+				// No ciphertext. Should throw error
+				{Key: bobPem.Bytes(), cmd: "decode", expectErr: true},
 
 				// Go encoded, ruby cannot decode with wrong keys
-				{Key: bobPem.Bytes(), cmd: "decode", expectErr: true},
 				{Key: malloryPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: ciphertext, cmd: "decode", expectErr: true},
 				{Key: malloryPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: ciphertext, cmd: "decodeunverified", expectErr: true},
 				{Key: malloryPem.Bytes(), Ciphertext: ciphertext, cmd: "decode", expectErr: true},
 				{Key: malloryPem.Bytes(), Ciphertext: ciphertext, cmd: "decodeunverified", expectErr: true},
 			}
 
-			//#nosec G306 -- Need readable files
 			for _, tt := range tests {
 				tt := tt
 
 				t.Run("", func(t *testing.T) {
 					t.Parallel()
 
-					dir := t.TempDir()
-					testfile := path.Join(dir, "testcase.msgpack")
-					rubyout := path.Join(dir, "ruby-out")
+					testfile := path.Join(dir, ulid.New()+".msgpack")
+					rubyout := path.Join(dir, ulid.New()+"ruby-out")
 
 					//
 					// Setup

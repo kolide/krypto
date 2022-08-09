@@ -2,9 +2,12 @@ package krypto
 
 import (
 	"crypto/rsa"
+	_ "embed"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"image/png"
+	"io"
 	"time"
 
 	"github.com/kolide/kit/ulid"
@@ -31,6 +34,11 @@ type boxMaker struct {
 	counterparty *rsa.PublicKey
 }
 
+//go:embed 1x1.png
+var onexonePng []byte
+
+const maxBoxSize = 4 * 1024 * 1024
+
 func NewBoxer(key *rsa.PrivateKey, counterparty *rsa.PublicKey) boxMaker {
 	return boxMaker{
 		key:          key,
@@ -41,10 +49,25 @@ func NewBoxer(key *rsa.PrivateKey, counterparty *rsa.PublicKey) boxMaker {
 func (boxer boxMaker) Encode(inResponseTo string, data []byte) (string, error) {
 	raw, err := boxer.EncodeRaw(inResponseTo, data)
 	if err != nil {
-		return "", fmt.Errorf("encoding base64: %w", err)
+		return "", fmt.Errorf("encoding raw: %w", err)
 	}
 
 	return base64.StdEncoding.EncodeToString(raw), nil
+}
+
+func (boxer boxMaker) EncodePng(inResponseTo string, data []byte, w io.Writer) error {
+	raw, err := boxer.EncodeRaw(inResponseTo, data)
+	if err != nil {
+		return fmt.Errorf("encoding raw: %w", err)
+	}
+
+	if _, err := w.Write(onexonePng); err != nil {
+		return fmt.Errorf("writing base png: %w", err)
+	}
+	if _, err := w.Write(raw); err != nil {
+		return fmt.Errorf("writing data: %w", err)
+	}
+	return nil
 }
 
 func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error) {
@@ -126,6 +149,25 @@ func (boxer boxMaker) Decode(b64 string) ([]byte, error) {
 	}
 
 	return boxer.DecodeRaw(data)
+}
+
+func (boxer boxMaker) DecodePngUnverified(r io.Reader) ([]byte, error) {
+	// Instead of manually looking for `IEND`, we let the go png parser wind the io.Reader for us.
+	_, err := png.Decode(r)
+	if err != nil {
+		return nil, fmt.Errorf("png splitting: %w", err)
+	}
+
+	buf := make([]byte, maxBoxSize)
+	n, err := r.Read(buf)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read data: %w", err)
+	}
+	if n == maxBoxSize {
+		return nil, errors.New("looks to be larger than max box size")
+	}
+
+	return boxer.DecodeRawUnverified(buf[:n])
 }
 
 func (boxer boxMaker) DecodeRaw(data []byte) ([]byte, error) {
