@@ -2,8 +2,8 @@
 
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 require "base64"
-require "msgpack"
 require "krypto"
+require "msgpack"
 
 args = ARGV
 
@@ -26,6 +26,9 @@ when "decode"
   File.write(outfile, Base64.strict_encode64(MessagePack.pack(testcase)))
 when "decodeunverified"
   testcase["Plaintext"] = boxer.decode_unverified(testcase["Ciphertext"])
+  File.write(outfile, Base64.strict_encode64(MessagePack.pack(testcase)))
+when "decodepng"
+  testcase["Plaintext"] = boxer.decode_png(File.read(testcase["PngFile"]))
   File.write(outfile, Base64.strict_encode64(MessagePack.pack(testcase)))
 when "spew"
   pp testcase

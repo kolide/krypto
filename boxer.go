@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"image"
 	"image/png"
 	"io"
 	"time"
@@ -33,7 +32,6 @@ type innerBox struct {
 type boxMaker struct {
 	key          *rsa.PrivateKey
 	counterparty *rsa.PublicKey
-	baseImg      image.Image
 }
 
 //go:embed 1x1.png
@@ -42,16 +40,6 @@ var onexonePng []byte
 const maxBoxSize = 4 * 1024 * 1024
 
 func NewBoxer(key *rsa.PrivateKey, counterparty *rsa.PublicKey) boxMaker {
-	/*
-		// Set the base PNG. This is a panic, because it's only dealing with constants.
-		baseImg, err := png.Decode(onexonePNG())
-		if err != nil {
-			panic(err)
-		}
-
-		// TODO metadata
-	*/
-
 	return boxMaker{
 		key:          key,
 		counterparty: counterparty,
@@ -73,8 +61,12 @@ func (boxer boxMaker) EncodePng(inResponseTo string, data []byte, w io.Writer) e
 		return fmt.Errorf("encoding raw: %w", err)
 	}
 
-	w.Write(onexonePng)
-	w.Write(raw)
+	if _, err := w.Write(onexonePng); err != nil {
+		return fmt.Errorf("writing base png: %w", err)
+	}
+	if _, err := w.Write(raw); err != nil {
+		return fmt.Errorf("writing data: %w", err)
+	}
 	return nil
 }
 
