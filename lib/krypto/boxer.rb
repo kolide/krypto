@@ -1,13 +1,16 @@
 # frozen_string_literal: true
 
-require "krypto/rsa"
+require "base64"
 require "krypto/aes"
+require "krypto/rsa"
 require "msgpack"
 require "securerandom"
-require "base64"
+require "stringio"
 
 module Krypto
   class Boxer
+    MAX_BOX_SIZE = 4 * 1024 * 1024
+
     def initialize(key, counterparty = nil)
       raise "Missing key" unless key
       @key = key
@@ -43,16 +46,33 @@ module Krypto
     end
 
     def decode_unverified(data)
-      outer = Outer.new(MessagePack.unpack(Base64.strict_decode64(data)))
+      decode(data, verify: false)
+    end
+
+    def decode(data, verify: true, raw: false)
+      data = Base64.strict_decode64(data) unless raw
+      outer = Outer.new(MessagePack.unpack(data))
+
+      raise "Bag Signature" if verify && !::Krypto::Rsa.verify(@counterparty, outer.signature, outer.inner)
+
       decode_inner(outer.inner)
     end
 
-    def decode(data)
-      outer = Outer.new(MessagePack.unpack(Base64.strict_decode64(data)))
+    def decode_png(data, verify: true)
+      reader = StringIO.new(data)
 
-      raise "Bag Signature" unless ::Krypto::Rsa.verify(@counterparty, outer.signature, outer.inner)
+      # read past the first 8 header bytes
+      # TODO: Verify maybe?
+      reader.read(8)
 
-      decode_inner(outer.inner)
+      # Read chunks until the IEND
+      chunk_type = nil
+      while chunk_type != "IEND"
+        length, chunk_type = reader.read(8).unpack("Na4") # gives us length, and the chunk type
+        reader.read(length + 4) # fast forward past the length, plus it's checksum
+      end
+
+      decode(reader.read(MAX_BOX_SIZE), verify: verify, raw: true)
     end
 
     private
