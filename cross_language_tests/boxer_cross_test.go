@@ -170,10 +170,12 @@ func TestBoxerRuby(t *testing.T) {
 				{Key: bobPem.Bytes(), Counterparty: alicePubPem.Bytes(), PngFile: pngFile, cmd: "decodepng"},
 
 				// Cannot use decode method on png
+				{Key: bobPem.Bytes(), PngFile: pngFile, cmd: "decode", expectErr: true},
+
+				// No ciphertext. Should throw error
 				{Key: bobPem.Bytes(), cmd: "decode", expectErr: true},
 
 				// Go encoded, ruby cannot decode with wrong keys
-				{Key: bobPem.Bytes(), PngFile: pngFile, cmd: "decode", expectErr: true},
 				{Key: malloryPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: ciphertext, cmd: "decode", expectErr: true},
 				{Key: malloryPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: ciphertext, cmd: "decodeunverified", expectErr: true},
 				{Key: malloryPem.Bytes(), Ciphertext: ciphertext, cmd: "decode", expectErr: true},
