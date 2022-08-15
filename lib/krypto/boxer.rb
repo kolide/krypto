@@ -45,12 +45,19 @@ module Krypto
       )
     end
 
+    def sender(data, png: false)
+      data = unpng(data) if png
+      outer = Outer.new(MessagePack.unpack(data))
+      outer.sender
+    end
+    
     def decode_unverified(data)
       decode(data, verify: false)
     end
 
-    def decode(data, verify: true, raw: false)
-      data = Base64.strict_decode64(data) unless raw
+    def decode(data, verify: true, raw: false, png: false)
+      data = unpng(data) if png
+      data = Base64.strict_decode64(data) unless raw || png
       outer = Outer.new(MessagePack.unpack(data))
 
       raise "Bag Signature" if verify && !::Krypto::Rsa.verify(@counterparty, outer.signature, outer.inner)
@@ -59,6 +66,12 @@ module Krypto
     end
 
     def decode_png(data, verify: true)
+      decode(data, verify: verify, raw: true, png: true)
+    end
+
+    private
+
+    def unpng(data)
       reader = StringIO.new(data)
 
       # read past the first 8 header bytes
@@ -72,19 +85,23 @@ module Krypto
         reader.read(length + 4) # fast forward past the length, plus it's checksum
       end
 
-      decode(reader.read(MAX_BOX_SIZE), verify: verify, raw: true)
+      reader.read(MAX_BOX_SIZE)
     end
-
-    private
-
+   
     def decode_inner(data)
       inner = Inner.new(MessagePack.unpack(data))
 
       aeskey = ::Krypto::Rsa.decrypt(@key, inner.key)
-      ::Krypto::Aes.decrypt(aeskey, nil, inner.ciphertext)
+      inner.data = ::Krypto::Aes.decrypt(aeskey, nil, inner.ciphertext)
+
+      # zero out uninteresting data
+      inner.key = nil
+      inner.ciphertext = nil
+ 
+      inner
     end
 
-    class Inner < Struct.new(*%i[version timestamp key ciphertext requestid responseto], keyword_init: true)
+    class Inner < Struct.new(*%i[version timestamp key ciphertext requestid responseto sender data], keyword_init: true)
       def to_msgpack(out = "")
         to_h.to_msgpack(out)
       end
