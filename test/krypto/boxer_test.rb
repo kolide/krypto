@@ -25,9 +25,9 @@ class TestKryptoBoxer < Minitest::Test
     define_method("test_can_decode: #{name}") do
       box = ALICEBOX.encode(SecureRandom.uuid, message)
 
-      assert_equal(message, BOBBOX.decode(box))
-      assert_equal(message, BOBBOX.decode_unverified(box))
-      assert_equal(message, BARE_BOBBOX.decode_unverified(box))
+      assert_equal(message, BOBBOX.decode(box).data)
+      assert_equal(message, BOBBOX.decode_unverified(box).data)
+      assert_equal(message, BARE_BOBBOX.decode_unverified(box).data)
     end
 
     define_method("test_cannot_decode: #{name}") do

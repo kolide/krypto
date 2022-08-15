@@ -50,7 +50,7 @@ module Krypto
       outer = Outer.new(MessagePack.unpack(data))
       outer.sender
     end
-    
+
     def decode_unverified(data)
       decode(data, verify: false)
     end
@@ -87,7 +87,7 @@ module Krypto
 
       reader.read(MAX_BOX_SIZE)
     end
-   
+
     def decode_inner(data)
       inner = Inner.new(MessagePack.unpack(data))
 
@@ -97,7 +97,7 @@ module Krypto
       # zero out uninteresting data
       inner.key = nil
       inner.ciphertext = nil
- 
+
       inner
     end
 
