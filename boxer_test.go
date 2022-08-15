@@ -41,7 +41,7 @@ func TestBoxRandomRoundTrips(t *testing.T) {
 
 	var testFuncs = []struct {
 		name      string
-		fn        func(string) ([]byte, error)
+		fn        func(string) (*Box, error)
 		expectErr bool
 	}{
 		{name: "bob can decode", fn: bobBoxer.Decode},
@@ -73,13 +73,13 @@ func TestBoxRandomRoundTrips(t *testing.T) {
 					t.Run(tf.name, func(t *testing.T) {
 						t.Parallel()
 						if tf.expectErr {
-							plaintext, err := tf.fn(ciphertext)
+							box, err := tf.fn(ciphertext)
 							require.Error(t, err)
-							require.Empty(t, plaintext)
+							require.Nil(t, box)
 						} else {
-							plaintext, err := tf.fn(ciphertext)
+							box, err := tf.fn(ciphertext)
 							require.NoError(t, err)
-							require.Equal(t, tt.in, plaintext, "decoded matches")
+							require.Equal(t, tt.in, box.Data(), "decoded matches")
 						}
 					})
 				}
@@ -93,10 +93,10 @@ func TestBoxRandomRoundTrips(t *testing.T) {
 				var buf bytes.Buffer
 				require.NoError(t, aliceBoxer.EncodePng(responseTo, tt.in, &buf))
 
-				plaintext, err := bobBoxer.DecodePngUnverified(&buf)
+				box, err := bobBoxer.DecodePngUnverified(&buf)
 				require.NoError(t, err)
 
-				require.Equal(t, tt.in, plaintext, "decoded matches")
+				require.Equal(t, tt.in, box.Data(), "decoded matches")
 			})
 		})
 	}
