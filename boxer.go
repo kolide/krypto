@@ -20,14 +20,21 @@ type outerBox struct {
 	Sender    string `msgpack:"sender"`
 }
 
-type innerBox struct {
+// Box holds data. Note that most of these fields are metadata. And while that is signed,
+// verification of the signature is up to the recipient. Caution is especially merited
+// around the Sender field. It can be seen as an arbitrary string.
+type Box struct {
 	Version    int    `msgpack:"version"`
 	Timestamp  int64  `msgpack:"timestamp"`
 	Key        []byte `msgpack:"key"`
 	Ciphertext []byte `msgpack:"ciphertext"`
+	data       []byte // used when returning things, but not msgpack
 	RequestId  string `msgpack:"requestid"`
 	ResponseTo string `msgpack:"responseto"`
+	Sender     string `msgpack:"sender"`
 }
+
+func (inner Box) Data() []byte { return inner.data }
 
 type boxMaker struct {
 	key          *rsa.PrivateKey
@@ -86,13 +93,19 @@ func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error
 		return nil, fmt.Errorf("encrypting data: %w", err)
 	}
 
-	inner := innerBox{
+	fingerprint, err := RsaFingerprint(boxer.key)
+	if err != nil {
+		return nil, fmt.Errorf("unable to fingerprint: %w", err)
+	}
+
+	inner := Box{
 		Version:    1,
 		Timestamp:  time.Now().Unix(),
 		Key:        aeskeyEnc,
 		Ciphertext: ciphertext,
 		RequestId:  ulid.New(),
 		ResponseTo: inResponseTo,
+		Sender:     fingerprint,
 	}
 
 	innerPacked, err := msgpack.Marshal(inner)
@@ -103,11 +116,6 @@ func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error
 	innerSig, err := RsaSign(boxer.key, innerPacked)
 	if err != nil {
 		return nil, fmt.Errorf("signing inner: %w", err)
-	}
-
-	fingerprint, err := RsaFingerprint(boxer.key)
-	if err != nil {
-		return nil, fmt.Errorf("unable to fingerprint: %w", err)
 	}
 
 	outer := outerBox{
@@ -124,7 +132,7 @@ func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error
 	return outerPacked, nil
 }
 
-func (boxer boxMaker) DecodeUnverified(b64 string) ([]byte, error) {
+func (boxer boxMaker) DecodeUnverified(b64 string) (*Box, error) {
 	data, err := base64.StdEncoding.DecodeString(b64)
 	if err != nil {
 		return nil, fmt.Errorf("decoding base64: %w", err)
@@ -133,7 +141,7 @@ func (boxer boxMaker) DecodeUnverified(b64 string) ([]byte, error) {
 	return boxer.DecodeRawUnverified(data)
 }
 
-func (boxer boxMaker) DecodeRawUnverified(data []byte) ([]byte, error) {
+func (boxer boxMaker) DecodeRawUnverified(data []byte) (*Box, error) {
 	var outer outerBox
 	if err := msgpack.Unmarshal(data, &outer); err != nil {
 		return nil, fmt.Errorf("unmarshalling outer: %w", err)
@@ -142,7 +150,7 @@ func (boxer boxMaker) DecodeRawUnverified(data []byte) ([]byte, error) {
 	return boxer.decodeInner(outer.Inner)
 }
 
-func (boxer boxMaker) Decode(b64 string) ([]byte, error) {
+func (boxer boxMaker) Decode(b64 string) (*Box, error) {
 	data, err := base64.StdEncoding.DecodeString(b64)
 	if err != nil {
 		return nil, fmt.Errorf("decoding base64: %w", err)
@@ -151,7 +159,7 @@ func (boxer boxMaker) Decode(b64 string) ([]byte, error) {
 	return boxer.DecodeRaw(data)
 }
 
-func (boxer boxMaker) DecodePngUnverified(r io.Reader) ([]byte, error) {
+func (boxer boxMaker) DecodePngUnverified(r io.Reader) (*Box, error) {
 	// Instead of manually looking for `IEND`, we let the go png parser wind the io.Reader for us.
 	_, err := png.Decode(r)
 	if err != nil {
@@ -160,7 +168,9 @@ func (boxer boxMaker) DecodePngUnverified(r io.Reader) ([]byte, error) {
 
 	buf := make([]byte, maxBoxSize)
 	n, err := r.Read(buf)
-	if err != nil {
+	if err == io.EOF {
+		return nil, nil
+	} else if err != nil {
 		return nil, fmt.Errorf("unable to read data: %w", err)
 	}
 	if n == maxBoxSize {
@@ -170,7 +180,7 @@ func (boxer boxMaker) DecodePngUnverified(r io.Reader) ([]byte, error) {
 	return boxer.DecodeRawUnverified(buf[:n])
 }
 
-func (boxer boxMaker) DecodeRaw(data []byte) ([]byte, error) {
+func (boxer boxMaker) DecodeRaw(data []byte) (*Box, error) {
 	var outer outerBox
 	if err := msgpack.Unmarshal(data, &outer); err != nil {
 		return nil, fmt.Errorf("unmarshalling outer: %w", err)
@@ -183,12 +193,12 @@ func (boxer boxMaker) DecodeRaw(data []byte) ([]byte, error) {
 	return boxer.decodeInner(outer.Inner)
 }
 
-func (boxer boxMaker) decodeInner(data []byte) ([]byte, error) {
+func (boxer boxMaker) decodeInner(data []byte) (*Box, error) {
 	if boxer.key == nil {
 		return nil, errors.New("Can't decode without a key")
 	}
 
-	var inner innerBox
+	var inner Box
 	if err := msgpack.Unmarshal(data, &inner); err != nil {
 		return nil, fmt.Errorf("unmarshalling inner: %w", err)
 	}
@@ -203,5 +213,7 @@ func (boxer boxMaker) decodeInner(data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("decrypting data: %w", err)
 	}
 
-	return plaintext, err
+	inner.data = plaintext
+
+	return &inner, nil
 }

@@ -68,10 +68,13 @@ func RsaFingerprint(keyRaw interface{}) (string, error) {
 	var pub *rsa.PublicKey
 
 	switch key := keyRaw.(type) {
-	case *rsa.PrivateKey:
-		pub = key.Public().(*rsa.PublicKey)
 	case *rsa.PublicKey:
 		pub = key
+	case *rsa.PrivateKey:
+		if key == nil {
+			return "", errors.New("no key, cannot fingerprint")
+		}
+		pub = key.Public().(*rsa.PublicKey)
 	default:
 		return "", errors.New("cannot fingerprint that type")
 	}

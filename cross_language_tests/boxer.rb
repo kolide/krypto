@@ -22,13 +22,13 @@ when "encode"
   testcase["Ciphertext"] = boxer.encode(testcase["ResponseTo"], testcase["Plaintext"])
   File.write(outfile, Base64.strict_encode64(MessagePack.pack(testcase)))
 when "decode"
-  testcase["Plaintext"] = boxer.decode(testcase["Ciphertext"])
+  testcase["Plaintext"] = boxer.decode(testcase["Ciphertext"]).data
   File.write(outfile, Base64.strict_encode64(MessagePack.pack(testcase)))
 when "decodeunverified"
-  testcase["Plaintext"] = boxer.decode_unverified(testcase["Ciphertext"])
+  testcase["Plaintext"] = boxer.decode_unverified(testcase["Ciphertext"]).data
   File.write(outfile, Base64.strict_encode64(MessagePack.pack(testcase)))
 when "decodepng"
-  testcase["Plaintext"] = boxer.decode_png(File.read(testcase["PngFile"]))
+  testcase["Plaintext"] = boxer.decode_png(File.read(testcase["PngFile"])).data
   File.write(outfile, Base64.strict_encode64(MessagePack.pack(testcase)))
 when "spew"
   pp testcase

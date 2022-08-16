@@ -114,7 +114,7 @@ func TestBoxerRuby(t *testing.T) {
 
 			var testFuncs = []struct {
 				name       string
-				fn         func(string) ([]byte, error)
+				fn         func(string) (*krypto.Box, error)
 				expectErr  bool
 				ciphertext string
 			}{
@@ -135,13 +135,13 @@ func TestBoxerRuby(t *testing.T) {
 				t.Run(tf.name, func(t *testing.T) {
 					t.Parallel()
 					if tf.expectErr {
-						plaintext, err := tf.fn(tf.ciphertext)
+						box, err := tf.fn(tf.ciphertext)
 						require.Error(t, err)
-						require.Empty(t, plaintext)
+						require.Nil(t, box)
 					} else {
-						plaintext, err := tf.fn(tf.ciphertext)
+						box, err := tf.fn(tf.ciphertext)
 						require.NoError(t, err)
-						require.Equal(t, message, plaintext, "decoded matches")
+						require.Equal(t, message, box.Data(), "decoded matches")
 					}
 				})
 			}

@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    krypto (0.1.0)
+    krypto (0.2.0)
       msgpack (~> 1.5)
       openssl
 
@@ -12,7 +12,7 @@ GEM
     docile (1.4.0)
     json (2.6.2)
     minitest (5.16.2)
-    msgpack (1.5.3)
+    msgpack (1.5.4)
     openssl (3.0.0)
     parallel (1.22.1)
     parser (3.1.2.0)
