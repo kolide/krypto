@@ -22,7 +22,7 @@ type outerBox struct {
 
 // Box holds data. Note that most of these fields are metadata. And while that is signed,
 // verification of the signature is up to the recipient. Caution is especially merited
-// around the Sender field. It can be seen as an arbitary string.
+// around the Sender field. It can be seen as an arbitrary string.
 type Box struct {
 	Version    int    `msgpack:"version"`
 	Timestamp  int64  `msgpack:"timestamp"`
