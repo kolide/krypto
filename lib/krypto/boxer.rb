@@ -45,8 +45,9 @@ module Krypto
       )
     end
 
-    def sender(data, png: false)
+    def sender(data, raw: false, png: false)
       data = unpng(data) if png
+      data = Base64.strict_decode64(data) unless raw || png
       outer = Outer.new(MessagePack.unpack(data))
       outer.sender
     end
