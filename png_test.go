@@ -37,7 +37,6 @@ func TestPng(t *testing.T) {
 			require.NoError(t, FromPng(&pngBuf, &actual))
 
 			require.Equal(t, tt.in, actual.Bytes())
-
 		})
 	}
 

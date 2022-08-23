@@ -15,7 +15,7 @@ const (
 )
 
 func ToPng(w io.Writer, data []byte) error {
-	dataPlusHeader := len(data) + 4
+	dataPlusHeader := len(data) + bytesPerPixel
 
 	pixelCount := divCeil(dataPlusHeader, bytesPerPixel)
 
@@ -34,7 +34,7 @@ func ToPng(w io.Writer, data []byte) error {
 		Rect:   image.Rectangle{image.Point{0, 0}, image.Point{width, height}},
 	}
 
-	encoder := &png.Encoder{CompressionLevel: png.NoCompression}
+	encoder := &png.Encoder{} //CompressionLevel: png.NoCompression}
 	return encoder.Encode(w, img)
 }
 
@@ -65,6 +65,8 @@ func FromPng(r io.Reader, w io.Writer) error {
 	return nil
 }
 
+// divCeil divides and then takes the ceiling. This could be done with several calls to math,
+// but that would entail a lot of float64 conversions.
 func divCeil(numerator, denominator int) int {
 	quotient, remainder := numerator/denominator, numerator%denominator
 
