@@ -2,22 +2,23 @@ package krypto
 
 import (
 	"bytes"
-	"os"
-	"path"
 	"testing"
 
-	"github.com/kolide/kit/ulid"
 	"github.com/stretchr/testify/require"
 )
 
-func TestToPng(t *testing.T) {
+func TestPng(t *testing.T) {
 	t.Parallel()
 
 	var tests = []struct {
 		in []byte
 	}{
 		{in: []byte("a")},
+		{in: mkrand(t, 30)},
+		{in: mkrand(t, 31)},
 		{in: mkrand(t, 32)},
+		{in: mkrand(t, 33)},
+		{in: mkrand(t, 34)},
 		{in: mkrand(t, 256)},
 		{in: mkrand(t, 2048)},
 		{in: mkrand(t, 4096)},
@@ -27,10 +28,16 @@ func TestToPng(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run("", func(t *testing.T) {
-			var buf bytes.Buffer
-			require.NoError(t, ToPng(&buf, tt.in))
+			t.Parallel()
 
-			require.NoError(t, os.WriteFile(path.Join("/tmp", "kpng", ulid.New()+".png"), buf.Bytes(), 0644))
+			var pngBuf bytes.Buffer
+			require.NoError(t, ToPng(&pngBuf, tt.in))
+
+			var actual bytes.Buffer
+			require.NoError(t, FromPng(&pngBuf, &actual))
+
+			require.Equal(t, tt.in, actual.Bytes())
+
 		})
 	}
 
