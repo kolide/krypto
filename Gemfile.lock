@@ -2,6 +2,7 @@ PATH
   remote: .
   specs:
     krypto (0.2.1)
+      chunky_png
       msgpack (~> 1.5)
       openssl
 
@@ -9,6 +10,7 @@ GEM
   remote: https://rubygems.org/
   specs:
     ast (2.4.2)
+    chunky_png (1.4.0)
     docile (1.4.0)
     json (2.6.2)
     minitest (5.16.2)

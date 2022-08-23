@@ -19,5 +19,6 @@ Gem::Specification.new do |s|
 
   s.add_runtime_dependency "openssl"
   s.add_runtime_dependency "msgpack", "~> 1.5"
+  s.add_runtime_dependency "chunky_png"
   s.metadata["rubygems_mfa_required"] = "true"
 end
