@@ -34,7 +34,7 @@ func ToPng(w io.Writer, data []byte) error {
 		Rect:   image.Rectangle{image.Point{0, 0}, image.Point{width, height}},
 	}
 
-	encoder := &png.Encoder{} //CompressionLevel: png.NoCompression}
+	encoder := &png.Encoder{}
 	return encoder.Encode(w, img)
 }
 
