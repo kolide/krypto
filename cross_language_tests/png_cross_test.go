@@ -22,7 +22,7 @@ func TestPngRuby(t *testing.T) {
 	t.Parallel()
 
 	dir := t.TempDir()
-	dir = "/tmp/crosstest"
+
 	var tests = []struct {
 		in []byte
 	}{
@@ -53,7 +53,7 @@ func TestPngRuby(t *testing.T) {
 			pngfile := path.Join(dir, uniq+".png")
 			resultFile := path.Join(dir, uniq+".dat")
 
-			require.NoError(t, os.WriteFile(pngfile, pngBuf.Bytes(), 0644))
+			require.NoError(t, os.WriteFile(pngfile, pngBuf.Bytes(), 0600))
 
 			cmd := exec.CommandContext(ctx, pngRB, "decode", pngfile, resultFile)
 			out, err := cmd.CombinedOutput()
