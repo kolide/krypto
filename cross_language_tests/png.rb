@@ -7,7 +7,7 @@ require "krypto"
 args = ARGV
 
 cmd = args.shift
-pngfile = args.shift #File.read(args.shift)
+pngfile = args.shift # File.read(args.shift)
 outfile = args.shift
 
 case cmd
