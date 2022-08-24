@@ -1,12 +1,12 @@
 package krypto
 
 import (
+	"bytes"
 	"crypto/rsa"
 	_ "embed"
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"image/png"
 	"io"
 	"time"
 
@@ -41,9 +41,6 @@ type boxMaker struct {
 	counterparty *rsa.PublicKey
 }
 
-//go:embed 1x1.png
-var onexonePng []byte
-
 const maxBoxSize = 4 * 1024 * 1024
 
 func NewBoxer(key *rsa.PrivateKey, counterparty *rsa.PublicKey) boxMaker {
@@ -68,13 +65,7 @@ func (boxer boxMaker) EncodePng(inResponseTo string, data []byte, w io.Writer) e
 		return fmt.Errorf("encoding raw: %w", err)
 	}
 
-	if _, err := w.Write(onexonePng); err != nil {
-		return fmt.Errorf("writing base png: %w", err)
-	}
-	if _, err := w.Write(raw); err != nil {
-		return fmt.Errorf("writing data: %w", err)
-	}
-	return nil
+	return ToPng(w, raw)
 }
 
 func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error) {
@@ -160,24 +151,16 @@ func (boxer boxMaker) Decode(b64 string) (*Box, error) {
 }
 
 func (boxer boxMaker) DecodePngUnverified(r io.Reader) (*Box, error) {
-	// Instead of manually looking for `IEND`, we let the go png parser wind the io.Reader for us.
-	_, err := png.Decode(r)
-	if err != nil {
-		return nil, fmt.Errorf("png splitting: %w", err)
+	var data bytes.Buffer
+	if err := FromPng(r, &data); err != nil {
+		return nil, fmt.Errorf("decoding png: %w", err)
 	}
 
-	buf := make([]byte, maxBoxSize)
-	n, err := r.Read(buf)
-	if err == io.EOF {
-		return nil, nil
-	} else if err != nil {
-		return nil, fmt.Errorf("unable to read data: %w", err)
-	}
-	if n == maxBoxSize {
+	if data.Len() > maxBoxSize {
 		return nil, errors.New("looks to be larger than max box size")
 	}
 
-	return boxer.DecodeRawUnverified(buf[:n])
+	return boxer.DecodeRawUnverified(data.Bytes())
 }
 
 func (boxer boxMaker) DecodeRaw(data []byte) (*Box, error) {
