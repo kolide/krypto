@@ -41,7 +41,8 @@ module Krypto
 
     def self.decode0(header, pixels)
       padding_len = header[3]
-      data_len = pixels.size - padding_len - 1 # 1 for header
+      data_len = (pixels.size - 1) *  BYTES_PER_PIXEL
+      data_len -= padding_len
       
       # This is probably less efficient than iterating over the image,
       # and stopping when we're done. But the bit shift operations are
@@ -49,7 +50,7 @@ module Krypto
       pixels
         .map { |pixel| color_to_rgba(pixel) }
         .flatten
-        .slice(1, data_len)
+        .slice(BYTES_PER_PIXEL, data_len)
         .pack('C*')
     end
   end

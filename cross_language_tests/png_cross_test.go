@@ -26,16 +26,16 @@ func TestPngRuby(t *testing.T) {
 	var tests = []struct {
 		in []byte
 	}{
-		//{in: []byte("a")},
+		{in: []byte("a")},
 		{in: mkrand(t, 30)},
-		//{in: mkrand(t, 31)},
-		//{in: mkrand(t, 32)},
-		//{in: mkrand(t, 33)},
-		//{in: mkrand(t, 34)},
-		//{in: mkrand(t, 256)},
-		//{in: mkrand(t, 2048)},
-		//{in: mkrand(t, 4096)},
-		//{in: []byte(randomString(t, 4096))},
+		{in: mkrand(t, 31)},
+		{in: mkrand(t, 32)},
+		{in: mkrand(t, 33)},
+		{in: mkrand(t, 34)},
+		{in: mkrand(t, 256)},
+		{in: mkrand(t, 2048)},
+		{in: mkrand(t, 4096)},
+		{in: []byte(randomString(t, 4096))},
 	}
 
 	for _, tt := range tests {
