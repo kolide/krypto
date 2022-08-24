@@ -13,16 +13,31 @@ module Krypto
 
     BYTES_PER_PIXEL = 4
 
-    def self.decode(file)
-      @img = ChunkyPNG::Image.from_file(file)
+    def self.decode_io(io)
+      ds = ChunkyPNG::Datastream.from_io(io)
+      img = ChunkyPNG::Image.from_datastream(ds)
 
-      @header = color_to_rgba(@img.pixels[0])
+      process(img)
+    end
 
-      raise BadHeaderError.new("Missing identifier") unless @header[0].eql?(0x4b) && @header[1].eql?(0x32)
+    def self.decode_blob(blob)
+      img = ChunkyPNG::Image.from_blob(blob)
+      process(img)
+    end
 
-      case @header[2]
+    def self.decode_file(file)
+      img = ChunkyPNG::Image.from_file(file)
+      process(img)
+    end
+
+    def self.process(img)
+      header = color_to_rgba(img.pixels[0])
+
+      raise BadHeaderError.new("Missing identifier") unless header[0].eql?(0x4b) && header[1].eql?(0x32)
+
+      case header[2]
       when 0
-        decode0(@header, @img.pixels)
+        decode0(header, img.pixels)
       else
         raise BadHeaderError.new("Unknown format: #{header[3]}")
       end

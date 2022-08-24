@@ -43,28 +43,37 @@ func TestPngRuby(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			t.Parallel()
 
-			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-			defer cancel()
+			pngfile := path.Join(dir, ulid.New()+".png")
 
-			var pngBuf bytes.Buffer
-			require.NoError(t, krypto.ToPng(&pngBuf, tt.in))
+			t.Run("setup", func(t *testing.T) {
+				var pngBuf bytes.Buffer
+				require.NoError(t, krypto.ToPng(&pngBuf, tt.in))
 
-			uniq := ulid.New()
-			pngfile := path.Join(dir, uniq+".png")
-			resultFile := path.Join(dir, uniq+".dat")
+				require.NoError(t, os.WriteFile(pngfile, pngBuf.Bytes(), 0600))
+			})
 
-			require.NoError(t, os.WriteFile(pngfile, pngBuf.Bytes(), 0600))
+			for _, routine := range []string{"decode-file", "decode-blob", "decode-io"} {
 
-			cmd := exec.CommandContext(ctx, pngRB, "decode", pngfile, resultFile)
-			out, err := cmd.CombinedOutput()
-			require.NoError(t, err, string(out))
+				t.Run(routine, func(t *testing.T) {
+					t.Parallel()
 
-			res, err := os.ReadFile(resultFile)
-			require.NoError(t, err)
+					ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+					defer cancel()
 
-			actual := base64Decode(t, string(res))
+					resultFile := path.Join(dir, ulid.New()+".dat")
 
-			require.Equal(t, tt.in, actual)
+					cmd := exec.CommandContext(ctx, pngRB, routine, pngfile, resultFile)
+					out, err := cmd.CombinedOutput()
+					require.NoError(t, err, string(out))
+
+					res, err := os.ReadFile(resultFile)
+					require.NoError(t, err)
+
+					actual := base64Decode(t, string(res))
+
+					require.Equal(t, tt.in, actual)
+				})
+			}
 		})
 
 	}
