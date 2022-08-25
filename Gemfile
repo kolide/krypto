@@ -2,6 +2,8 @@
 
 source "https://rubygems.org"
 
+gem "chunky_png", git: "https://github.com/kolide/chunky_png"
+
 gemspec
 
 group :test do

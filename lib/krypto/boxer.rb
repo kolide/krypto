@@ -73,20 +73,7 @@ module Krypto
     private
 
     def unpng(data)
-      reader = StringIO.new(data)
-
-      # read past the first 8 header bytes
-      # TODO: Verify maybe?
-      reader.read(8)
-
-      # Read chunks until the IEND
-      chunk_type = nil
-      while chunk_type != "IEND"
-        length, chunk_type = reader.read(8).unpack("Na4") # gives us length, and the chunk type
-        reader.read(length + 4) # fast forward past the length, plus it's checksum
-      end
-
-      reader.read(MAX_BOX_SIZE)
+      ::Krypto::Png.decode_blob(data)
     end
 
     def decode_inner(data)
