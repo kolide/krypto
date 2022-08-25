@@ -13,7 +13,11 @@ func TestPng(t *testing.T) {
 	var tests = []struct {
 		in []byte
 	}{
+		{in: nil},
+		{in: []byte{0}},
 		{in: []byte("a")},
+		{in: []byte("abcd")},
+		{in: []byte("abcdefgh")},
 		{in: mkrand(t, 30)},
 		{in: mkrand(t, 31)},
 		{in: mkrand(t, 32)},
