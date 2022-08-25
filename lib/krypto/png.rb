@@ -66,8 +66,7 @@ module Krypto
     end
 
     def self.divCeil(numerator, denominator)
-      quotient = numerator / denominator
-      remainder = numerator % denominator
+      quotient, remainder = numerator.divmod(denominator)
 
       quotient += 1 if remainder > 0
 
