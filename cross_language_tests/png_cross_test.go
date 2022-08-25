@@ -27,6 +27,7 @@ func TestPngRuby(t *testing.T) {
 		in []byte
 	}{
 		{in: []byte("a")},
+		{in: []byte("abcd")},
 		{in: mkrand(t, 30)},
 		{in: mkrand(t, 31)},
 		{in: mkrand(t, 32)},
