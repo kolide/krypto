@@ -5,3 +5,4 @@
 /doc/
 /tmp/
 coverage.out
+/Gemfile.lock
