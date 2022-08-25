@@ -2,8 +2,7 @@
 
 source "https://rubygems.org"
 
-gem "chunky_png", :git => "https://github.com/kolide/chunky_png"
-
+gem "chunky_png", git: "https://github.com/kolide/chunky_png"
 
 gemspec
 
