@@ -24,17 +24,23 @@ type outerBox struct {
 // verification of the signature is up to the recipient. Caution is especially merited
 // around the Sender field. It can be seen as an arbitrary string.
 type Box struct {
+	// These fields are the packed, signed, etc data.
 	Version    int    `msgpack:"version"`
 	Timestamp  int64  `msgpack:"timestamp"`
 	Key        []byte `msgpack:"key"`
 	Ciphertext []byte `msgpack:"ciphertext"`
-	data       []byte // used when returning things, but not msgpack
+	Signedtext []byte `msgpack:"signedtext"`
 	RequestId  string `msgpack:"requestid"`
 	ResponseTo string `msgpack:"responseto"`
-	Sender     string `msgpack:"sender"`
+
+	// These fields are used as internal fields, not part of the packed data. Thus, not exported.
+	data   []byte
+	sender string
 }
 
 func (inner Box) Data() []byte { return inner.data }
+
+func (inner Box) Sender() string { return inner.sender }
 
 type boxMaker struct {
 	key          *rsa.PrivateKey
@@ -96,7 +102,44 @@ func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error
 		Ciphertext: ciphertext,
 		RequestId:  ulid.New(),
 		ResponseTo: inResponseTo,
-		Sender:     fingerprint,
+	}
+
+	innerPacked, err := msgpack.Marshal(inner)
+	if err != nil {
+		return nil, fmt.Errorf("packing inner: %w", err)
+	}
+
+	innerSig, err := RsaSign(boxer.key, innerPacked)
+	if err != nil {
+		return nil, fmt.Errorf("signing inner: %w", err)
+	}
+
+	outer := outerBox{
+		Inner:     innerPacked,
+		Signature: innerSig,
+		Sender:    fingerprint,
+	}
+
+	outerPacked, err := msgpack.Marshal(outer)
+	if err != nil {
+		return nil, fmt.Errorf("packing outer: %w", err)
+	}
+
+	return outerPacked, nil
+}
+
+func (boxer boxMaker) Sign(inResponseTo string, data []byte) ([]byte, error) {
+	fingerprint, err := RsaFingerprint(boxer.key)
+	if err != nil {
+		return nil, fmt.Errorf("unable to fingerprint: %w", err)
+	}
+
+	inner := Box{
+		Version:    1,
+		Timestamp:  time.Now().Unix(),
+		Signedtext: data,
+		RequestId:  ulid.New(),
+		ResponseTo: inResponseTo,
 	}
 
 	innerPacked, err := msgpack.Marshal(inner)
@@ -138,7 +181,7 @@ func (boxer boxMaker) DecodeRawUnverified(data []byte) (*Box, error) {
 		return nil, fmt.Errorf("unmarshalling outer: %w", err)
 	}
 
-	return boxer.decodeInner(outer.Inner)
+	return boxer.decodeInner(outer)
 }
 
 func (boxer boxMaker) Decode(b64 string) (*Box, error) {
@@ -173,30 +216,36 @@ func (boxer boxMaker) DecodeRaw(data []byte) (*Box, error) {
 		return nil, fmt.Errorf("verifying outer: %w", err)
 	}
 
-	return boxer.decodeInner(outer.Inner)
+	return boxer.decodeInner(outer)
 }
 
-func (boxer boxMaker) decodeInner(data []byte) (*Box, error) {
+func (boxer boxMaker) decodeInner(outer outerBox) (*Box, error) {
 	if boxer.key == nil {
 		return nil, errors.New("Can't decode without a key")
 	}
 
 	var inner Box
-	if err := msgpack.Unmarshal(data, &inner); err != nil {
+	if err := msgpack.Unmarshal(outer.Inner, &inner); err != nil {
 		return nil, fmt.Errorf("unmarshalling inner: %w", err)
 	}
 
-	aeskey, err := RsaDecrypt(boxer.key, inner.Key)
-	if err != nil {
-		return nil, fmt.Errorf("decrypting DEK: %w", err)
+	// Only decode if the inner has ciphertext. It's acceptable to have no ciphertext,
+	// this is just a signature.
+	if inner.Ciphertext != nil {
+		aeskey, err := RsaDecrypt(boxer.key, inner.Key)
+		if err != nil {
+			return nil, fmt.Errorf("decrypting DEK: %w", err)
+		}
+
+		plaintext, err := AesDecrypt(aeskey, nil, inner.Ciphertext)
+		if err != nil {
+			return nil, fmt.Errorf("decrypting data: %w", err)
+		}
+
+		inner.data = plaintext
 	}
 
-	plaintext, err := AesDecrypt(aeskey, nil, inner.Ciphertext)
-	if err != nil {
-		return nil, fmt.Errorf("decrypting data: %w", err)
-	}
-
-	inner.data = plaintext
+	inner.sender = outer.Sender
 
 	return &inner, nil
 }

@@ -11,6 +11,9 @@ module Krypto
   class Boxer
     MAX_BOX_SIZE = 4 * 1024 * 1024
 
+    OUTER_FIELDS = %i[inner signature sender].freeze
+    INNER_FIELDS = %i[version timestamp key ciphertext signedtext requestid responseto sender data].freeze
+
     def initialize(key, counterparty = nil)
       raise "Missing key" unless key
       @key = key
@@ -45,6 +48,28 @@ module Krypto
       )
     end
 
+    def sign(in_response_to, data)
+      inner = MessagePack.pack(
+        Inner.new(
+          version: 1,
+          timestamp: Time.now.to_i,
+          signedtext: data,
+          requestid: SecureRandom.uuid,
+          responseto: in_response_to
+        )
+      )
+
+      Base64.strict_encode64(
+        MessagePack.pack(
+          Outer.new(
+            inner: inner,
+            signature: ::Krypto::Rsa.sign(@key, inner),
+            sender: @fingerprint
+          )
+        )
+      )
+    end
+
     def sender(data, raw: false, png: false)
       data = unpng(data) if png
       data = Base64.strict_decode64(data) unless raw || png
@@ -63,7 +88,7 @@ module Krypto
 
       raise "Bag Signature" if verify && !::Krypto::Rsa.verify(@counterparty, outer.signature, outer.inner)
 
-      decode_inner(outer.inner)
+      decode_inner(outer)
     end
 
     def decode_png(data, verify: true)
@@ -76,11 +101,17 @@ module Krypto
       ::Krypto::Png.decode_blob(data)
     end
 
-    def decode_inner(data)
-      inner = Inner.new(MessagePack.unpack(data))
+    def decode_inner(outer)
+      inner = Inner.new(MessagePack.unpack(outer.inner))
 
-      aeskey = ::Krypto::Rsa.decrypt(@key, inner.key)
-      inner.data = ::Krypto::Aes.decrypt(aeskey, nil, inner.ciphertext)
+      # Only decode if the inner has ciphertext. It's acceptable to have no ciphertext,
+      # this is just a signature.
+      unless inner.ciphertext.nil? || inner.ciphertext.empty?
+        aeskey = ::Krypto::Rsa.decrypt(@key, inner.key)
+        inner.data = ::Krypto::Aes.decrypt(aeskey, nil, inner.ciphertext)
+      end
+
+      inner.sender = outer.sender
 
       # zero out uninteresting data
       inner.key = nil
@@ -89,14 +120,14 @@ module Krypto
       inner
     end
 
-    class Inner < Struct.new(*%i[version timestamp key ciphertext requestid responseto sender data], keyword_init: true)
+    class Inner < Struct.new(*INNER_FIELDS, keyword_init: true)
       def to_msgpack(out = "")
         to_h.to_msgpack(out)
       end
     end
     private_constant :Inner
 
-    class Outer < Struct.new(*%i[inner signature sender], keyword_init: true)
+    class Outer < Struct.new(*OUTER_FIELDS, keyword_init: true)
       def to_msgpack(out = "")
         to_h.to_msgpack(out)
       end

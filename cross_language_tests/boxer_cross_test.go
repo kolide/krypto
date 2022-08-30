@@ -69,10 +69,10 @@ func TestBoxerRuby(t *testing.T) {
 	}
 
 	// Ruby Decrypt Tests
+	//#nosec G306 -- Need readable files
 	for _, message := range testMessages {
 		message := message
 
-		//#nosec G306 -- Need readable files
 		t.Run("ruby encrypt go decrypt", func(t *testing.T) {
 			t.Parallel()
 
@@ -148,7 +148,6 @@ func TestBoxerRuby(t *testing.T) {
 
 		})
 
-		//#nosec G306 -- Need readable files
 		t.Run("go encrypt ruby decrypt", func(t *testing.T) {
 			t.Parallel()
 			dir := t.TempDir()
@@ -226,5 +225,73 @@ func TestBoxerRuby(t *testing.T) {
 			}
 		})
 
+		t.Run("ruby sign, go verify", func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+
+			var ciphertext string
+
+			t.Run("ruby sign", func(t *testing.T) {
+				rubyInFile := path.Join(dir, ulid.New()+".msgpack")
+				rubyOutFile := path.Join(dir, ulid.New()+"ruby-out")
+
+				rubyCommand := boxerCrossTestCase{
+					Key:        bobPem.Bytes(),
+					Plaintext:  message,
+					ResponseTo: ulid.New(),
+				}
+
+				b, err := msgpack.Marshal(rubyCommand)
+				require.NoError(t, err)
+				require.NoError(t, os.WriteFile(rubyInFile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
+
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+				defer cancel()
+
+				cmd := exec.CommandContext(ctx, boxerRB, "sign", rubyInFile, rubyOutFile)
+
+				out, err := cmd.CombinedOutput()
+				require.NoError(t, err, string(out))
+
+				rubyResult, err := os.ReadFile(rubyOutFile)
+				require.NoError(t, err)
+
+				var unpacked boxerCrossTestCase
+				require.NoError(t, msgpack.Unmarshal(base64Decode(t, string(rubyResult)), &unpacked))
+
+				require.NotEmpty(t, unpacked.Ciphertext)
+				ciphertext = unpacked.Ciphertext
+			})
+
+			var testFuncs = []struct {
+				name       string
+				fn         func(string) (*krypto.Box, error)
+				expectErr  bool
+				ciphertext string
+			}{
+
+				{name: "alice can verify", ciphertext: ciphertext, fn: aliceBoxer.Decode},
+				{name: "alice can verify unverified", ciphertext: ciphertext, fn: aliceBoxer.DecodeUnverified},
+				{name: "bare alice can verify unverified", ciphertext: ciphertext, fn: bareAliceBoxer.DecodeUnverified},
+
+				{name: "bare alice cannot verify", ciphertext: ciphertext, fn: bareAliceBoxer.Decode, expectErr: true},
+			}
+
+			for _, tf := range testFuncs {
+				tf := tf
+				t.Run(tf.name, func(t *testing.T) {
+					t.Parallel()
+					if tf.expectErr {
+						box, err := tf.fn(tf.ciphertext)
+						require.Error(t, err)
+						require.Nil(t, box)
+					} else {
+						box, err := tf.fn(tf.ciphertext)
+						require.NoError(t, err)
+						require.Equal(t, message, box.Signedtext, "signed text matches")
+					}
+				})
+			}
+		})
 	}
 }
