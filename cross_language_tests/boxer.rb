@@ -21,6 +21,9 @@ case cmd
 when "encode"
   testcase["Ciphertext"] = boxer.encode(testcase["ResponseTo"], testcase["Plaintext"])
   File.write(outfile, Base64.strict_encode64(MessagePack.pack(testcase)))
+when "sign"
+  testcase["Ciphertext"] = boxer.sign(testcase["ResponseTo"], testcase["Plaintext"])
+  File.write(outfile, Base64.strict_encode64(MessagePack.pack(testcase)))
 when "decode"
   testcase["Plaintext"] = boxer.decode(testcase["Ciphertext"]).data
   File.write(outfile, Base64.strict_encode64(MessagePack.pack(testcase)))
@@ -29,6 +32,12 @@ when "decodeunverified"
   File.write(outfile, Base64.strict_encode64(MessagePack.pack(testcase)))
 when "decodepng"
   testcase["Plaintext"] = boxer.decode_png(File.read(testcase["PngFile"])).data
+  File.write(outfile, Base64.strict_encode64(MessagePack.pack(testcase)))
+when "verify"
+  testcase["Plaintext"] = boxer.decode(testcase["Ciphertext"]).signedtext
+  File.write(outfile, Base64.strict_encode64(MessagePack.pack(testcase)))
+when "verifyunverified"
+  testcase["Plaintext"] = boxer.decode_unverified(testcase["Ciphertext"]).signedtext
   File.write(outfile, Base64.strict_encode64(MessagePack.pack(testcase)))
 when "spew"
   pp testcase
