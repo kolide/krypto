@@ -24,17 +24,23 @@ type outerBox struct {
 // verification of the signature is up to the recipient. Caution is especially merited
 // around the Sender field. It can be seen as an arbitrary string.
 type Box struct {
+	// These fields are the packed, signed, etc data.
 	Version    int    `msgpack:"version"`
 	Timestamp  int64  `msgpack:"timestamp"`
 	Key        []byte `msgpack:"key"`
 	Ciphertext []byte `msgpack:"ciphertext"`
-	data       []byte // used when returning things, but not msgpack
+	Signedtext []byte `msgpack:"signedtext"`
 	RequestId  string `msgpack:"requestid"`
 	ResponseTo string `msgpack:"responseto"`
-	Sender     string `msgpack:"sender"`
+
+	// These fields are used as internal fields, not part of the packed data. Thus, not exported.
+	data   []byte
+	sender string
 }
 
 func (inner Box) Data() []byte { return inner.data }
+
+func (inner Box) Sender() string { return inner.sender }
 
 type boxMaker struct {
 	key          *rsa.PrivateKey
@@ -96,7 +102,6 @@ func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error
 		Ciphertext: ciphertext,
 		RequestId:  ulid.New(),
 		ResponseTo: inResponseTo,
-		Sender:     fingerprint,
 	}
 
 	innerPacked, err := msgpack.Marshal(inner)
@@ -138,7 +143,7 @@ func (boxer boxMaker) DecodeRawUnverified(data []byte) (*Box, error) {
 		return nil, fmt.Errorf("unmarshalling outer: %w", err)
 	}
 
-	return boxer.decodeInner(outer.Inner)
+	return boxer.decodeInner(outer)
 }
 
 func (boxer boxMaker) Decode(b64 string) (*Box, error) {
@@ -173,16 +178,16 @@ func (boxer boxMaker) DecodeRaw(data []byte) (*Box, error) {
 		return nil, fmt.Errorf("verifying outer: %w", err)
 	}
 
-	return boxer.decodeInner(outer.Inner)
+	return boxer.decodeInner(outer)
 }
 
-func (boxer boxMaker) decodeInner(data []byte) (*Box, error) {
+func (boxer boxMaker) decodeInner(outer outerBox) (*Box, error) {
 	if boxer.key == nil {
 		return nil, errors.New("Can't decode without a key")
 	}
 
 	var inner Box
-	if err := msgpack.Unmarshal(data, &inner); err != nil {
+	if err := msgpack.Unmarshal(outer.Inner, &inner); err != nil {
 		return nil, fmt.Errorf("unmarshalling inner: %w", err)
 	}
 
@@ -197,6 +202,7 @@ func (boxer boxMaker) decodeInner(data []byte) (*Box, error) {
 	}
 
 	inner.data = plaintext
+	inner.sender = outer.Sender
 
 	return &inner, nil
 }
