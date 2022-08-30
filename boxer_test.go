@@ -10,6 +10,73 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestBoxSigning(t *testing.T) {
+	t.Parallel()
+
+	var tests = []struct {
+		in []byte
+	}{
+		{in: []byte("a")},
+		{in: mkrand(t, 32)},
+		{in: mkrand(t, 256)},
+		{in: mkrand(t, 2048)},
+		{in: mkrand(t, 4096)},
+		{in: []byte(randomString(t, 4096))},
+	}
+
+	aliceKey, err := RsaRandomKey()
+	require.NoError(t, err)
+
+	bobKey, err := RsaRandomKey()
+	require.NoError(t, err)
+
+	aliceSigner := NewBoxer(aliceKey, nil)
+
+	bobBoxer := NewBoxer(bobKey, aliceKey.Public().(*rsa.PublicKey))
+	bareBobBoxer := NewBoxer(bobKey, nil)
+
+	var testFuncs = []struct {
+		name      string
+		fn        func([]byte) (*Box, error)
+		expectErr bool
+	}{
+		{name: "bob can verify", fn: bobBoxer.DecodeRaw},
+		{name: "bob can decode unverified", fn: bobBoxer.DecodeRawUnverified},
+		{name: "bare bob can decode unverified", fn: bareBobBoxer.DecodeRawUnverified},
+
+		{name: "bare bob cannot verify", fn: bareBobBoxer.DecodeRaw, expectErr: true},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run("", func(t *testing.T) {
+			t.Parallel()
+
+			responseTo := ulid.New()
+
+			signed, err := aliceSigner.Sign(responseTo, tt.in)
+			require.NoError(t, err)
+
+			for _, tf := range testFuncs {
+				tf := tf
+				t.Run(tf.name, func(t *testing.T) {
+					t.Parallel()
+					if tf.expectErr {
+						box, err := tf.fn(signed)
+						require.Error(t, err)
+						require.Nil(t, box)
+					} else {
+						box, err := tf.fn(signed)
+						require.NoError(t, err)
+						require.Equal(t, tt.in, box.Signedtext, "decoded matches")
+					}
+				})
+			}
+
+		})
+	}
+}
+
 func TestBoxRandomRoundTrips(t *testing.T) {
 	t.Parallel()
 

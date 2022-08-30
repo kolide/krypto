@@ -40,5 +40,19 @@ class TestKryptoBoxer < Minitest::Test
       assert_raises { BARE_MALLORYBOX.decode(box) }
       assert_raises { BARE_MALLORYBOX.decode_unverified(box) }
     end
+
+    define_method("test_can_verify: #{name}") do
+      box = ALICEBOX.sign(SecureRandom.uuid, message)
+
+      assert_equal(message, BOBBOX.decode(box).signedtext)
+      assert_equal(message, BOBBOX.decode_unverified(box).signedtext)
+      assert_equal(message, BARE_BOBBOX.decode_unverified(box).signedtext)
+    end
+
+    define_method("test_cannot_verify: #{name}") do
+      box = ALICEBOX.sign(SecureRandom.uuid, message)
+
+      assert_raises { BARE_BOBBOX.decode(box) }
+    end
   end
 end
