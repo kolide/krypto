@@ -128,6 +128,44 @@ func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error
 	return outerPacked, nil
 }
 
+func (boxer boxMaker) Sign(inResponseTo string, data []byte) ([]byte, error) {
+	fingerprint, err := RsaFingerprint(boxer.key)
+	if err != nil {
+		return nil, fmt.Errorf("unable to fingerprint: %w", err)
+	}
+
+	inner := Box{
+		Version:    1,
+		Timestamp:  time.Now().Unix(),
+		Signedtext: data,
+		RequestId:  ulid.New(),
+		ResponseTo: inResponseTo,
+	}
+
+	innerPacked, err := msgpack.Marshal(inner)
+	if err != nil {
+		return nil, fmt.Errorf("packing inner: %w", err)
+	}
+
+	innerSig, err := RsaSign(boxer.key, innerPacked)
+	if err != nil {
+		return nil, fmt.Errorf("signing inner: %w", err)
+	}
+
+	outer := outerBox{
+		Inner:     innerPacked,
+		Signature: innerSig,
+		Sender:    fingerprint,
+	}
+
+	outerPacked, err := msgpack.Marshal(outer)
+	if err != nil {
+		return nil, fmt.Errorf("packing outer: %w", err)
+	}
+
+	return outerPacked, nil
+}
+
 func (boxer boxMaker) DecodeUnverified(b64 string) (*Box, error) {
 	data, err := base64.StdEncoding.DecodeString(b64)
 	if err != nil {
@@ -191,17 +229,22 @@ func (boxer boxMaker) decodeInner(outer outerBox) (*Box, error) {
 		return nil, fmt.Errorf("unmarshalling inner: %w", err)
 	}
 
-	aeskey, err := RsaDecrypt(boxer.key, inner.Key)
-	if err != nil {
-		return nil, fmt.Errorf("decrypting DEK: %w", err)
+	// Only decode if the inner has ciphertext. It's acceptable to have no ciphertext,
+	// this is just a signature.
+	if inner.Ciphertext != nil {
+		aeskey, err := RsaDecrypt(boxer.key, inner.Key)
+		if err != nil {
+			return nil, fmt.Errorf("decrypting DEK: %w", err)
+		}
+
+		plaintext, err := AesDecrypt(aeskey, nil, inner.Ciphertext)
+		if err != nil {
+			return nil, fmt.Errorf("decrypting data: %w", err)
+		}
+
+		inner.data = plaintext
 	}
 
-	plaintext, err := AesDecrypt(aeskey, nil, inner.Ciphertext)
-	if err != nil {
-		return nil, fmt.Errorf("decrypting data: %w", err)
-	}
-
-	inner.data = plaintext
 	inner.sender = outer.Sender
 
 	return &inner, nil
