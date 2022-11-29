@@ -3,17 +3,13 @@ package krypto
 import (
 	"crypto"
 	"crypto/rsa"
+	"crypto/sha256"
 	"fmt"
 	"io"
 
 	"github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm/tpm2"
 	"github.com/google/go-tpm/tpmutil"
-)
-
-const (
-	CryptoHash  = crypto.SHA256
-	signingAlgo = tpm2.AlgRSAPSS
 )
 
 type tpmEncoder struct {
@@ -44,7 +40,7 @@ func (t *tpmEncoder) Decrypt(input []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer tpm2.FlushContext(rwc, handle)
+	defer tpm2.FlushContext(rwc, handle) //nolint:errcheck
 
 	return tpm2.RSADecrypt(rwc, handle, "", input, &tpm2.AsymScheme{Alg: tpm2.AlgOAEP, Hash: tpm2.AlgSHA1}, "")
 }
@@ -64,7 +60,7 @@ func (t *tpmEncoder) PublicEncryptionKey() *rsa.PublicKey {
 	if err != nil {
 		return nil
 	}
-	defer tpm2.FlushContext(rwc, handle)
+	defer tpm2.FlushContext(rwc, handle) //nolint:errcheck
 
 	t.publicEncryptionKey = publicKey.(*rsa.PublicKey)
 	return t.publicEncryptionKey
@@ -74,7 +70,7 @@ func (t *tpmEncoder) signingKeyTemplate() tpm2.Public {
 	return tpm2.Public{
 		Type:    tpm2.AlgRSA,
 		NameAlg: tpm2.AlgSHA256,
-		// can add tpm2.FlagRestricted to the attributes to force the TPM to do the hashing as well, but this severly limits the size
+		// can add tpm2.FlagRestricted to the attributes to force the TPM to do the hashing as well, but this severely limits the size
 		// of the datat that can be hashed
 		Attributes: tpm2.FlagSign | tpm2.FlagFixedTPM | tpm2.FlagFixedParent | tpm2.FlagSensitiveDataOrigin | tpm2.FlagUserWithAuth,
 		RSAParameters: &tpm2.RSAParams{
@@ -104,7 +100,7 @@ func (t *tpmEncoder) Sign(input []byte) ([]byte, error) {
 	}
 	defer signingKey.Close()
 
-	hash := CryptoHash.New()
+	hash := sha256.New()
 	if _, err := hash.Write(input); err != nil {
 		return nil, fmt.Errorf("hashing input: %w", err)
 	}

@@ -109,17 +109,17 @@ func TestBoxTpmSigning(t *testing.T) { //nolint:paralleltest
 		{name: "bare bob cannot verify", fn: bareBobBoxer.DecodeRaw, expectErr: true},
 	}
 
-	for _, tt := range tests {
+	for _, tt := range tests { //nolint:paralleltest
 		tt := tt
-		t.Run("", func(t *testing.T) { //nolint:paralleltest
+		t.Run("", func(t *testing.T) {
 			responseTo := ulid.New()
 
 			signed, err := aliceSigner.Sign(responseTo, tt.in)
 			require.NoError(t, err)
 
-			for _, tf := range testFuncs {
+			for _, tf := range testFuncs { //nolint:paralleltest
 				tf := tf
-				t.Run(tf.name, func(t *testing.T) { //nolint:paralleltest
+				t.Run(tf.name, func(t *testing.T) {
 					if tf.expectErr {
 						box, err := tf.fn(signed)
 						require.Error(t, err)
