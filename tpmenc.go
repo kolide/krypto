@@ -22,12 +22,6 @@ type tpmEncoder struct {
 	openTpm             func() (io.ReadWriteCloser, error)
 }
 
-func newTpmEncoder() *tpmEncoder {
-	return &tpmEncoder{
-		openTpm: tpm2.OpenTPM,
-	}
-}
-
 func encryptionKey(tpm io.ReadWriteCloser) (tpmutil.Handle, crypto.PublicKey, error) {
 	return tpm2.CreatePrimary(tpm, tpm2.HandleOwner, tpm2.PCRSelection{}, "", "", tpm2.Public{
 		Type:       tpm2.AlgRSA,
