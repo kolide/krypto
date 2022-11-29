@@ -3,10 +3,16 @@
 
 package krypto
 
-import "github.com/google/go-tpm/tpm2"
+import (
+	"io"
+
+	"github.com/google/go-tpm/tpm2"
+)
 
 func newTpmEncoder() *tpmEncoder {
 	return &tpmEncoder{
-		openTpm: tpm2.OpenTPM("/dev/tpm0"),
+		openTpm: func() (io.ReadWriteCloser, error) {
+			return tpm2.OpenTPM("/dev/tpm0")
+		},
 	}
 }

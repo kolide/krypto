@@ -3,7 +3,9 @@
 
 package krypto
 
-import "github.com/google/go-tpm/tpm2"
+import (
+	"github.com/google/go-tpm/tpm2"
+)
 
 func newTpmEncoder() *tpmEncoder {
 	return &tpmEncoder{
