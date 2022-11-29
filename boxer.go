@@ -43,17 +43,60 @@ func (inner Box) Data() []byte { return inner.data }
 func (inner Box) Sender() string { return inner.sender }
 
 type boxMaker struct {
-	key          *rsa.PrivateKey
-	counterparty *rsa.PublicKey
+	encoder                   encoder
+	counterPartySigningKey    *rsa.PublicKey
+	counterPartyEncryptionKey *rsa.PublicKey
 }
 
 const maxBoxSize = 4 * 1024 * 1024
 
-func NewBoxer(key *rsa.PrivateKey, counterparty *rsa.PublicKey) boxMaker {
+type encoder interface {
+	PublicSigningKey() *rsa.PublicKey
+	Sign([]byte) ([]byte, error)
+	PublicEncryptionKey() *rsa.PublicKey
+	Decrypt([]byte) ([]byte, error)
+}
+
+func NewEncoderBoxer(encoder encoder, counterPartySigningKey *rsa.PublicKey, counterPartyEncryptionKey *rsa.PublicKey) boxMaker {
 	return boxMaker{
-		key:          key,
-		counterparty: counterparty,
+		counterPartySigningKey:    counterPartySigningKey,
+		counterPartyEncryptionKey: counterPartyEncryptionKey,
+		encoder:                   encoder,
 	}
+}
+
+type keyEncoder struct {
+	key *rsa.PrivateKey
+}
+
+func (enc keyEncoder) PublicSigningKey() *rsa.PublicKey {
+	if enc.key == nil {
+		return nil
+	}
+
+	return enc.key.Public().(*rsa.PublicKey)
+}
+
+func (enc keyEncoder) PublicEncryptionKey() *rsa.PublicKey {
+	return enc.PublicSigningKey()
+}
+
+func (enc keyEncoder) Sign(input []byte) ([]byte, error) {
+	return RsaSign(enc.key, input)
+}
+
+func (enc keyEncoder) Decrypt(input []byte) ([]byte, error) {
+	return RsaDecrypt(enc.key, input)
+}
+
+func NewKeyBoxer(key *rsa.PrivateKey, counterPartySigningKey *rsa.PublicKey, counterPartyEncryptionKey *rsa.PublicKey) boxMaker {
+	return NewEncoderBoxer(keyEncoder{
+		key: key,
+	}, counterPartySigningKey, counterPartyEncryptionKey)
+}
+
+func NewTpmBoxer(counterPartySigningKey *rsa.PublicKey, counterPartyEncryptionKey *rsa.PublicKey) boxMaker {
+	return NewEncoderBoxer(newTpmEncoder(), counterPartySigningKey, counterPartyEncryptionKey)
 }
 
 func (boxer boxMaker) Encode(inResponseTo string, data []byte) (string, error) {
@@ -80,7 +123,7 @@ func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error
 		return nil, fmt.Errorf("generating DEK: %w", err)
 	}
 
-	aeskeyEnc, err := RsaEncrypt(boxer.counterparty, aeskey)
+	aeskeyEnc, err := RsaEncrypt(boxer.counterPartyEncryptionKey, aeskey)
 	if err != nil {
 		return nil, fmt.Errorf("encrypting DEK: %w", err)
 	}
@@ -90,7 +133,7 @@ func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error
 		return nil, fmt.Errorf("encrypting data: %w", err)
 	}
 
-	fingerprint, err := RsaFingerprint(boxer.key)
+	fingerprint, err := RsaFingerprint(boxer.encoder.PublicSigningKey())
 	if err != nil {
 		return nil, fmt.Errorf("unable to fingerprint: %w", err)
 	}
@@ -109,7 +152,7 @@ func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error
 		return nil, fmt.Errorf("packing inner: %w", err)
 	}
 
-	innerSig, err := RsaSign(boxer.key, innerPacked)
+	innerSig, err := boxer.encoder.Sign(innerPacked)
 	if err != nil {
 		return nil, fmt.Errorf("signing inner: %w", err)
 	}
@@ -129,7 +172,7 @@ func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error
 }
 
 func (boxer boxMaker) Sign(inResponseTo string, data []byte) ([]byte, error) {
-	fingerprint, err := RsaFingerprint(boxer.key)
+	fingerprint, err := RsaFingerprint(boxer.encoder.PublicSigningKey())
 	if err != nil {
 		return nil, fmt.Errorf("unable to fingerprint: %w", err)
 	}
@@ -147,7 +190,7 @@ func (boxer boxMaker) Sign(inResponseTo string, data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("packing inner: %w", err)
 	}
 
-	innerSig, err := RsaSign(boxer.key, innerPacked)
+	innerSig, err := boxer.encoder.Sign(innerPacked)
 	if err != nil {
 		return nil, fmt.Errorf("signing inner: %w", err)
 	}
@@ -212,7 +255,7 @@ func (boxer boxMaker) DecodeRaw(data []byte) (*Box, error) {
 		return nil, fmt.Errorf("unmarshalling outer: %w", err)
 	}
 
-	if err := RsaVerify(boxer.counterparty, outer.Inner, outer.Signature); err != nil {
+	if err := RsaVerify(boxer.counterPartySigningKey, outer.Inner, outer.Signature); err != nil {
 		return nil, fmt.Errorf("verifying outer: %w", err)
 	}
 
@@ -220,7 +263,7 @@ func (boxer boxMaker) DecodeRaw(data []byte) (*Box, error) {
 }
 
 func (boxer boxMaker) decodeInner(outer outerBox) (*Box, error) {
-	if boxer.key == nil {
+	if boxer.encoder == nil {
 		return nil, errors.New("Can't decode without a key")
 	}
 
@@ -232,7 +275,7 @@ func (boxer boxMaker) decodeInner(outer outerBox) (*Box, error) {
 	// Only decode if the inner has ciphertext. It's acceptable to have no ciphertext,
 	// this is just a signature.
 	if inner.Ciphertext != nil {
-		aeskey, err := RsaDecrypt(boxer.key, inner.Key)
+		aeskey, err := boxer.encoder.Decrypt(inner.Key)
 		if err != nil {
 			return nil, fmt.Errorf("decrypting DEK: %w", err)
 		}

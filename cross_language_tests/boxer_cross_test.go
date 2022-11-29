@@ -53,10 +53,10 @@ func TestBoxerRuby(t *testing.T) {
 	var malloryPem bytes.Buffer
 	require.NoError(t, krypto.RsaPrivateKeyToPem(malloryKey, &malloryPem))
 
-	aliceBoxer := krypto.NewBoxer(aliceKey, bobKey.Public().(*rsa.PublicKey))
-	bareAliceBoxer := krypto.NewBoxer(aliceKey, nil)
-	malloryBoxer := krypto.NewBoxer(malloryKey, aliceKey.Public().(*rsa.PublicKey))
-	bareMalloryBoxer := krypto.NewBoxer(malloryKey, nil)
+	aliceBoxer := krypto.NewKeyBoxer(aliceKey, bobKey.Public().(*rsa.PublicKey), bobKey.Public().(*rsa.PublicKey))
+	bareAliceBoxer := krypto.NewKeyBoxer(aliceKey, nil, nil)
+	malloryBoxer := krypto.NewKeyBoxer(malloryKey, bobKey.Public().(*rsa.PublicKey), bobKey.Public().(*rsa.PublicKey))
+	bareMalloryBoxer := krypto.NewKeyBoxer(malloryKey, nil, nil)
 
 	testMessages := [][]byte{
 		[]byte("a"),
