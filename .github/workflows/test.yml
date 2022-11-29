@@ -39,6 +39,7 @@ jobs:
         go:
           - '1.18'
           - '1.19'
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v3
 
