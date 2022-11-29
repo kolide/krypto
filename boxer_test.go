@@ -5,10 +5,13 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"testing"
 
 	"github.com/google/go-tpm-tools/simulator"
+	"github.com/google/go-tpm/tpm2"
+	"github.com/google/go-tpm/tpmutil"
 	"github.com/kolide/kit/ulid"
 	"github.com/stretchr/testify/require"
 )
@@ -95,12 +98,19 @@ func TestBoxTpmSigning(t *testing.T) { //nolint:paralleltest
 		{in: []byte(randomString(t, 4096))},
 	}
 
-	aliceSigner := NewTpmBoxer(nil, nil)
+	tpmEncoder := testTpmEncoder(t)
+	aliceSigner := NewEncoderBoxer(tpmEncoder, nil, nil)
 
 	bobKey, err := RsaRandomKey()
 	require.NoError(t, err)
 
-	bobBoxer := NewKeyBoxer(bobKey, aliceSigner.encoder.PublicSigningKey(), aliceSigner.encoder.PublicEncryptionKey())
+	aliceSigningKey, err := aliceSigner.encoder.PublicSigningKey()
+	require.NoError(t, err)
+
+	aliceEncryptionKey, err := aliceSigner.encoder.PublicEncryptionKey()
+	require.NoError(t, err)
+
+	bobBoxer := NewKeyBoxer(bobKey, aliceSigningKey, aliceEncryptionKey)
 	bareBobBoxer := NewKeyBoxer(bobKey, nil, nil)
 
 	var testFuncs = []struct {
@@ -233,7 +243,6 @@ func TestBoxRandomRoundTrips(t *testing.T) {
 }
 
 func TestBoxTpmRandomRoundTrips(t *testing.T) { //nolint:paralleltest
-
 	var tests = []struct {
 		in []byte
 	}{
@@ -251,16 +260,19 @@ func TestBoxTpmRandomRoundTrips(t *testing.T) { //nolint:paralleltest
 	malloryKey, err := RsaRandomKey()
 	require.NoError(t, err)
 
-	tpmEncoder := newTpmEncoder()
-	tpmEncoder.openTpm = func() (io.ReadWriteCloser, error) {
-		return simulator.Get()
-	}
+	tpmEncoder := testTpmEncoder(t)
 
-	bobTpmBoxer := NewTpmBoxer(aliceKey.Public().(*rsa.PublicKey), aliceKey.Public().(*rsa.PublicKey))
+	bobTpmBoxer := NewEncoderBoxer(tpmEncoder, aliceKey.Public().(*rsa.PublicKey), aliceKey.Public().(*rsa.PublicKey))
 
-	aliceKeyBoxer := NewKeyBoxer(aliceKey, bobTpmBoxer.encoder.PublicSigningKey(), bobTpmBoxer.encoder.PublicEncryptionKey())
+	bobSigningKey, err := bobTpmBoxer.encoder.PublicSigningKey()
+	require.NoError(t, err)
 
-	bareBobTpmBoxer := NewTpmBoxer(nil, nil)
+	bobEncryptionKey, err := bobTpmBoxer.encoder.PublicEncryptionKey()
+	require.NoError(t, err)
+
+	aliceKeyBoxer := NewKeyBoxer(aliceKey, bobSigningKey, bobEncryptionKey)
+
+	bareBobTpmBoxer := NewEncoderBoxer(tpmEncoder, nil, nil)
 	malloryKeyBoxer := NewKeyBoxer(malloryKey, aliceKey.Public().(*rsa.PublicKey), aliceKey.Public().(*rsa.PublicKey))
 	bareMalloryKeyBoxer := NewKeyBoxer(malloryKey, nil, nil)
 
@@ -370,4 +382,61 @@ func TestNilNoPanic(t *testing.T) {
 		})
 	}
 
+}
+
+func testTpmEncoder(t *testing.T) *tpmEncoder {
+	tpmEncoder := &tpmEncoder{}
+
+	// use simulator during CI, run against real TPM otherwise
+	if os.Getenv("CI") == "true" {
+		simulatedTpm, err := simulator.Get()
+		require.NoError(t, err)
+
+		t.Cleanup(func() {
+			CheckedClose(t, simulatedTpm)
+		})
+
+		tpmEncoder.externalTpm = simulatedTpm
+	}
+
+	return tpmEncoder
+}
+
+// CheckedClose closes the simulator and asserts that there were no leaked handles.
+func CheckedClose(t *testing.T, rwc io.ReadWriteCloser) {
+	for _, handle := range []tpm2.HandleType{
+		tpm2.HandleTypeLoadedSession,
+		tpm2.HandleTypeSavedSession,
+		tpm2.HandleTypeTransient,
+	} {
+		handles, err := Handles(rwc, handle)
+		require.NoError(t, err)
+		require.Empty(t, len(handles), fmt.Sprintf("test leaked handles: %v", handles))
+	}
+
+	require.NoError(t, rwc.Close())
+}
+
+// Handles returns a slice of tpmutil.Handle objects of all handles within
+// the TPM rw of type handleType.
+func Handles(rw io.ReadWriter, handleType tpm2.HandleType) ([]tpmutil.Handle, error) {
+	// Handle type is determined by the most-significant octet (MSO) of the property.
+	property := uint32(handleType) << 24
+
+	vals, moreData, err := tpm2.GetCapability(rw, tpm2.CapabilityHandles, math.MaxUint32, property)
+	if err != nil {
+		return nil, err
+	}
+	if moreData {
+		return nil, fmt.Errorf("tpm2.GetCapability() should never return moreData==true for tpm2.CapabilityHandles")
+	}
+	handles := make([]tpmutil.Handle, len(vals))
+	for i, v := range vals {
+		handle, ok := v.(tpmutil.Handle)
+		if !ok {
+			return nil, fmt.Errorf("unable to assert type tpmutil.Handle of value %#v", v)
+		}
+		handles[i] = handle
+	}
+	return handles, nil
 }

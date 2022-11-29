@@ -15,7 +15,7 @@ import (
 type tpmEncoder struct {
 	publicSigningKey    *rsa.PublicKey
 	publicEncryptionKey *rsa.PublicKey
-	openTpm             func() (io.ReadWriteCloser, error)
+	externalTpm         io.ReadWriteCloser
 }
 
 func encryptionKey(tpm io.ReadWriteCloser) (tpmutil.Handle, crypto.PublicKey, error) {
@@ -30,40 +30,40 @@ func encryptionKey(tpm io.ReadWriteCloser) (tpmutil.Handle, crypto.PublicKey, er
 }
 
 func (t *tpmEncoder) Decrypt(input []byte) ([]byte, error) {
-	rwc, err := t.openTpm()
+	tpm, err := t.openTpm()
 	if err != nil {
 		return nil, fmt.Errorf("opening TPM: %w", err)
 	}
-	defer rwc.Close()
+	defer t.closeTpm(tpm)
 
-	handle, _, err := encryptionKey(rwc)
+	handle, _, err := encryptionKey(tpm)
 	if err != nil {
 		return nil, err
 	}
-	defer tpm2.FlushContext(rwc, handle) //nolint:errcheck
+	defer tpm2.FlushContext(tpm, handle) //nolint:errcheck
 
-	return tpm2.RSADecrypt(rwc, handle, "", input, &tpm2.AsymScheme{Alg: tpm2.AlgOAEP, Hash: tpm2.AlgSHA1}, "")
+	return tpm2.RSADecrypt(tpm, handle, "", input, &tpm2.AsymScheme{Alg: tpm2.AlgOAEP, Hash: tpm2.AlgSHA1}, "")
 }
 
-func (t *tpmEncoder) PublicEncryptionKey() *rsa.PublicKey {
+func (t *tpmEncoder) PublicEncryptionKey() (*rsa.PublicKey, error) {
 	if t.publicEncryptionKey != nil {
-		return t.publicEncryptionKey
+		return t.publicEncryptionKey, nil
 	}
 
-	rwc, err := t.openTpm()
+	tpm, err := t.openTpm()
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("opening tpm: %w", err)
 	}
-	defer rwc.Close()
+	defer t.closeTpm(tpm)
 
-	handle, publicKey, err := encryptionKey(rwc)
+	handle, publicKey, err := encryptionKey(tpm)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("creating encryption key: %w", err)
 	}
-	defer tpm2.FlushContext(rwc, handle) //nolint:errcheck
+	defer tpm2.FlushContext(tpm, handle) //nolint:errcheck
 
 	t.publicEncryptionKey = publicKey.(*rsa.PublicKey)
-	return t.publicEncryptionKey
+	return t.publicEncryptionKey, nil
 }
 
 func (t *tpmEncoder) signingKeyTemplate() tpm2.Public {
@@ -88,13 +88,13 @@ func (t *tpmEncoder) signingKeyTemplate() tpm2.Public {
 // This means the keys will always be the same as long as the TPM is not reset.
 // Use PublicSigningKey() to get the public key
 func (t *tpmEncoder) Sign(input []byte) ([]byte, error) {
-	rwc, err := t.openTpm()
+	tpm, err := t.openTpm()
 	if err != nil {
 		return nil, fmt.Errorf("opening TPM: %w", err)
 	}
-	defer rwc.Close()
+	defer t.closeTpm(tpm)
 
-	signingKey, err := client.NewKey(rwc, tpm2.HandleEndorsement, t.signingKeyTemplate())
+	signingKey, err := client.NewKey(tpm, tpm2.HandleEndorsement, t.signingKeyTemplate())
 	if err != nil {
 		return nil, fmt.Errorf("opening signing key: %w", err)
 	}
@@ -111,23 +111,31 @@ func (t *tpmEncoder) Sign(input []byte) ([]byte, error) {
 // PublicSigningKey returns the public key of the key used for signing.
 // The key is derived deterministically from the TPM built-in and protected seed.
 // This means the keys will always be the same as long as the TPM is not reset.
-func (t *tpmEncoder) PublicSigningKey() *rsa.PublicKey {
+func (t *tpmEncoder) PublicSigningKey() (*rsa.PublicKey, error) {
 	if t.publicSigningKey != nil {
-		return t.publicSigningKey
+		return t.publicSigningKey, nil
 	}
 
-	rwc, err := t.openTpm()
+	tpm, err := t.openTpm()
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("opening tpm: %w", err)
 	}
-	defer rwc.Close()
+	defer t.closeTpm(tpm)
 
-	signingKey, err := client.NewKey(rwc, tpm2.HandleEndorsement, t.signingKeyTemplate())
+	signingKey, err := client.NewKey(tpm, tpm2.HandleEndorsement, t.signingKeyTemplate())
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("creating signing key: %w", err)
 	}
 	defer signingKey.Close()
 
 	t.publicSigningKey = signingKey.PublicKey().(*rsa.PublicKey)
-	return t.publicSigningKey
+	return t.publicSigningKey, nil
+}
+
+func (t *tpmEncoder) closeTpm(tpm io.ReadWriteCloser) {
+	if t.externalTpm != nil {
+		return
+	}
+
+	tpm.Close()
 }

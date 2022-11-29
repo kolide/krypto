@@ -51,9 +51,9 @@ type boxMaker struct {
 const maxBoxSize = 4 * 1024 * 1024
 
 type encoder interface {
-	PublicSigningKey() *rsa.PublicKey
+	PublicSigningKey() (*rsa.PublicKey, error)
 	Sign([]byte) ([]byte, error)
-	PublicEncryptionKey() *rsa.PublicKey
+	PublicEncryptionKey() (*rsa.PublicKey, error)
 	Decrypt([]byte) ([]byte, error)
 }
 
@@ -69,15 +69,15 @@ type keyEncoder struct {
 	key *rsa.PrivateKey
 }
 
-func (enc keyEncoder) PublicSigningKey() *rsa.PublicKey {
+func (enc keyEncoder) PublicSigningKey() (*rsa.PublicKey, error) {
 	if enc.key == nil {
-		return nil
+		return nil, nil
 	}
 
-	return enc.key.Public().(*rsa.PublicKey)
+	return enc.key.Public().(*rsa.PublicKey), nil
 }
 
-func (enc keyEncoder) PublicEncryptionKey() *rsa.PublicKey {
+func (enc keyEncoder) PublicEncryptionKey() (*rsa.PublicKey, error) {
 	return enc.PublicSigningKey()
 }
 
@@ -96,7 +96,7 @@ func NewKeyBoxer(key *rsa.PrivateKey, counterPartySigningKey *rsa.PublicKey, cou
 }
 
 func NewTpmBoxer(counterPartySigningKey *rsa.PublicKey, counterPartyEncryptionKey *rsa.PublicKey) boxMaker {
-	return NewEncoderBoxer(newTpmEncoder(), counterPartySigningKey, counterPartyEncryptionKey)
+	return NewEncoderBoxer(&tpmEncoder{}, counterPartySigningKey, counterPartyEncryptionKey)
 }
 
 func (boxer boxMaker) Encode(inResponseTo string, data []byte) (string, error) {
@@ -133,7 +133,12 @@ func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error
 		return nil, fmt.Errorf("encrypting data: %w", err)
 	}
 
-	fingerprint, err := RsaFingerprint(boxer.encoder.PublicSigningKey())
+	pubSigningKey, err := boxer.encoder.PublicSigningKey()
+	if err != nil {
+		return nil, fmt.Errorf("generating public signing key: %w", err)
+	}
+
+	fingerprint, err := RsaFingerprint(pubSigningKey)
 	if err != nil {
 		return nil, fmt.Errorf("unable to fingerprint: %w", err)
 	}
@@ -172,7 +177,12 @@ func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error
 }
 
 func (boxer boxMaker) Sign(inResponseTo string, data []byte) ([]byte, error) {
-	fingerprint, err := RsaFingerprint(boxer.encoder.PublicSigningKey())
+	pubSigningKey, err := boxer.encoder.PublicSigningKey()
+	if err != nil {
+		return nil, fmt.Errorf("generating public signing key: %w", err)
+	}
+
+	fingerprint, err := RsaFingerprint(pubSigningKey)
 	if err != nil {
 		return nil, fmt.Errorf("unable to fingerprint: %w", err)
 	}
