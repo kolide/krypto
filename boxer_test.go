@@ -83,10 +83,6 @@ func TestBoxSigning(t *testing.T) {
 }
 
 func TestBoxTpmSigning(t *testing.T) { //nolint:paralleltest
-	if os.Getenv("CI") == "true" {
-		t.Skip("skipping tmp test due to lack of tpm until simulator is working")
-	}
-
 	var tests = []struct {
 		in []byte
 	}{
