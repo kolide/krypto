@@ -9,10 +9,10 @@ import (
 	"github.com/google/go-tpm/tpm2"
 )
 
-func newTpmEncoder() *tpmEncoder {
-	return &tpmEncoder{
-		openTpm: func() (io.ReadWriteCloser, error) {
-			return tpm2.OpenTPM("/dev/tpm0")
-		},
+func (t *tpmEncoder) openTpm() (io.ReadWriteCloser, error) {
+	if t.externalTpm != nil {
+		return t.externalTpm, nil
 	}
+
+	return tpm2.OpenTPM("/dev/tpm0")
 }

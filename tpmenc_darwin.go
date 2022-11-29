@@ -3,6 +3,11 @@
 
 package krypto
 
-func newTpmEncoder() *tpmEncoder {
-	return nil
+import (
+	"errors"
+	"io"
+)
+
+func (t *tpmEncoder) openTpm() (io.ReadWriteCloser, error) {
+	return nil, errors.New("not implemented")
 }
