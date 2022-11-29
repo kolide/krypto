@@ -32,8 +32,8 @@ jobs:
     strategy:
       matrix:
         go:
-          - '1.16'
           - '1.18'
+          - '1.19'
     steps:
     - uses: actions/checkout@v3
     - name: Set up Go
