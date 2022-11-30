@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"os"
 	"testing"
 
 	"github.com/google/go-tpm-tools/simulator"
@@ -95,15 +94,15 @@ func TestBoxTpmSigning(t *testing.T) { //nolint:paralleltest
 	}
 
 	tpmEncoder := testTpmEncoder(t)
-	aliceSigner := NewEncoderBoxer(tpmEncoder, nil, nil)
+	aliceTpmSigner := NewEncoderBoxer(tpmEncoder, nil, nil)
 
 	bobKey, err := RsaRandomKey()
 	require.NoError(t, err)
 
-	aliceSigningKey, err := aliceSigner.encoder.PublicSigningKey()
+	aliceSigningKey, err := aliceTpmSigner.encoder.PublicSigningKey()
 	require.NoError(t, err)
 
-	aliceEncryptionKey, err := aliceSigner.encoder.PublicEncryptionKey()
+	aliceEncryptionKey, err := aliceTpmSigner.encoder.PublicEncryptionKey()
 	require.NoError(t, err)
 
 	bobBoxer := NewKeyBoxer(bobKey, aliceSigningKey, aliceEncryptionKey)
@@ -125,7 +124,7 @@ func TestBoxTpmSigning(t *testing.T) { //nolint:paralleltest
 		t.Run("", func(t *testing.T) {
 			responseTo := ulid.New()
 
-			signed, err := aliceSigner.Sign(responseTo, tt.in)
+			signed, err := aliceTpmSigner.Sign(responseTo, tt.in)
 			require.NoError(t, err)
 
 			for _, tf := range testFuncs { //nolint:paralleltest
@@ -374,26 +373,29 @@ func TestNilNoPanic(t *testing.T) {
 
 			_, err = tt.boxer.DecodeRaw(nil)
 			require.Error(t, err)
-
 		})
 	}
-
 }
 
 func testTpmEncoder(t *testing.T) *tpmEncoder {
 	tpmEncoder := &tpmEncoder{}
+	tpm, err := tpmEncoder.openTpm()
 
-	// use simulator during CI, run against real TPM otherwise
-	if os.Getenv("CI") == "true" {
-		simulatedTpm, err := simulator.Get()
-		require.NoError(t, err)
-
-		t.Cleanup(func() {
-			CheckedClose(t, simulatedTpm)
-		})
-
-		tpmEncoder.externalTpm = simulatedTpm
+	if err != nil {
+		tpm.Close()
+		// we have a working tpm, use it for testing
+		return tpmEncoder
 	}
+
+	// no working tpm, use simulator
+	simulatedTpm, err := simulator.Get()
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		CheckedClose(t, simulatedTpm)
+	})
+
+	tpmEncoder.externalTpm = simulatedTpm
 
 	return tpmEncoder
 }
