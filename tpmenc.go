@@ -29,6 +29,10 @@ func encryptionKey(tpm io.ReadWriteCloser) (tpmutil.Handle, crypto.PublicKey, er
 	})
 }
 
+// Decrypt decrypts the provided input with a generated key.
+// The keys are derived deterministically from the TPM built-in and protected seed.
+// This means the keys will always be the same as long as the TPM is not reset.
+// Use PublicEncryptionKey() to get the public key
 func (t *tpmEncoder) Decrypt(input []byte) ([]byte, error) {
 	tpm, err := t.openTpm()
 	if err != nil {
@@ -45,6 +49,9 @@ func (t *tpmEncoder) Decrypt(input []byte) ([]byte, error) {
 	return tpm2.RSADecrypt(tpm, handle, "", input, &tpm2.AsymScheme{Alg: tpm2.AlgOAEP, Hash: tpm2.AlgSHA1}, "")
 }
 
+// PublicEncryptionKey returns the public key of the key used for signing.
+// The key is derived deterministically from the TPM built-in and protected seed.
+// This means the keys will always be the same as long as the TPM is not reset.
 func (t *tpmEncoder) PublicEncryptionKey() (*rsa.PublicKey, error) {
 	if t.publicEncryptionKey != nil {
 		return t.publicEncryptionKey, nil

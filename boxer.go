@@ -57,6 +57,7 @@ type encoder interface {
 	Decrypt([]byte) ([]byte, error)
 }
 
+// NewEncoderBoxer returns a boxerMaker that uses the provided encoder interface to perform signing and encryption operations
 func NewEncoderBoxer(encoder encoder, counterPartySigningKey *rsa.PublicKey, counterPartyEncryptionKey *rsa.PublicKey) boxMaker {
 	return boxMaker{
 		counterPartySigningKey:    counterPartySigningKey,
@@ -89,12 +90,14 @@ func (enc keyEncoder) Decrypt(input []byte) ([]byte, error) {
 	return RsaDecrypt(enc.key, input)
 }
 
+// NewKeyBoxer returns a boxerMaker that using the provided rsa private key to perform signing and encryption operations
 func NewKeyBoxer(key *rsa.PrivateKey, counterPartySigningKey *rsa.PublicKey, counterPartyEncryptionKey *rsa.PublicKey) boxMaker {
 	return NewEncoderBoxer(keyEncoder{
 		key: key,
 	}, counterPartySigningKey, counterPartyEncryptionKey)
 }
 
+// NewTpmBoxer returns a boxerMaker that attempts to use the built in tpm chip on the machine
 func NewTpmBoxer(counterPartySigningKey *rsa.PublicKey, counterPartyEncryptionKey *rsa.PublicKey) boxMaker {
 	return NewEncoderBoxer(&tpmEncoder{}, counterPartySigningKey, counterPartyEncryptionKey)
 }
