@@ -388,8 +388,8 @@ func testTpmEncoder(t *testing.T) *tpmEncoder {
 		return tpmEncoder
 	}
 
+	// no working tpm, use simulatoa
 	t.Log("no tpm found, using simulator")
-	// no working tpm, use simulator
 	simulatedTpm, err := simulator.Get()
 	require.NoError(t, err)
 
