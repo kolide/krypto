@@ -381,9 +381,9 @@ func testTpmEncoder(t *testing.T) *tpmEncoder {
 	tpmEncoder := &tpmEncoder{}
 	tpm, err := tpmEncoder.openTpm()
 
-	if err != nil {
+	// have a working tpm
+	if err == nil {
 		tpm.Close()
-		// we have a working tpm, use it for testing
 		return tpmEncoder
 	}
 
