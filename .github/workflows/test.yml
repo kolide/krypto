@@ -57,7 +57,7 @@ jobs:
       run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
       
     - name: Run golangci-lint
-      run: golangci-lint run --version --verbose --out-format=github-actions
+      run: golangci-lint run ./... --out-format=github-actions
       
     - name: Test
       # suppress cgo warnings (c is only used for the tpm simulator)
