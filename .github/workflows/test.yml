@@ -10,11 +10,12 @@ on:
 jobs:
   ruby:
     name: Ruby ${{ matrix.ruby }}
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         ruby:
           - '3.1.2'
+        os: [ubuntu-latest, windows-latest]
+    runs-on: matrix.os
 
     steps:
     - uses: actions/checkout@v3
@@ -27,9 +28,11 @@ jobs:
 
     - name: Lint
       run: bundle exec rake standard
+      shell: bash
 
     - name: Test
       run: bundle exec rake test
+      shell: bash
 
   go:
     name: ${{ matrix.os }} Go ${{ matrix.go }}
@@ -37,7 +40,6 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         go:
-          - '1.18'
           - '1.19'
     runs-on: ${{ matrix.os }}
 
@@ -61,44 +63,39 @@ jobs:
     - name: Test
       # suppress cgo warnings (c is only used for the tpm simulator)
       run: CGO_CFLAGS='-w' go test $(go list ./... | grep -v cross_language_tests) -race
-      shell: bash
-      if: ${{ runner.os != 'Windows' && matrix.go != '1.18' }}
-
-    - name: Test Windows Go 1.18 Without Race Detection
-      # suppress cgo warnings (c is only used for the tpm simulator)
-      # go race detection runs out of memory in Go 1.18 on Windows with error:
-      # ==6568==ERROR: ThreadSanitizer failed to allocate 0x0000012f1000 (19861504) bytes at 0x200dcb58cc000 (error code: 87)
-      run: CGO_CFLAGS='-w' go test $(go list ./... | grep -v cross_language_tests)
-      shell: bash
-      if: ${{ runner.os == 'Windows' && matrix.go == '1.18' }}
-      
+      shell: bash      
 
   cross:
     name: Cross -- Go ${{ matrix.go }} Ruby ${{ matrix.ruby }}
-    runs-on: ubuntu-latest
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest]
         go:
-          - '1.18'
           - '1.19'
         ruby:
           - '3.1.2'
+    runs-on: ${{ matrix.os }}
+
     steps:
     - uses: actions/checkout@v3
+
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
         go-version: ${{ matrix.go }}
         cache: true
+
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: true
+
     - name: Cross Language Tests
       # ruby bundler leaves a `vendor` director here, which confuses go mod, so we need to explicitly disable it.
       run:
         bundle exec go test ./cross_language_tests/... -mod=mod
+      shell: bash
 
   mergeable:
     runs-on: ubuntu-latest
