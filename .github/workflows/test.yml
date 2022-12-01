@@ -50,18 +50,13 @@ jobs:
         go-version: ${{ matrix.go }}
         cache: true
 
-    - name: Lint
-      uses: golangci/golangci-lint-action@v3
-      # skipping on windows because I can't figure out how to get past this error:
-      # level=error msg="Running error: 1 error occurred:\n\t* can't run linter goanalysis_metalinter: 
-      # buildir: failed to load package internal: could not load export data: 
-      # no export data for \"github.com/google/go-tpm-tools/simulator/internal\"\n\n"
-      if: runner.os != 'Windows'
-
     - name: Install openssl windows
       run: choco install openssl
       # this dependency is required to run tpm simulator on windows
       if: runner.os == 'Windows'
+
+    - name: Lint
+      uses: golangci/golangci-lint-action@v3
 
     - name: Test
       # suppress cgo warnings (c is only used for the tpm simulator)
