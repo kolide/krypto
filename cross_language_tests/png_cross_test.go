@@ -63,7 +63,7 @@ func TestPngRuby(t *testing.T) {
 
 					resultFile := path.Join(dir, ulid.New()+".dat")
 
-					cmd := exec.CommandContext(ctx, pngRB, routine, pngfile, resultFile)
+					cmd := exec.CommandContext(ctx, "ruby", pngRB, routine, pngfile, resultFile)
 					out, err := cmd.CombinedOutput()
 					require.NoError(t, err, string(out))
 

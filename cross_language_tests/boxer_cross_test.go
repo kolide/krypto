@@ -97,7 +97,7 @@ func TestBoxerRuby(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
 
-				cmd := exec.CommandContext(ctx, boxerRB, "encode", rubyInFile, rubyOutFile)
+				cmd := exec.CommandContext(ctx, "ruby", boxerRB, "encode", rubyInFile, rubyOutFile)
 
 				out, err := cmd.CombinedOutput()
 				require.NoError(t, err, string(out))
@@ -201,7 +201,7 @@ func TestBoxerRuby(t *testing.T) {
 					defer cancel()
 
 					//#nosec G204 -- No taint on hardcoded input
-					cmd := exec.CommandContext(ctx, boxerRB, tt.cmd, testfile, rubyout)
+					cmd := exec.CommandContext(ctx, "ruby", boxerRB, tt.cmd, testfile, rubyout)
 					out, err := cmd.CombinedOutput()
 
 					//
@@ -248,7 +248,7 @@ func TestBoxerRuby(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
 
-				cmd := exec.CommandContext(ctx, boxerRB, "sign", rubyInFile, rubyOutFile)
+				cmd := exec.CommandContext(ctx, "ruby", boxerRB, "sign", rubyInFile, rubyOutFile)
 
 				out, err := cmd.CombinedOutput()
 				require.NoError(t, err, string(out))
