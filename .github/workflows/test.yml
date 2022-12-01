@@ -56,9 +56,8 @@ jobs:
       # level=error msg="Running error: 1 error occurred:\n\t* can't run linter goanalysis_metalinter: 
       # buildir: failed to load package internal: could not load export data: 
       # no export data for \"github.com/google/go-tpm-tools/simulator/internal\"\n\n"
-      if: runner.os == 'Windows
+      if: runner.os != 'Windows'
 
-      
     - name: Test
       # suppress cgo warnings (c is only used for the tpm simulator)
       run: CGO_CFLAGS='-w' go test $(go list ./... | grep -v cross_language_tests) -race
