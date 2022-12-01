@@ -61,6 +61,7 @@ jobs:
     - name: Test
       # suppress cgo warnings (c is only used for the tpm simulator)
       run: CGO_CFLAGS='-w' go test $(go list ./... | grep -v cross_language_tests) -race
+      shell: bash
 
   cross:
     name: Cross -- Go ${{ matrix.go }} Ruby ${{ matrix.ruby }}
