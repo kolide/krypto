@@ -50,7 +50,7 @@ jobs:
         go-version: ${{ matrix.go }}
         cache: true
 
-    - name: Install openssl windows
+    - name: Install OpenSSL Windows
       run: choco install openssl
       # this dependency is required to run tpm simulator on windows
       if: runner.os == 'Windows'
@@ -62,6 +62,16 @@ jobs:
       # suppress cgo warnings (c is only used for the tpm simulator)
       run: CGO_CFLAGS='-w' go test $(go list ./... | grep -v cross_language_tests) -race
       shell: bash
+      if: runner.os != 'Windows' && ${{ matrix.go }} != '1.18'
+
+    - name: Test Windows Go 1.18 Without Race Detection
+      # suppress cgo warnings (c is only used for the tpm simulator)
+      # go race detection runs out of memory in Go 1.18 on Windows with error:
+      # ==6568==ERROR: ThreadSanitizer failed to allocate 0x0000012f1000 (19861504) bytes at 0x200dcb58cc000 (error code: 87)
+      run: CGO_CFLAGS='-w' go test $(go list ./... | grep -v cross_language_tests)
+      shell: bash
+      if: runner.os == 'Windows' && ${{ matrix.go }} == '1.18'
+      
 
   cross:
     name: Cross -- Go ${{ matrix.go }} Ruby ${{ matrix.ruby }}
