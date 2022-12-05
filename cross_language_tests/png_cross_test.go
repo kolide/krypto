@@ -5,7 +5,7 @@ import (
 	"context"
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -44,7 +44,7 @@ func TestPngRuby(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			t.Parallel()
 
-			pngfile := path.Join(dir, ulid.New()+".png")
+			pngfile := filepath.Join(dir, ulid.New()+".png")
 
 			t.Run("setup", func(t *testing.T) {
 				var pngBuf bytes.Buffer
@@ -61,7 +61,7 @@ func TestPngRuby(t *testing.T) {
 					ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 					defer cancel()
 
-					resultFile := path.Join(dir, ulid.New()+".dat")
+					resultFile := filepath.Join(dir, ulid.New()+".dat")
 
 					cmd := exec.CommandContext(ctx, "ruby", pngRB, routine, pngfile, resultFile)
 					out, err := cmd.CombinedOutput()

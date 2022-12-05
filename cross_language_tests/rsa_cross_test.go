@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -64,7 +64,7 @@ func TestRsaRuby(t *testing.T) {
 				defer cancel()
 
 				dir := t.TempDir()
-				testfile := path.Join(dir, "testcase.msgpack")
+				testfile := filepath.Join(dir, "testcase.msgpack")
 
 				ciphertext, err := krypto.RsaEncrypt(&key.PublicKey, tt.Plaintext)
 				require.NoError(t, err)
@@ -74,11 +74,11 @@ func TestRsaRuby(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
-				cmd := exec.CommandContext(ctx, "ruby", rsaRB, "decrypt", testfile, path.Join(dir, "ruby-decrypt"))
+				cmd := exec.CommandContext(ctx, "ruby", rsaRB, "decrypt", testfile, filepath.Join(dir, "ruby-decrypt"))
 				out, err := cmd.CombinedOutput()
 				require.NoError(t, err, string(out))
 
-				res, err := os.ReadFile(path.Join(dir, "ruby-decrypt"))
+				res, err := os.ReadFile(filepath.Join(dir, "ruby-decrypt"))
 				require.NoError(t, err)
 
 				var actual rsaCrossTestCase
@@ -94,17 +94,17 @@ func TestRsaRuby(t *testing.T) {
 				defer cancel()
 
 				dir := t.TempDir()
-				testfile := path.Join(dir, "testcase.msgpack")
+				testfile := filepath.Join(dir, "testcase.msgpack")
 
 				b, err := msgpack.Marshal(tt)
 				require.NoError(t, err)
 				require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
-				cmd := exec.CommandContext(ctx, "ruby", rsaRB, "encrypt", testfile, path.Join(dir, "ruby-encrypt"))
+				cmd := exec.CommandContext(ctx, "ruby", rsaRB, "encrypt", testfile, filepath.Join(dir, "ruby-encrypt"))
 				out, err := cmd.CombinedOutput()
 				require.NoError(t, err, string(out))
 
-				res, err := os.ReadFile(path.Join(dir, "ruby-encrypt"))
+				res, err := os.ReadFile(filepath.Join(dir, "ruby-encrypt"))
 				require.NoError(t, err)
 				var actual rsaCrossTestCase
 				require.NoError(t, msgpack.Unmarshal(base64Decode(t, string(res)), &actual))
@@ -122,7 +122,7 @@ func TestRsaRuby(t *testing.T) {
 				defer cancel()
 
 				dir := t.TempDir()
-				testfile := path.Join(dir, "testcase.msgpack")
+				testfile := filepath.Join(dir, "testcase.msgpack")
 
 				sig, err := krypto.RsaSign(key, tt.Plaintext)
 				require.NoError(t, err)
@@ -132,11 +132,11 @@ func TestRsaRuby(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
-				cmd := exec.CommandContext(ctx, "ruby", rsaRB, "verify", testfile, path.Join(dir, "ruby-verify"))
+				cmd := exec.CommandContext(ctx, "ruby", rsaRB, "verify", testfile, filepath.Join(dir, "ruby-verify"))
 				out, err := cmd.CombinedOutput()
 				require.NoError(t, err, string(out))
 
-				res, err := os.ReadFile(path.Join(dir, "ruby-verify"))
+				res, err := os.ReadFile(filepath.Join(dir, "ruby-verify"))
 				require.NoError(t, err)
 
 				var actual rsaCrossTestCase
@@ -153,17 +153,17 @@ func TestRsaRuby(t *testing.T) {
 				defer cancel()
 
 				dir := t.TempDir()
-				testfile := path.Join(dir, "testcase.msgpack")
+				testfile := filepath.Join(dir, "testcase.msgpack")
 
 				b, err := msgpack.Marshal(tt)
 				require.NoError(t, err)
 				require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
-				cmd := exec.CommandContext(ctx, "ruby", rsaRB, "sign", testfile, path.Join(dir, "ruby-signed"))
+				cmd := exec.CommandContext(ctx, "ruby", rsaRB, "sign", testfile, filepath.Join(dir, "ruby-signed"))
 				out, err := cmd.CombinedOutput()
 				require.NoError(t, err, string(out))
 
-				res, err := os.ReadFile(path.Join(dir, "ruby-signed"))
+				res, err := os.ReadFile(filepath.Join(dir, "ruby-signed"))
 				require.NoError(t, err)
 				var actual rsaCrossTestCase
 				require.NoError(t, msgpack.Unmarshal(base64Decode(t, string(res)), &actual))

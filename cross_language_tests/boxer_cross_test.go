@@ -7,7 +7,7 @@ import (
 	"encoding/base64"
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -29,7 +29,8 @@ type boxerCrossTestCase struct {
 }
 
 var (
-	boxerRB = "./boxer.rb"
+	boxerRB    = "./boxer.rb"
+	ctxTimeout = 10 * time.Second
 )
 
 func TestBoxerRuby(t *testing.T) {
@@ -80,8 +81,8 @@ func TestBoxerRuby(t *testing.T) {
 
 			t.Run("ruby encrypt", func(t *testing.T) {
 				dir := t.TempDir()
-				rubyInFile := path.Join(dir, "testcase.msgpack")
-				rubyOutFile := path.Join(dir, "ruby-out")
+				rubyInFile := filepath.Join(dir, "testcase.msgpack")
+				rubyOutFile := filepath.Join(dir, "ruby-out")
 
 				rubyCommand := boxerCrossTestCase{
 					Key:          bobPem.Bytes(),
@@ -94,12 +95,13 @@ func TestBoxerRuby(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, os.WriteFile(rubyInFile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
-				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+				ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 				defer cancel()
 
 				cmd := exec.CommandContext(ctx, "ruby", boxerRB, "encode", rubyInFile, rubyOutFile)
 
 				out, err := cmd.CombinedOutput()
+				require.NoError(t, ctx.Err())
 				require.NoError(t, err, string(out))
 
 				rubyResult, err := os.ReadFile(rubyOutFile)
@@ -145,7 +147,6 @@ func TestBoxerRuby(t *testing.T) {
 					}
 				})
 			}
-
 		})
 
 		t.Run("go encrypt ruby decrypt", func(t *testing.T) {
@@ -157,7 +158,7 @@ func TestBoxerRuby(t *testing.T) {
 			require.NoError(t, err)
 
 			var png bytes.Buffer
-			pngFile := path.Join(dir, ulid.New()+".png")
+			pngFile := filepath.Join(dir, ulid.New()+".png")
 			require.NoError(t, aliceBoxer.EncodePng(responseTo, message, &png))
 			require.NoError(t, os.WriteFile(pngFile, png.Bytes(), 0644))
 
@@ -187,8 +188,8 @@ func TestBoxerRuby(t *testing.T) {
 				t.Run("", func(t *testing.T) {
 					t.Parallel()
 
-					testfile := path.Join(dir, ulid.New()+".msgpack")
-					rubyout := path.Join(dir, ulid.New()+"ruby-out")
+					testfile := filepath.Join(dir, ulid.New()+".msgpack")
+					rubyout := filepath.Join(dir, ulid.New()+"ruby-out")
 
 					//
 					// Setup
@@ -197,12 +198,14 @@ func TestBoxerRuby(t *testing.T) {
 					require.NoError(t, err)
 					require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
-					ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+					ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 					defer cancel()
 
 					//#nosec G204 -- No taint on hardcoded input
 					cmd := exec.CommandContext(ctx, "ruby", boxerRB, tt.cmd, testfile, rubyout)
 					out, err := cmd.CombinedOutput()
+
+					require.NoError(t, ctx.Err())
 
 					//
 					// Check
@@ -232,8 +235,8 @@ func TestBoxerRuby(t *testing.T) {
 			var ciphertext string
 
 			t.Run("ruby sign", func(t *testing.T) {
-				rubyInFile := path.Join(dir, ulid.New()+".msgpack")
-				rubyOutFile := path.Join(dir, ulid.New()+"ruby-out")
+				rubyInFile := filepath.Join(dir, ulid.New()+".msgpack")
+				rubyOutFile := filepath.Join(dir, ulid.New()+"ruby-out")
 
 				rubyCommand := boxerCrossTestCase{
 					Key:        bobPem.Bytes(),
@@ -245,10 +248,12 @@ func TestBoxerRuby(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, os.WriteFile(rubyInFile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
-				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+				ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 				defer cancel()
 
 				cmd := exec.CommandContext(ctx, "ruby", boxerRB, "sign", rubyInFile, rubyOutFile)
+
+				require.NoError(t, ctx.Err())
 
 				out, err := cmd.CombinedOutput()
 				require.NoError(t, err, string(out))

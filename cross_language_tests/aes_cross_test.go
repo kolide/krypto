@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -47,7 +47,7 @@ func TestAesRuby(t *testing.T) {
 			t.Parallel()
 
 			dir := t.TempDir()
-			testfile := path.Join(dir, "testcase.msgpack")
+			testfile := filepath.Join(dir, "testcase.msgpack")
 
 			t.Run("setup", func(t *testing.T) {
 				if tt.Key == nil {
@@ -67,11 +67,11 @@ func TestAesRuby(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
 
-				cmd := exec.CommandContext(ctx, "ruby", aesRB, "decrypt", testfile, path.Join(dir, "ruby-decrypt-go"))
+				cmd := exec.CommandContext(ctx, "ruby", aesRB, "decrypt", testfile, filepath.Join(dir, "ruby-decrypt-go"))
 				out, err := cmd.CombinedOutput()
 				require.NoError(t, err, string(out))
 
-				res, err := os.ReadFile(path.Join(dir, "ruby-decrypt-go"))
+				res, err := os.ReadFile(filepath.Join(dir, "ruby-decrypt-go"))
 				require.NoError(t, err)
 
 				var actual aesCrossTestCase
@@ -83,11 +83,11 @@ func TestAesRuby(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
 
-				cmd := exec.CommandContext(ctx, "ruby", aesRB, "encrypt", testfile, path.Join(dir, "ruby-encrypted"))
+				cmd := exec.CommandContext(ctx, "ruby", aesRB, "encrypt", testfile, filepath.Join(dir, "ruby-encrypted"))
 				out, err := cmd.CombinedOutput()
 				require.NoError(t, err, string(out))
 
-				testcaseRaw, err := os.ReadFile(path.Join(dir, "ruby-encrypted"))
+				testcaseRaw, err := os.ReadFile(filepath.Join(dir, "ruby-encrypted"))
 				require.NoError(t, err)
 
 				var testcase aesCrossTestCase
