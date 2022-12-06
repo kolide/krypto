@@ -8,6 +8,6 @@ import (
 	"io"
 )
 
-func (t *tpmEncoder) OpenTpm() (io.ReadWriteCloser, error) {
+func (t *TpmEncoder) OpenTpm() (io.ReadWriteCloser, error) {
 	return nil, errors.New("not implemented")
 }
