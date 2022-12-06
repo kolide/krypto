@@ -45,4 +45,4 @@ blog posts, and stackoverflow posts.
   - https://stackoverflow.com/questions/68040875/
   - https://stackoverflow.com/questions/68350301
   - https://crypto.stackexchange.com/questions/25249
-
+* https://github.com/google/go-tpm-tools would have have been able to figure out tpm with out this

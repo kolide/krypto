@@ -616,6 +616,10 @@ func testTpmEncoder(t *testing.T) *krypto.TpmEncoder {
 
 // CheckedClose closes the simulator and asserts that there were no leaked handles.
 func CheckedClose(t *testing.T, rwc io.ReadWriteCloser) {
+	// modifed version of:
+	// https://github.com/google/go-tpm-tools/blob/d27e86e31f40ddd8720bfbebc20cb2ceae30fddb/client/close.go#L11
+	// thank you!
+
 	for _, handle := range []tpm2.HandleType{
 		tpm2.HandleTypeLoadedSession,
 		tpm2.HandleTypeSavedSession,
