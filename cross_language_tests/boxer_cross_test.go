@@ -19,14 +19,15 @@ import (
 )
 
 type boxerCrossTestCase struct {
-	Key          []byte
-	Counterparty []byte
-	Plaintext    []byte
-	Ciphertext   string
-	PngFile      string
-	ResponseTo   string
-	expectErr    bool
-	cmd          string
+	Key                       []byte
+	CounterpartySigningKey    []byte
+	CounterpartyEncryptionKey []byte
+	Plaintext                 []byte
+	Ciphertext                string
+	PngFile                   string
+	ResponseTo                string
+	expectErr                 bool
+	cmd                       string
 }
 
 var (
@@ -42,8 +43,12 @@ func TestBoxerRuby(t *testing.T) {
 	//
 	aliceKey, err := krypto.RsaRandomKey()
 	require.NoError(t, err)
-	var alicePubPem bytes.Buffer
-	require.NoError(t, krypto.RsaPublicKeyToPem(aliceKey, &alicePubPem))
+
+	var alicePubSigningKey bytes.Buffer
+	require.NoError(t, krypto.RsaPublicKeyToPem(aliceKey, &alicePubSigningKey))
+
+	var alicePubEncryptionKey bytes.Buffer
+	require.NoError(t, krypto.RsaPublicKeyToPem(aliceKey, &alicePubEncryptionKey))
 
 	bobKey, err := krypto.RsaRandomKey()
 	require.NoError(t, err)
@@ -86,10 +91,11 @@ func TestBoxerRuby(t *testing.T) {
 				rubyOutFile := filepath.Join(dir, "ruby-out")
 
 				rubyCommand := boxerCrossTestCase{
-					Key:          bobPem.Bytes(),
-					Counterparty: alicePubPem.Bytes(),
-					Plaintext:    message,
-					ResponseTo:   ulid.New(),
+					Key:                       bobPem.Bytes(),
+					CounterpartySigningKey:    alicePubSigningKey.Bytes(),
+					CounterpartyEncryptionKey: alicePubEncryptionKey.Bytes(),
+					Plaintext:                 message,
+					ResponseTo:                ulid.New(),
 				}
 
 				b, err := msgpack.Marshal(rubyCommand)
@@ -165,10 +171,10 @@ func TestBoxerRuby(t *testing.T) {
 
 			tests := []boxerCrossTestCase{
 				// Go encoded, ruby successfully decode
-				{Key: bobPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: ciphertext, cmd: "decode"},
-				{Key: bobPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: ciphertext, cmd: "decodeunverified"},
+				{Key: bobPem.Bytes(), CounterpartySigningKey: alicePubSigningKey.Bytes(), CounterpartyEncryptionKey: alicePubEncryptionKey.Bytes(), Ciphertext: ciphertext, cmd: "decode"},
+				{Key: bobPem.Bytes(), CounterpartySigningKey: alicePubSigningKey.Bytes(), CounterpartyEncryptionKey: alicePubEncryptionKey.Bytes(), Ciphertext: ciphertext, cmd: "decodeunverified"},
 				{Key: bobPem.Bytes(), Ciphertext: ciphertext, cmd: "decodeunverified"},
-				{Key: bobPem.Bytes(), Counterparty: alicePubPem.Bytes(), PngFile: pngFile, cmd: "decodepng"},
+				{Key: bobPem.Bytes(), CounterpartySigningKey: alicePubSigningKey.Bytes(), CounterpartyEncryptionKey: alicePubEncryptionKey.Bytes(), PngFile: pngFile, cmd: "decodepng"},
 
 				// Cannot use decode method on png
 				{Key: bobPem.Bytes(), PngFile: pngFile, cmd: "decode", expectErr: true},
@@ -177,8 +183,8 @@ func TestBoxerRuby(t *testing.T) {
 				{Key: bobPem.Bytes(), cmd: "decode", expectErr: true},
 
 				// Go encoded, ruby cannot decode with wrong keys
-				{Key: malloryPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: ciphertext, cmd: "decode", expectErr: true},
-				{Key: malloryPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: ciphertext, cmd: "decodeunverified", expectErr: true},
+				{Key: malloryPem.Bytes(), CounterpartySigningKey: alicePubSigningKey.Bytes(), CounterpartyEncryptionKey: alicePubEncryptionKey.Bytes(), Ciphertext: ciphertext, cmd: "decode", expectErr: true},
+				{Key: malloryPem.Bytes(), CounterpartySigningKey: alicePubSigningKey.Bytes(), CounterpartyEncryptionKey: alicePubEncryptionKey.Bytes(), Ciphertext: ciphertext, cmd: "decodeunverified", expectErr: true},
 				{Key: malloryPem.Bytes(), Ciphertext: ciphertext, cmd: "decode", expectErr: true},
 				{Key: malloryPem.Bytes(), Ciphertext: ciphertext, cmd: "decodeunverified", expectErr: true},
 			}

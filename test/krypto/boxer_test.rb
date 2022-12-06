@@ -7,10 +7,10 @@ class TestKryptoBoxer < Minitest::Test
   BOBKEY = Krypto::Rsa.random_key.freeze
   MALLORYKEY = Krypto::Rsa.random_key.freeze
 
-  ALICEBOX = Krypto::Boxer.new(ALICEKEY, BOBKEY).freeze
-  BOBBOX = Krypto::Boxer.new(BOBKEY, ALICEKEY).freeze
+  ALICEBOX = Krypto::Boxer.new(ALICEKEY, BOBKEY, BOBKEY).freeze
+  BOBBOX = Krypto::Boxer.new(BOBKEY, ALICEKEY, ALICEKEY).freeze
   BARE_BOBBOX = Krypto::Boxer.new(BOBKEY).freeze
-  MALLORYBOX = Krypto::Boxer.new(MALLORYKEY, ALICEKEY).freeze
+  MALLORYBOX = Krypto::Boxer.new(MALLORYKEY, ALICEKEY, ALICEKEY).freeze
   BARE_MALLORYBOX = Krypto::Boxer.new(MALLORYKEY).freeze
 
   MESSAGES = {

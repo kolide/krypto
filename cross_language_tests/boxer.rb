@@ -12,10 +12,16 @@ testcase = MessagePack.unpack(Base64.strict_decode64(File.read(args.shift)))
 outfile = args.shift
 
 key = OpenSSL::PKey::RSA.new(testcase["Key"])
-counterparty = if testcase["Counterparty"]
-  OpenSSL::PKey::RSA.new(testcase["Counterparty"])
+
+counterparty_signingkey = if testcase["CounterpartySigningKey"]
+  OpenSSL::PKey::RSA.new(testcase["CounterpartySigningKey"])
 end
-boxer = Krypto::Boxer.new(key, counterparty)
+
+counterparty_encryptionkey = if testcase["CounterpartyEncryptionKey"]
+  OpenSSL::PKey::RSA.new(testcase["CounterpartyEncryptionKey"])
+end
+
+boxer = Krypto::Boxer.new(key, counterparty_signingkey, counterparty_encryptionkey)
 
 case cmd
 when "encode"

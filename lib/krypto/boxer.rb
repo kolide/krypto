@@ -14,16 +14,17 @@ module Krypto
     OUTER_FIELDS = %i[inner signature sender].freeze
     INNER_FIELDS = %i[version timestamp key ciphertext signedtext requestid responseto sender data].freeze
 
-    def initialize(key, counterparty = nil)
+    def initialize(key, counterparty_signingkey = nil, counterparty_encryptionkey = nil)
       raise "Missing key" unless key
       @key = key
       @fingerprint = ::Krypto::Rsa.fingerprint(key)
-      @counterparty = counterparty
+      @counterparty_signingkey = counterparty_signingkey
+      @counterparty_encryptionkey = counterparty_encryptionkey
     end
 
     def encode(in_response_to, data)
       aeskey = ::Krypto::Aes.random_key
-      aeskey_enc = ::Krypto::Rsa.encrypt(@counterparty, aeskey)
+      aeskey_enc = ::Krypto::Rsa.encrypt(@counterparty_encryptionkey, aeskey)
       ciphertext = ::Krypto::Aes.encrypt(aeskey, nil, data)
 
       inner = MessagePack.pack(
@@ -86,7 +87,7 @@ module Krypto
       data = Base64.strict_decode64(data) unless raw || png
       outer = Outer.new(MessagePack.unpack(data))
 
-      raise "Bag Signature" if verify && !::Krypto::Rsa.verify(@counterparty, outer.signature, outer.inner)
+      raise "Bag Signature" if verify && !::Krypto::Rsa.verify(@counterparty_signingkey, outer.signature, outer.inner)
 
       decode_inner(outer)
     end
