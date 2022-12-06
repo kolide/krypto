@@ -52,7 +52,7 @@ func TestRsaRuby(t *testing.T) {
 				tt.Private = privatePem.Bytes()
 
 				var publicPem bytes.Buffer
-				require.NoError(t, krypto.RsaPublicKeyToPem(key, &publicPem))
+				require.NoError(t, krypto.RsaPrivateToPubicPem(key, &publicPem))
 				tt.Public = publicPem.Bytes()
 			})
 

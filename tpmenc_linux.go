@@ -9,7 +9,7 @@ import (
 	"github.com/google/go-tpm/tpm2"
 )
 
-func (t *tpmEncoder) openTpm() (io.ReadWriteCloser, error) {
+func (t *tpmEncoder) OpenTpm() (io.ReadWriteCloser, error) {
 	if t.externalTpm != nil {
 		return t.externalTpm, nil
 	}

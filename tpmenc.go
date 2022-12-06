@@ -12,10 +12,10 @@ import (
 	"github.com/google/go-tpm/tpmutil"
 )
 
-type tpmEncoder struct {
+type TpmEncoder struct {
 	publicSigningKey    *rsa.PublicKey
 	publicEncryptionKey *rsa.PublicKey
-	externalTpm         io.ReadWriteCloser
+	ExternalTpm         io.ReadWriteCloser
 }
 
 func encryptionKey(tpm io.ReadWriteCloser) (tpmutil.Handle, crypto.PublicKey, error) {
@@ -33,8 +33,8 @@ func encryptionKey(tpm io.ReadWriteCloser) (tpmutil.Handle, crypto.PublicKey, er
 // The keys are derived deterministically from the TPM built-in and protected seed.
 // This means the keys will always be the same as long as the TPM is not reset.
 // Use PublicEncryptionKey() to get the public key
-func (t *tpmEncoder) Decrypt(input []byte) ([]byte, error) {
-	tpm, err := t.openTpm()
+func (t *TpmEncoder) Decrypt(input []byte) ([]byte, error) {
+	tpm, err := t.OpenTpm()
 	if err != nil {
 		return nil, fmt.Errorf("opening TPM: %w", err)
 	}
@@ -52,12 +52,12 @@ func (t *tpmEncoder) Decrypt(input []byte) ([]byte, error) {
 // PublicEncryptionKey returns the public key of the key used for signing.
 // The key is derived deterministically from the TPM built-in and protected seed.
 // This means the keys will always be the same as long as the TPM is not reset.
-func (t *tpmEncoder) PublicEncryptionKey() (*rsa.PublicKey, error) {
+func (t *TpmEncoder) PublicEncryptionKey() (*rsa.PublicKey, error) {
 	if t.publicEncryptionKey != nil {
 		return t.publicEncryptionKey, nil
 	}
 
-	tpm, err := t.openTpm()
+	tpm, err := t.OpenTpm()
 	if err != nil {
 		return nil, fmt.Errorf("opening tpm: %w", err)
 	}
@@ -73,7 +73,7 @@ func (t *tpmEncoder) PublicEncryptionKey() (*rsa.PublicKey, error) {
 	return t.publicEncryptionKey, nil
 }
 
-func (t *tpmEncoder) signingKeyTemplate() tpm2.Public {
+func (t *TpmEncoder) signingKeyTemplate() tpm2.Public {
 	return tpm2.Public{
 		Type:    tpm2.AlgRSA,
 		NameAlg: tpm2.AlgSHA256,
@@ -94,8 +94,8 @@ func (t *tpmEncoder) signingKeyTemplate() tpm2.Public {
 // The keys are derived deterministically from the TPM built-in and protected seed.
 // This means the keys will always be the same as long as the TPM is not reset.
 // Use PublicSigningKey() to get the public key
-func (t *tpmEncoder) Sign(input []byte) ([]byte, error) {
-	tpm, err := t.openTpm()
+func (t *TpmEncoder) Sign(input []byte) ([]byte, error) {
+	tpm, err := t.OpenTpm()
 	if err != nil {
 		return nil, fmt.Errorf("opening TPM: %w", err)
 	}
@@ -118,12 +118,12 @@ func (t *tpmEncoder) Sign(input []byte) ([]byte, error) {
 // PublicSigningKey returns the public key of the key used for signing.
 // The key is derived deterministically from the TPM built-in and protected seed.
 // This means the keys will always be the same as long as the TPM is not reset.
-func (t *tpmEncoder) PublicSigningKey() (*rsa.PublicKey, error) {
+func (t *TpmEncoder) PublicSigningKey() (*rsa.PublicKey, error) {
 	if t.publicSigningKey != nil {
 		return t.publicSigningKey, nil
 	}
 
-	tpm, err := t.openTpm()
+	tpm, err := t.OpenTpm()
 	if err != nil {
 		return nil, fmt.Errorf("opening tpm: %w", err)
 	}
@@ -139,8 +139,8 @@ func (t *tpmEncoder) PublicSigningKey() (*rsa.PublicKey, error) {
 	return t.publicSigningKey, nil
 }
 
-func (t *tpmEncoder) closeTpm(tpm io.ReadWriteCloser) {
-	if t.externalTpm != nil {
+func (t *TpmEncoder) closeTpm(tpm io.ReadWriteCloser) {
+	if t.ExternalTpm != nil {
 		return
 	}
 

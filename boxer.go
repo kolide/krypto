@@ -43,7 +43,7 @@ func (inner Box) Data() []byte { return inner.data }
 func (inner Box) Sender() string { return inner.sender }
 
 type boxMaker struct {
-	encoder                   encoder
+	Encoder                   encoder
 	counterPartySigningKey    *rsa.PublicKey
 	counterPartyEncryptionKey *rsa.PublicKey
 }
@@ -62,7 +62,7 @@ func NewEncoderBoxer(encoder encoder, counterPartySigningKey *rsa.PublicKey, cou
 	return boxMaker{
 		counterPartySigningKey:    counterPartySigningKey,
 		counterPartyEncryptionKey: counterPartyEncryptionKey,
-		encoder:                   encoder,
+		Encoder:                   encoder,
 	}
 }
 
@@ -99,7 +99,7 @@ func NewKeyBoxer(key *rsa.PrivateKey, counterPartySigningKey *rsa.PublicKey, cou
 
 // NewTpmBoxer returns a boxerMaker that attempts to use the built in tpm chip on the machine
 func NewTpmBoxer(counterPartySigningKey *rsa.PublicKey, counterPartyEncryptionKey *rsa.PublicKey) boxMaker {
-	return NewEncoderBoxer(&tpmEncoder{}, counterPartySigningKey, counterPartyEncryptionKey)
+	return NewEncoderBoxer(&TpmEncoder{}, counterPartySigningKey, counterPartyEncryptionKey)
 }
 
 func (boxer boxMaker) Encode(inResponseTo string, data []byte) (string, error) {
@@ -136,7 +136,7 @@ func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error
 		return nil, fmt.Errorf("encrypting data: %w", err)
 	}
 
-	pubSigningKey, err := boxer.encoder.PublicSigningKey()
+	pubSigningKey, err := boxer.Encoder.PublicSigningKey()
 	if err != nil {
 		return nil, fmt.Errorf("generating public signing key: %w", err)
 	}
@@ -160,7 +160,7 @@ func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error
 		return nil, fmt.Errorf("packing inner: %w", err)
 	}
 
-	innerSig, err := boxer.encoder.Sign(innerPacked)
+	innerSig, err := boxer.Encoder.Sign(innerPacked)
 	if err != nil {
 		return nil, fmt.Errorf("signing inner: %w", err)
 	}
@@ -180,7 +180,7 @@ func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error
 }
 
 func (boxer boxMaker) Sign(inResponseTo string, data []byte) ([]byte, error) {
-	pubSigningKey, err := boxer.encoder.PublicSigningKey()
+	pubSigningKey, err := boxer.Encoder.PublicSigningKey()
 	if err != nil {
 		return nil, fmt.Errorf("generating public signing key: %w", err)
 	}
@@ -203,7 +203,7 @@ func (boxer boxMaker) Sign(inResponseTo string, data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("packing inner: %w", err)
 	}
 
-	innerSig, err := boxer.encoder.Sign(innerPacked)
+	innerSig, err := boxer.Encoder.Sign(innerPacked)
 	if err != nil {
 		return nil, fmt.Errorf("signing inner: %w", err)
 	}
@@ -276,7 +276,7 @@ func (boxer boxMaker) DecodeRaw(data []byte) (*Box, error) {
 }
 
 func (boxer boxMaker) decodeInner(outer outerBox) (*Box, error) {
-	if boxer.encoder == nil {
+	if boxer.Encoder == nil {
 		return nil, errors.New("Can't decode without a key")
 	}
 
@@ -288,7 +288,7 @@ func (boxer boxMaker) decodeInner(outer outerBox) (*Box, error) {
 	// Only decode if the inner has ciphertext. It's acceptable to have no ciphertext,
 	// this is just a signature.
 	if inner.Ciphertext != nil {
-		aeskey, err := boxer.encoder.Decrypt(inner.Key)
+		aeskey, err := boxer.Encoder.Decrypt(inner.Key)
 		if err != nil {
 			return nil, fmt.Errorf("decrypting DEK: %w", err)
 		}

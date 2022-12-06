@@ -113,8 +113,12 @@ func RsaPrivateKeyToPem(key *rsa.PrivateKey, out io.Writer) error {
 	})
 }
 
-func RsaPublicKeyToPem(key *rsa.PrivateKey, out io.Writer) error {
-	pubASN1, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
+func RsaPrivateToPubicPem(key *rsa.PrivateKey, out io.Writer) error {
+	return RsaPublicToPublicPem(&key.PublicKey, out)
+}
+
+func RsaPublicToPublicPem(key *rsa.PublicKey, out io.Writer) error {
+	pubASN1, err := x509.MarshalPKIXPublicKey(key)
 	if err != nil {
 		return fmt.Errorf("pkix marshalling: %w", err)
 	}

@@ -99,10 +99,10 @@ func TestBoxTpmSigning(t *testing.T) { //nolint:paralleltest
 	bobKey, err := RsaRandomKey()
 	require.NoError(t, err)
 
-	aliceSigningKey, err := aliceTpmSigner.encoder.PublicSigningKey()
+	aliceSigningKey, err := aliceTpmSigner.Encoder.PublicSigningKey()
 	require.NoError(t, err)
 
-	aliceEncryptionKey, err := aliceTpmSigner.encoder.PublicEncryptionKey()
+	aliceEncryptionKey, err := aliceTpmSigner.Encoder.PublicEncryptionKey()
 	require.NoError(t, err)
 
 	bobBoxer := NewKeyBoxer(bobKey, aliceSigningKey, aliceEncryptionKey)
@@ -259,10 +259,10 @@ func TestBoxTpmRandomRoundTrips(t *testing.T) { //nolint:paralleltest
 
 	bobTpmBoxer := NewEncoderBoxer(tpmEncoder, aliceKey.Public().(*rsa.PublicKey), aliceKey.Public().(*rsa.PublicKey))
 
-	bobSigningKey, err := bobTpmBoxer.encoder.PublicSigningKey()
+	bobSigningKey, err := bobTpmBoxer.Encoder.PublicSigningKey()
 	require.NoError(t, err)
 
-	bobEncryptionKey, err := bobTpmBoxer.encoder.PublicEncryptionKey()
+	bobEncryptionKey, err := bobTpmBoxer.Encoder.PublicEncryptionKey()
 	require.NoError(t, err)
 
 	aliceKeyBoxer := NewKeyBoxer(aliceKey, bobSigningKey, bobEncryptionKey)
@@ -377,9 +377,9 @@ func TestNilNoPanic(t *testing.T) {
 	}
 }
 
-func testTpmEncoder(t *testing.T) *tpmEncoder {
-	tpmEncoder := &tpmEncoder{}
-	tpm, err := tpmEncoder.openTpm()
+func testTpmEncoder(t *testing.T) *TpmEncoder {
+	tpmEncoder := &TpmEncoder{}
+	tpm, err := tpmEncoder.OpenTpm()
 
 	// have a working tpm
 	if err == nil {
@@ -397,7 +397,7 @@ func testTpmEncoder(t *testing.T) *tpmEncoder {
 		CheckedClose(t, simulatedTpm)
 	})
 
-	tpmEncoder.externalTpm = simulatedTpm
+	tpmEncoder.ExternalTpm = simulatedTpm
 
 	return tpmEncoder
 }
