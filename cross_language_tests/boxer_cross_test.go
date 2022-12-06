@@ -342,7 +342,7 @@ func TestTpmBoxerRuby(t *testing.T) { //nolint:paralleltest
 	require.NoError(t, err)
 	require.NoError(t, krypto.RsaPublicToPublicPem(alicePubEncryptionKey, &alicePubEncryptionKeyPem))
 
-	bareAliceBoxer := krypto.NewTpmBoxer(nil, nil)
+	bareAliceBoxer := krypto.NewEncoderBoxer(tpmEncoder, nil, nil)
 	malloryBoxer := krypto.NewKeyBoxer(malloryKey, bobKey.Public().(*rsa.PublicKey), bobKey.Public().(*rsa.PublicKey))
 	bareMalloryBoxer := krypto.NewKeyBoxer(malloryKey, nil, nil)
 
