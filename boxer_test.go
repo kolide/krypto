@@ -127,7 +127,7 @@ func TestBoxTpmSigning(t *testing.T) { //nolint:paralleltest
 			signed, err := aliceTpmSigner.Sign(responseTo, tt.in)
 			require.NoError(t, err)
 
-			for _, tf := range testFuncs { //nolint:paralleltest
+			for _, tf := range testFuncs {
 				tf := tf
 				t.Run(tf.name, func(t *testing.T) {
 					if tf.expectErr {
@@ -287,11 +287,11 @@ func TestBoxTpmRandomRoundTrips(t *testing.T) { //nolint:paralleltest
 		{name: "bare bob cannot verify and decode", fn: bareBobTpmBoxer.Decode, expectErr: true},
 	}
 
-	for _, tt := range tests {
+	for _, tt := range tests { //nolint:paralleltest
 		tt := tt
-		t.Run(fmt.Sprintf("size %d", len(tt.in)), func(t *testing.T) { //nolint:paralleltest
+		t.Run(fmt.Sprintf("size %d", len(tt.in)), func(t *testing.T) {
 
-			t.Run("roundtrips", func(t *testing.T) { //nolint:paralleltest
+			t.Run("roundtrips", func(t *testing.T) {
 				responseTo := ulid.New()
 
 				ciphertext, err := aliceKeyBoxer.Encode(responseTo, tt.in)
@@ -300,7 +300,7 @@ func TestBoxTpmRandomRoundTrips(t *testing.T) { //nolint:paralleltest
 
 				for _, tf := range testFuncs {
 					tf := tf
-					t.Run(tf.name, func(t *testing.T) { //nolint:paralleltest
+					t.Run(tf.name, func(t *testing.T) {
 						if tf.expectErr {
 							box, err := tf.fn(ciphertext)
 							require.Error(t, err)
@@ -315,7 +315,7 @@ func TestBoxTpmRandomRoundTrips(t *testing.T) { //nolint:paralleltest
 
 			})
 
-			t.Run("png", func(t *testing.T) { //nolint:paralleltest
+			t.Run("png", func(t *testing.T) {
 				responseTo := ulid.New()
 
 				var buf bytes.Buffer

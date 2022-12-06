@@ -361,7 +361,7 @@ func TestTpmBoxerRuby(t *testing.T) { //nolint:paralleltest
 	for _, message := range testMessages {
 		message := message
 
-		t.Run("ruby encrypt go decrypt", func(t *testing.T) { //nolint:paralleltest
+		t.Run("ruby encrypt go decrypt", func(t *testing.T) {
 			var ciphertext string
 
 			t.Run("ruby encrypt", func(t *testing.T) {
@@ -420,7 +420,7 @@ func TestTpmBoxerRuby(t *testing.T) { //nolint:paralleltest
 			for _, tf := range testFuncs {
 				tf := tf
 
-				t.Run(tf.name, func(t *testing.T) { //nolint:paralleltest
+				t.Run(tf.name, func(t *testing.T) {
 					if tf.expectErr {
 						box, err := tf.fn(tf.ciphertext)
 						require.Error(t, err)
@@ -434,7 +434,7 @@ func TestTpmBoxerRuby(t *testing.T) { //nolint:paralleltest
 			}
 		})
 
-		t.Run("go encrypt ruby decrypt", func(t *testing.T) { //nolint:paralleltest
+		t.Run("go encrypt ruby decrypt", func(t *testing.T) {
 			dir := t.TempDir()
 
 			responseTo := ulid.New()
@@ -573,7 +573,7 @@ func TestTpmBoxerRuby(t *testing.T) { //nolint:paralleltest
 
 			for _, tf := range testFuncs {
 				tf := tf
-				t.Run(tf.name, func(t *testing.T) { //nolint:paralleltest
+				t.Run(tf.name, func(t *testing.T) {
 					if tf.expectErr {
 						box, err := tf.fn(tf.ciphertext)
 						require.Error(t, err)
