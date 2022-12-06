@@ -202,7 +202,7 @@ func TestKeyBoxerRuby(t *testing.T) {
 					t.Parallel()
 
 					if runtime.GOOS == "windows" && tt.cmd == "decodepng" {
-						t.Skip("skip png decode test on windows because ruby library chunky_png is looks for CRLF png signature")
+						t.Skip("skip png decode test on windows because ruby library chunky_png is looking for CRLF png signature")
 					}
 
 					testfile := filepath.Join(dir, ulid.New()+".msgpack")
@@ -473,7 +473,7 @@ func TestTpmBoxerRuby(t *testing.T) { //nolint:paralleltest
 					t.Parallel()
 
 					if runtime.GOOS == "windows" && tt.cmd == "decodepng" {
-						t.Skip("skip png decode test on windows because ruby library chunky_png is looks for CRLF png signature")
+						t.Skip("skip png decode test on windows because ruby library chunky_png is looking for CRLF png signature")
 					}
 
 					testfile := filepath.Join(dir, ulid.New()+".msgpack")
@@ -600,7 +600,7 @@ func testTpmEncoder(t *testing.T) *krypto.TpmEncoder {
 		return tpmEncoder
 	}
 
-	// no working tpm, use simulatoa
+	// no working tpm, use simulator
 	t.Log("no tpm found, using simulator")
 	simulatedTpm, err := simulator.Get()
 	require.NoError(t, err)

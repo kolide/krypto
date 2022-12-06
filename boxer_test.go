@@ -289,7 +289,7 @@ func TestBoxTpmRandomRoundTrips(t *testing.T) { //nolint:paralleltest
 
 	for _, tt := range tests {
 		tt := tt
-		t.Run(fmt.Sprintf("size %d", len(tt.in)), func(t *testing.T) {
+		t.Run(fmt.Sprintf("size %d", len(tt.in)), func(t *testing.T) { //nolint:paralleltest
 
 			t.Run("roundtrips", func(t *testing.T) { //nolint:paralleltest
 				responseTo := ulid.New()
@@ -315,8 +315,7 @@ func TestBoxTpmRandomRoundTrips(t *testing.T) { //nolint:paralleltest
 
 			})
 
-			t.Run("png", func(t *testing.T) {
-				t.Parallel()
+			t.Run("png", func(t *testing.T) { //nolint:paralleltest
 				responseTo := ulid.New()
 
 				var buf bytes.Buffer
@@ -388,7 +387,7 @@ func testTpmEncoder(t *testing.T) *TpmEncoder {
 		return tpmEncoder
 	}
 
-	// no working tpm, use simulatoa
+	// no working tpm, use simulator
 	t.Log("no tpm found, using simulator")
 	simulatedTpm, err := simulator.Get()
 	require.NoError(t, err)
