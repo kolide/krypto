@@ -9,5 +9,9 @@ import (
 )
 
 func (t *TpmEncoder) OpenTpm() (io.ReadWriteCloser, error) {
-	return nil, errors.New("not implemented")
+	if t.ExternalTpm != nil {
+		return t.ExternalTpm, nil
+	}
+
+	return nil, errors.New("external TPM required for darwin, but was nil")
 }
