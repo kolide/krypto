@@ -87,7 +87,7 @@ module Krypto
       data = Base64.strict_decode64(data) unless raw || png
       outer = Outer.new(MessagePack.unpack(data))
 
-      raise "Bag Signature" if verify && !::Krypto::Rsa.verify(@counterparty_signingkey, outer.signature, outer.inner)
+      raise "Bad Signature" if verify && !::Krypto::Rsa.verify(@counterparty_signingkey, outer.signature, outer.inner)
 
       decode_inner(outer)
     end
