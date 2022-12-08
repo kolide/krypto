@@ -1,1 +1,1 @@
-core.autocrlf=true
+*.go text eol=lf

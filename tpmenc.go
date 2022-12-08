@@ -12,6 +12,8 @@ import (
 	"github.com/google/go-tpm/tpmutil"
 )
 
+const tpmKeyBitCount = 2048
+
 type TpmEncoder struct {
 	publicSigningKey    *rsa.PublicKey
 	publicEncryptionKey *rsa.PublicKey
@@ -24,7 +26,7 @@ func encryptionKey(tpm io.ReadWriteCloser) (tpmutil.Handle, crypto.PublicKey, er
 		NameAlg:    tpm2.AlgSHA1,
 		Attributes: tpm2.FlagDecrypt | tpm2.FlagUserWithAuth | tpm2.FlagFixedParent | tpm2.FlagFixedTPM | tpm2.FlagSensitiveDataOrigin,
 		RSAParameters: &tpm2.RSAParams{
-			KeyBits: 2048,
+			KeyBits: tpmKeyBitCount,
 		},
 	})
 }
@@ -85,7 +87,7 @@ func (t *TpmEncoder) signingKeyTemplate() tpm2.Public {
 				Alg:  tpm2.AlgRSAPSS,
 				Hash: tpm2.AlgSHA256,
 			},
-			KeyBits: 2048,
+			KeyBits: tpmKeyBitCount,
 		},
 	}
 }
