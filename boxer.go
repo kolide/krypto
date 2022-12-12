@@ -277,7 +277,7 @@ func (boxer boxMaker) DecodeRaw(data []byte) (*Box, error) {
 
 func (boxer boxMaker) decodeInner(outer outerBox) (*Box, error) {
 	if boxer.Encoder == nil {
-		return nil, errors.New("Can't decode without a key")
+		return nil, errors.New("Can't decode without a decoder")
 	}
 
 	var inner Box
