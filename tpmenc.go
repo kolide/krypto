@@ -15,9 +15,10 @@ import (
 const tpmKeyBitCount = 2048
 
 type TpmEncoder struct {
-	publicSigningKey    *rsa.PublicKey
-	publicEncryptionKey *rsa.PublicKey
-	ExternalTpm         io.ReadWriteCloser
+	publicSigningKeyFingerprint string
+	publicSigningKey            *rsa.PublicKey
+	publicEncryptionKey         *rsa.PublicKey
+	ExternalTpm                 io.ReadWriteCloser
 }
 
 func encryptionKey(tpm io.ReadWriteCloser) (tpmutil.Handle, crypto.PublicKey, error) {
@@ -115,6 +116,29 @@ func (t *TpmEncoder) Sign(input []byte) ([]byte, error) {
 	}
 
 	return signingKey.SignData(input)
+}
+
+// PublicSigningKeyFingerprint returns the fingerprint of the public signing key.
+// The key is derived deterministically from the TPM built-in and protected seed.
+// This means the keys will always be the same as long as the TPM is not reset.
+func (t *TpmEncoder) PublicSigningKeyFingerprint() (string, error) {
+	if t.publicSigningKeyFingerprint != "" {
+		return t.publicSigningKeyFingerprint, nil
+	}
+
+	tpm, err := t.OpenTpm()
+	if err != nil {
+		return "", fmt.Errorf("opening tpm: %w", err)
+	}
+	defer t.closeTpm(tpm)
+
+	signingKey, err := client.NewKey(tpm, tpm2.HandleEndorsement, t.signingKeyTemplate())
+	if err != nil {
+		return "", fmt.Errorf("creating signing key: %w", err)
+	}
+	defer signingKey.Close()
+
+	return RsaFingerprint(signingKey.PublicKey())
 }
 
 // PublicSigningKey returns the public key of the key used for signing.

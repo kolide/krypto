@@ -99,10 +99,10 @@ func TestBoxTpmSigning(t *testing.T) { //nolint:paralleltest
 	bobKey, err := RsaRandomKey()
 	require.NoError(t, err)
 
-	aliceSigningKey, err := aliceTpmSigner.Encoder.PublicSigningKey()
+	aliceSigningKey, err := tpmEncoder.PublicSigningKey()
 	require.NoError(t, err)
 
-	aliceEncryptionKey, err := aliceTpmSigner.Encoder.PublicEncryptionKey()
+	aliceEncryptionKey, err := tpmEncoder.PublicEncryptionKey()
 	require.NoError(t, err)
 
 	bobBoxer := NewKeyBoxer(bobKey, aliceSigningKey, aliceEncryptionKey)
@@ -259,10 +259,10 @@ func TestBoxTpmRandomRoundTrips(t *testing.T) { //nolint:paralleltest
 
 	bobTpmBoxer := NewEncoderBoxer(tpmEncoder, aliceKey.Public().(*rsa.PublicKey), aliceKey.Public().(*rsa.PublicKey))
 
-	bobSigningKey, err := bobTpmBoxer.Encoder.PublicSigningKey()
+	bobSigningKey, err := tpmEncoder.PublicSigningKey()
 	require.NoError(t, err)
 
-	bobEncryptionKey, err := bobTpmBoxer.Encoder.PublicEncryptionKey()
+	bobEncryptionKey, err := tpmEncoder.PublicEncryptionKey()
 	require.NoError(t, err)
 
 	aliceKeyBoxer := NewKeyBoxer(aliceKey, bobSigningKey, bobEncryptionKey)

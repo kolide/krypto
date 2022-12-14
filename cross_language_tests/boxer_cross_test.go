@@ -333,12 +333,12 @@ func TestTpmBoxerRuby(t *testing.T) { //nolint:paralleltest
 	aliceBoxer := krypto.NewEncoderBoxer(tpmEncoder, bobKey.Public().(*rsa.PublicKey), bobKey.Public().(*rsa.PublicKey))
 
 	var alicePubSigningKeyPem bytes.Buffer
-	alicePubSigningKey, err := aliceBoxer.Encoder.PublicSigningKey()
+	alicePubSigningKey, err := tpmEncoder.PublicSigningKey()
 	require.NoError(t, err)
 	require.NoError(t, krypto.RsaPublicToPublicPem(alicePubSigningKey, &alicePubSigningKeyPem))
 
 	var alicePubEncryptionKeyPem bytes.Buffer
-	alicePubEncryptionKey, err := aliceBoxer.Encoder.PublicEncryptionKey()
+	alicePubEncryptionKey, err := tpmEncoder.PublicEncryptionKey()
 	require.NoError(t, err)
 	require.NoError(t, krypto.RsaPublicToPublicPem(alicePubEncryptionKey, &alicePubEncryptionKeyPem))
 

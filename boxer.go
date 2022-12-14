@@ -51,9 +51,8 @@ type boxMaker struct {
 const maxBoxSize = 4 * 1024 * 1024
 
 type encoder interface {
-	PublicSigningKey() (*rsa.PublicKey, error)
 	Sign([]byte) ([]byte, error)
-	PublicEncryptionKey() (*rsa.PublicKey, error)
+	PublicSigningKeyFingerprint() (string, error)
 	Decrypt([]byte) ([]byte, error)
 }
 
@@ -70,16 +69,8 @@ type keyEncoder struct {
 	key *rsa.PrivateKey
 }
 
-func (enc keyEncoder) PublicSigningKey() (*rsa.PublicKey, error) {
-	if enc.key == nil {
-		return nil, nil
-	}
-
-	return enc.key.Public().(*rsa.PublicKey), nil
-}
-
-func (enc keyEncoder) PublicEncryptionKey() (*rsa.PublicKey, error) {
-	return enc.PublicSigningKey()
+func (enc keyEncoder) PublicSigningKeyFingerprint() (string, error) {
+	return RsaFingerprint(enc.key)
 }
 
 func (enc keyEncoder) Sign(input []byte) ([]byte, error) {
@@ -136,12 +127,7 @@ func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error
 		return nil, fmt.Errorf("encrypting data: %w", err)
 	}
 
-	pubSigningKey, err := boxer.Encoder.PublicSigningKey()
-	if err != nil {
-		return nil, fmt.Errorf("generating public signing key: %w", err)
-	}
-
-	fingerprint, err := RsaFingerprint(pubSigningKey)
+	fingerprint, err := boxer.Encoder.PublicSigningKeyFingerprint()
 	if err != nil {
 		return nil, fmt.Errorf("unable to fingerprint: %w", err)
 	}
@@ -180,12 +166,7 @@ func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error
 }
 
 func (boxer boxMaker) Sign(inResponseTo string, data []byte) ([]byte, error) {
-	pubSigningKey, err := boxer.Encoder.PublicSigningKey()
-	if err != nil {
-		return nil, fmt.Errorf("generating public signing key: %w", err)
-	}
-
-	fingerprint, err := RsaFingerprint(pubSigningKey)
+	fingerprint, err := boxer.Encoder.PublicSigningKeyFingerprint()
 	if err != nil {
 		return nil, fmt.Errorf("unable to fingerprint: %w", err)
 	}
