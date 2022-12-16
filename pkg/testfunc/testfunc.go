@@ -1,4 +1,4 @@
-package krypto
+package testfunc
 
 import (
 	"crypto/rand"
@@ -13,7 +13,7 @@ import (
 
 const randomStringCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-'\n"
 
-func randomString(t *testing.T, n int) string {
+func RandomString(t *testing.T, n int) string {
 	maxInt := big.NewInt(int64(len(randomStringCharset)))
 
 	sb := strings.Builder{}
@@ -27,14 +27,14 @@ func randomString(t *testing.T, n int) string {
 	return sb.String()
 }
 
-func mkrand(t *testing.T, size int) []byte {
+func Mkrand(t *testing.T, size int) []byte {
 	r := make([]byte, size)
 	_, err := io.ReadFull(rand.Reader, r)
 	require.NoError(t, err)
 	return r
 }
 
-func base64Decode(t *testing.T, raw string) []byte {
+func Base64Decode(t *testing.T, raw string) []byte {
 	d, err := base64.StdEncoding.DecodeString(raw)
 	require.NoError(t, err)
 	return d

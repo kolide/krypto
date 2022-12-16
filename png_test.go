@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/kolide/krypto/pkg/testfunc"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,15 +19,15 @@ func TestPng(t *testing.T) {
 		{in: []byte("a")},
 		{in: []byte("abcd")},
 		{in: []byte("abcdefgh")},
-		{in: mkrand(t, 30)},
-		{in: mkrand(t, 31)},
-		{in: mkrand(t, 32)},
-		{in: mkrand(t, 33)},
-		{in: mkrand(t, 34)},
-		{in: mkrand(t, 256)},
-		{in: mkrand(t, 2048)},
-		{in: mkrand(t, 4096)},
-		{in: []byte(randomString(t, 4096))},
+		{in: testfunc.Mkrand(t, 30)},
+		{in: testfunc.Mkrand(t, 31)},
+		{in: testfunc.Mkrand(t, 32)},
+		{in: testfunc.Mkrand(t, 33)},
+		{in: testfunc.Mkrand(t, 34)},
+		{in: testfunc.Mkrand(t, 256)},
+		{in: testfunc.Mkrand(t, 2048)},
+		{in: testfunc.Mkrand(t, 4096)},
+		{in: []byte(testfunc.RandomString(t, 4096))},
 	}
 
 	for _, tt := range tests {

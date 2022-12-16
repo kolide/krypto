@@ -1,4 +1,4 @@
-package krypto
+package rsafunc
 
 import (
 	"crypto/rsa"
@@ -6,6 +6,7 @@ import (
 	"path"
 	"testing"
 
+	"github.com/kolide/krypto/pkg/testfunc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,19 +14,19 @@ import (
 func TestEncryption(t *testing.T) {
 	t.Parallel()
 
-	key, err := RsaRandomKey()
+	key, err := RandomKey()
 	require.NoError(t, err)
 	pub, ok := key.Public().(*rsa.PublicKey)
 	require.True(t, ok)
 
-	message := []byte(randomString(t, 64))
+	message := []byte(testfunc.RandomString(t, 64))
 
-	ciphertext, err := RsaEncrypt(pub, message)
+	ciphertext, err := Encrypt(pub, message)
 	require.NoError(t, err)
 
 	require.NotEqual(t, message, ciphertext)
 
-	decrypted, err := RsaDecrypt(key, ciphertext)
+	decrypted, err := Decrypt(key, ciphertext)
 	require.NoError(t, err)
 
 	require.Equal(t, message, decrypted)
@@ -33,7 +34,7 @@ func TestEncryption(t *testing.T) {
 	// Break Stuff
 	t.Run("broken ciphertext", func(t *testing.T) {
 		t.Parallel()
-		cantDecrypt, err := RsaDecrypt(key, ciphertext[1:])
+		cantDecrypt, err := Decrypt(key, ciphertext[1:])
 		assert.Error(t, err)
 		assert.Nil(t, cantDecrypt)
 	})
@@ -42,49 +43,49 @@ func TestEncryption(t *testing.T) {
 func TestSigning(t *testing.T) {
 	t.Parallel()
 
-	key, err := RsaRandomKey()
+	key, err := RandomKey()
 	require.NoError(t, err)
 	pub, ok := key.Public().(*rsa.PublicKey)
 	require.True(t, ok)
 
-	message := []byte(randomString(t, 64))
+	message := []byte(testfunc.RandomString(t, 64))
 
-	sig, err := RsaSign(key, message)
+	sig, err := Sign(key, message)
 	require.NoError(t, err)
 
-	require.NoError(t, RsaVerify(pub, message, sig))
+	require.NoError(t, Verify(pub, message, sig))
 
 	// Break stuff
 	t.Run("broken message", func(t *testing.T) {
 		t.Parallel()
-		require.Error(t, RsaVerify(pub, message[2:], sig))
+		require.Error(t, Verify(pub, message[2:], sig))
 	})
 
 	t.Run("broken signature", func(t *testing.T) {
 		t.Parallel()
-		require.Error(t, RsaVerify(pub, message, sig[2:]))
+		require.Error(t, Verify(pub, message, sig[2:]))
 	})
 
 	t.Run("nil key", func(t *testing.T) {
 		t.Parallel()
-		require.Error(t, RsaVerify(nil, message, sig))
+		require.Error(t, Verify(nil, message, sig))
 	})
 
 	t.Run("nil message", func(t *testing.T) {
 		t.Parallel()
-		require.Error(t, RsaVerify(pub, nil, sig))
+		require.Error(t, Verify(pub, nil, sig))
 	})
 
 	t.Run("nil signature", func(t *testing.T) {
 		t.Parallel()
-		require.Error(t, RsaVerify(pub, message, nil))
+		require.Error(t, Verify(pub, message, nil))
 	})
 }
 
 func TestNilRsaEncrypt(t *testing.T) {
 	t.Parallel()
 
-	_, err := RsaEncrypt(nil, []byte("hello"))
+	_, err := Encrypt(nil, []byte("hello"))
 	require.Error(t, err)
 }
 
@@ -92,20 +93,20 @@ func TestNilRsaDecrypt(t *testing.T) {
 	t.Parallel()
 	var err error
 
-	_, err = RsaDecrypt(nil, mkrand(t, 32))
+	_, err = Decrypt(nil, testfunc.Mkrand(t, 32))
 	require.Error(t, err)
 
-	key, err := RsaRandomKey()
+	key, err := RandomKey()
 	require.NoError(t, err)
 
-	_, err = RsaDecrypt(key, nil)
+	_, err = Decrypt(key, nil)
 	require.Error(t, err)
 }
 
 func TestRsaSign(t *testing.T) {
 	t.Parallel()
 
-	_, err := RsaSign(nil, []byte("hello"))
+	_, err := Sign(nil, []byte("hello"))
 	require.Error(t, err)
 }
 
@@ -138,7 +139,7 @@ func TestRsaFingerprint(t *testing.T) {
 			key, err := KeyFromPem(contents)
 			require.NoError(t, err)
 
-			actual, err := RsaFingerprint(key)
+			actual, err := Fingerprint(key)
 			require.NoError(t, err)
 
 			require.Equal(t, tt.expected, actual)

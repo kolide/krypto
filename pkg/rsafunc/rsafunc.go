@@ -1,4 +1,4 @@
-package krypto
+package rsafunc
 
 import (
 	"crypto"
@@ -13,7 +13,7 @@ import (
 	"io"
 )
 
-func RsaEncrypt(key *rsa.PublicKey, secretMessage []byte) ([]byte, error) {
+func Encrypt(key *rsa.PublicKey, secretMessage []byte) ([]byte, error) {
 	if key == nil {
 		return nil, errors.New("Cannot encrypt with a nil key")
 	}
@@ -22,7 +22,7 @@ func RsaEncrypt(key *rsa.PublicKey, secretMessage []byte) ([]byte, error) {
 	return rsa.EncryptOAEP(sha1.New(), rand.Reader, key, secretMessage, nil)
 }
 
-func RsaDecrypt(key *rsa.PrivateKey, ciphertext []byte) ([]byte, error) {
+func Decrypt(key *rsa.PrivateKey, ciphertext []byte) ([]byte, error) {
 	if key == nil {
 		return nil, errors.New("Cannot decrypt with a nil key")
 	}
@@ -31,7 +31,7 @@ func RsaDecrypt(key *rsa.PrivateKey, ciphertext []byte) ([]byte, error) {
 	return rsa.DecryptOAEP(sha1.New(), rand.Reader, key, ciphertext, nil)
 }
 
-func RsaSign(key *rsa.PrivateKey, message []byte) ([]byte, error) {
+func Sign(key *rsa.PrivateKey, message []byte) ([]byte, error) {
 	if key == nil {
 		return nil, errors.New("Cannot sign with a nil key")
 	}
@@ -45,7 +45,7 @@ func RsaSign(key *rsa.PrivateKey, message []byte) ([]byte, error) {
 	return rsa.SignPSS(rand.Reader, key, crypto.SHA256, digest, nil)
 }
 
-func RsaVerify(key *rsa.PublicKey, message []byte, sig []byte) error {
+func Verify(key *rsa.PublicKey, message []byte, sig []byte) error {
 	if key == nil {
 		return errors.New("Cannot verify with a nil key")
 	}
@@ -59,12 +59,12 @@ func RsaVerify(key *rsa.PublicKey, message []byte, sig []byte) error {
 	return rsa.VerifyPSS(key, crypto.SHA256, digest, sig, nil)
 }
 
-// RsaFingerprint returns the SHA256 fingerprint. This is calculated
+// Fingerprint returns the SHA256 fingerprint. This is calculated
 // by hashing the DER representation of the public key. It is
 // analogous to various openssl commands:
 //   - openssl rsa -in private.pem -pubout -outform DER | openssl sha256 -c
 //   - openssl pkey -pubin -in public.pem -pubout -outform der | openssl sha256 -c
-func RsaFingerprint(keyRaw interface{}) (string, error) {
+func Fingerprint(keyRaw interface{}) (string, error) {
 	var pub *rsa.PublicKey
 
 	switch key := keyRaw.(type) {
@@ -97,11 +97,11 @@ func RsaFingerprint(keyRaw interface{}) (string, error) {
 	return out, nil
 }
 
-func RsaRandomKey() (*rsa.PrivateKey, error) {
+func RandomKey() (*rsa.PrivateKey, error) {
 	return rsa.GenerateKey(rand.Reader, 2048)
 }
 
-func RsaPrivateKeyToPem(key *rsa.PrivateKey, out io.Writer) error {
+func PrivateKeyToPem(key *rsa.PrivateKey, out io.Writer) error {
 	privASN1 := x509.MarshalPKCS1PrivateKey(key)
 
 	return pem.Encode(out, &pem.Block{
@@ -110,7 +110,7 @@ func RsaPrivateKeyToPem(key *rsa.PrivateKey, out io.Writer) error {
 	})
 }
 
-func RsaPublicKeyToPem(key *rsa.PrivateKey, out io.Writer) error {
+func PublicKeyToPem(key *rsa.PrivateKey, out io.Writer) error {
 	pubASN1, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
 	if err != nil {
 		return fmt.Errorf("pkix marshalling: %w", err)

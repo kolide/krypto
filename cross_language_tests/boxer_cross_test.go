@@ -13,6 +13,8 @@ import (
 
 	"github.com/kolide/kit/ulid"
 	"github.com/kolide/krypto"
+	"github.com/kolide/krypto/pkg/keyencoder"
+	"github.com/kolide/krypto/pkg/rsafunc"
 	"github.com/stretchr/testify/require"
 	"github.com/vmihailenco/msgpack/v5"
 )
@@ -38,25 +40,25 @@ func TestBoxerRuby(t *testing.T) {
 	//
 	// Setup keys and similar.
 	//
-	aliceKey, err := krypto.RsaRandomKey()
+	aliceKey, err := rsafunc.RandomKey()
 	require.NoError(t, err)
 	var alicePubPem bytes.Buffer
-	require.NoError(t, krypto.RsaPublicKeyToPem(aliceKey, &alicePubPem))
+	require.NoError(t, rsafunc.PublicKeyToPem(aliceKey, &alicePubPem))
 
-	bobKey, err := krypto.RsaRandomKey()
+	bobKey, err := rsafunc.RandomKey()
 	require.NoError(t, err)
 	var bobPem bytes.Buffer
-	require.NoError(t, krypto.RsaPrivateKeyToPem(bobKey, &bobPem))
+	require.NoError(t, rsafunc.PrivateKeyToPem(bobKey, &bobPem))
 
-	malloryKey, err := krypto.RsaRandomKey()
+	malloryKey, err := rsafunc.RandomKey()
 	require.NoError(t, err)
 	var malloryPem bytes.Buffer
-	require.NoError(t, krypto.RsaPrivateKeyToPem(malloryKey, &malloryPem))
+	require.NoError(t, rsafunc.PrivateKeyToPem(malloryKey, &malloryPem))
 
-	aliceBoxer := krypto.NewBoxer(aliceKey, bobKey.Public().(*rsa.PublicKey))
-	bareAliceBoxer := krypto.NewBoxer(aliceKey, nil)
-	malloryBoxer := krypto.NewBoxer(malloryKey, aliceKey.Public().(*rsa.PublicKey))
-	bareMalloryBoxer := krypto.NewBoxer(malloryKey, nil)
+	aliceBoxer := krypto.NewBoxer(keyencoder.New(aliceKey), bobKey.Public().(*rsa.PublicKey))
+	bareAliceBoxer := krypto.NewBoxer(keyencoder.New(aliceKey), nil)
+	malloryBoxer := krypto.NewBoxer(keyencoder.New(malloryKey), aliceKey.Public().(*rsa.PublicKey))
+	bareMalloryBoxer := krypto.NewBoxer(keyencoder.New(malloryKey), nil)
 
 	testMessages := [][]byte{
 		[]byte("a"),
@@ -112,7 +114,7 @@ func TestBoxerRuby(t *testing.T) {
 				ciphertext = unpacked.Ciphertext
 			})
 
-			var testFuncs = []struct {
+			var testfunc = []struct {
 				name       string
 				fn         func(string) (*krypto.Box, error)
 				expectErr  bool
@@ -129,7 +131,7 @@ func TestBoxerRuby(t *testing.T) {
 				{name: "bare alice cannot verify and decode", ciphertext: ciphertext, fn: bareAliceBoxer.Decode, expectErr: true},
 			}
 
-			for _, tf := range testFuncs {
+			for _, tf := range testfunc {
 				tf := tf
 
 				t.Run(tf.name, func(t *testing.T) {
@@ -263,7 +265,7 @@ func TestBoxerRuby(t *testing.T) {
 				ciphertext = unpacked.Ciphertext
 			})
 
-			var testFuncs = []struct {
+			var testfunc = []struct {
 				name       string
 				fn         func(string) (*krypto.Box, error)
 				expectErr  bool
@@ -277,7 +279,7 @@ func TestBoxerRuby(t *testing.T) {
 				{name: "bare alice cannot verify", ciphertext: ciphertext, fn: bareAliceBoxer.Decode, expectErr: true},
 			}
 
-			for _, tf := range testFuncs {
+			for _, tf := range testfunc {
 				tf := tf
 				t.Run(tf.name, func(t *testing.T) {
 					t.Parallel()

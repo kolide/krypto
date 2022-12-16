@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/kolide/krypto/pkg/testfunc"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,16 +17,16 @@ func TestAesRandomRoundTrips(t *testing.T) {
 		authdata []byte
 	}{
 		{in: []byte("a")},
-		{in: mkrand(t, 30)},
-		{in: mkrand(t, 31)},
-		{in: mkrand(t, 32)},
-		{in: mkrand(t, 33)},
-		{in: mkrand(t, 254)},
-		{in: mkrand(t, 255)},
-		{in: mkrand(t, 256)},
-		{in: mkrand(t, 257)},
+		{in: testfunc.Mkrand(t, 30)},
+		{in: testfunc.Mkrand(t, 31)},
+		{in: testfunc.Mkrand(t, 32)},
+		{in: testfunc.Mkrand(t, 33)},
+		{in: testfunc.Mkrand(t, 254)},
+		{in: testfunc.Mkrand(t, 255)},
+		{in: testfunc.Mkrand(t, 256)},
+		{in: testfunc.Mkrand(t, 257)},
 
-		{in: mkrand(t, 30), authdata: mkrand(t, 30)},
+		{in: testfunc.Mkrand(t, 30), authdata: testfunc.Mkrand(t, 30)},
 	}
 
 	for _, tt := range tests {
@@ -93,9 +94,9 @@ func TestAesDecryptCompatibility(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			t.Parallel()
 
-			key := base64Decode(t, tt.key)
-			authdata := base64Decode(t, tt.authdata)
-			ciphertext := base64Decode(t, tt.ciphertext)
+			key := testfunc.Base64Decode(t, tt.key)
+			authdata := testfunc.Base64Decode(t, tt.authdata)
+			ciphertext := testfunc.Base64Decode(t, tt.ciphertext)
 
 			actual, err := AesDecrypt(key, authdata, ciphertext)
 			require.NoError(t, err)
