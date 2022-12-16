@@ -82,6 +82,10 @@ func (boxer boxMaker) EncodePng(inResponseTo string, data []byte, w io.Writer) e
 }
 
 func (boxer boxMaker) EncodeRaw(inResponseTo string, data []byte) ([]byte, error) {
+	if boxer.encoder == nil {
+		return nil, errors.New("cannot encode without encoder")
+	}
+
 	aeskey, err := AesRandomKey()
 	if err != nil {
 		return nil, fmt.Errorf("generating DEK: %w", err)
