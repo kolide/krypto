@@ -7,6 +7,9 @@ import (
 	"testing"
 
 	"github.com/kolide/kit/ulid"
+	"github.com/kolide/krypto/pkg/keyencoder"
+	"github.com/kolide/krypto/pkg/rsafunc"
+	"github.com/kolide/krypto/pkg/testfunc"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,25 +20,25 @@ func TestBoxSigning(t *testing.T) {
 		in []byte
 	}{
 		{in: []byte("a")},
-		{in: mkrand(t, 32)},
-		{in: mkrand(t, 256)},
-		{in: mkrand(t, 2048)},
-		{in: mkrand(t, 4096)},
-		{in: []byte(randomString(t, 4096))},
+		{in: testfunc.Mkrand(t, 32)},
+		{in: testfunc.Mkrand(t, 256)},
+		{in: testfunc.Mkrand(t, 2048)},
+		{in: testfunc.Mkrand(t, 4096)},
+		{in: []byte(testfunc.RandomString(t, 4096))},
 	}
 
-	aliceKey, err := RsaRandomKey()
+	aliceKey, err := rsafunc.RandomKey()
 	require.NoError(t, err)
 
-	bobKey, err := RsaRandomKey()
+	bobKey, err := rsafunc.RandomKey()
 	require.NoError(t, err)
 
-	aliceSigner := NewBoxer(aliceKey, nil)
+	aliceSigner := NewBoxer(keyencoder.New(aliceKey), nil)
 
-	bobBoxer := NewBoxer(bobKey, aliceKey.Public().(*rsa.PublicKey))
-	bareBobBoxer := NewBoxer(bobKey, nil)
+	bobBoxer := NewBoxer(keyencoder.New(bobKey), aliceKey.Public().(*rsa.PublicKey))
+	bareBobBoxer := NewBoxer(keyencoder.New(bobKey), nil)
 
-	var testFuncs = []struct {
+	var testfunc = []struct {
 		name      string
 		fn        func([]byte) (*Box, error)
 		expectErr bool
@@ -57,7 +60,7 @@ func TestBoxSigning(t *testing.T) {
 			signed, err := aliceSigner.Sign(responseTo, tt.in)
 			require.NoError(t, err)
 
-			for _, tf := range testFuncs {
+			for _, tf := range testfunc {
 				tf := tf
 				t.Run(tf.name, func(t *testing.T) {
 					t.Parallel()
@@ -84,29 +87,29 @@ func TestBoxRandomRoundTrips(t *testing.T) {
 		in []byte
 	}{
 		{in: []byte("a")},
-		{in: mkrand(t, 32)},
-		{in: mkrand(t, 256)},
-		{in: mkrand(t, 2048)},
-		{in: mkrand(t, 4096)},
-		{in: []byte(randomString(t, 4096))},
+		{in: testfunc.Mkrand(t, 32)},
+		{in: testfunc.Mkrand(t, 256)},
+		{in: testfunc.Mkrand(t, 2048)},
+		{in: testfunc.Mkrand(t, 4096)},
+		{in: []byte(testfunc.RandomString(t, 4096))},
 	}
 
-	aliceKey, err := RsaRandomKey()
+	aliceKey, err := rsafunc.RandomKey()
 	require.NoError(t, err)
 
-	bobKey, err := RsaRandomKey()
+	bobKey, err := rsafunc.RandomKey()
 	require.NoError(t, err)
 
-	malloryKey, err := RsaRandomKey()
+	malloryKey, err := rsafunc.RandomKey()
 	require.NoError(t, err)
 
-	aliceBoxer := NewBoxer(aliceKey, bobKey.Public().(*rsa.PublicKey))
-	bobBoxer := NewBoxer(bobKey, aliceKey.Public().(*rsa.PublicKey))
-	bareBobBoxer := NewBoxer(bobKey, nil)
-	malloryBoxer := NewBoxer(malloryKey, aliceKey.Public().(*rsa.PublicKey))
-	bareMalloryBoxer := NewBoxer(malloryKey, nil)
+	aliceBoxer := NewBoxer(keyencoder.New(aliceKey), bobKey.Public().(*rsa.PublicKey))
+	bobBoxer := NewBoxer(keyencoder.New(bobKey), aliceKey.Public().(*rsa.PublicKey))
+	bareBobBoxer := NewBoxer(keyencoder.New(bobKey), nil)
+	malloryBoxer := NewBoxer(keyencoder.New(malloryKey), aliceKey.Public().(*rsa.PublicKey))
+	bareMalloryBoxer := NewBoxer(keyencoder.New(malloryKey), nil)
 
-	var testFuncs = []struct {
+	var testfunc = []struct {
 		name      string
 		fn        func(string) (*Box, error)
 		expectErr bool
@@ -135,7 +138,7 @@ func TestBoxRandomRoundTrips(t *testing.T) {
 				require.NoError(t, err)
 				require.NotContains(t, ciphertext, tt.in)
 
-				for _, tf := range testFuncs {
+				for _, tf := range testfunc {
 					tf := tf
 					t.Run(tf.name, func(t *testing.T) {
 						t.Parallel()
@@ -172,14 +175,14 @@ func TestBoxRandomRoundTrips(t *testing.T) {
 func TestNilNoPanic(t *testing.T) {
 	t.Parallel()
 
-	aliceKey, err := RsaRandomKey()
+	aliceKey, err := rsafunc.RandomKey()
 	require.NoError(t, err)
 
-	bobKey, err := RsaRandomKey()
+	bobKey, err := rsafunc.RandomKey()
 	require.NoError(t, err)
 
-	workingBoxer := NewBoxer(aliceKey, bobKey.Public().(*rsa.PublicKey))
-	ciphertext, err := workingBoxer.EncodeRaw(ulid.New(), mkrand(t, 32))
+	workingBoxer := NewBoxer(keyencoder.New(aliceKey), bobKey.Public().(*rsa.PublicKey))
+	ciphertext, err := workingBoxer.EncodeRaw(ulid.New(), testfunc.Mkrand(t, 32))
 	require.NoError(t, err)
 
 	_, err = workingBoxer.EncodeRaw("", nil)
@@ -190,7 +193,7 @@ func TestNilNoPanic(t *testing.T) {
 		boxer boxMaker
 	}{
 		{name: "all nil", boxer: NewBoxer(nil, nil)},
-		{name: "nil counterparty", boxer: NewBoxer(aliceKey, nil)},
+		{name: "nil counterparty", boxer: NewBoxer(keyencoder.New(aliceKey), nil)},
 		{name: "nil me", boxer: NewBoxer(nil, bobKey.Public().(*rsa.PublicKey))},
 	}
 

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kolide/krypto"
+	"github.com/kolide/krypto/pkg/rsafunc"
 	"github.com/stretchr/testify/require"
 	"github.com/vmihailenco/msgpack/v5"
 )
@@ -43,16 +43,16 @@ func TestRsaRuby(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			t.Parallel()
 
-			key, err := krypto.RsaRandomKey()
+			key, err := rsafunc.RandomKey()
 			require.NoError(t, err)
 
 			t.Run("setup", func(t *testing.T) {
 				var privatePem bytes.Buffer
-				require.NoError(t, krypto.RsaPrivateKeyToPem(key, &privatePem))
+				require.NoError(t, rsafunc.PrivateKeyToPem(key, &privatePem))
 				tt.Private = privatePem.Bytes()
 
 				var publicPem bytes.Buffer
-				require.NoError(t, krypto.RsaPublicKeyToPem(key, &publicPem))
+				require.NoError(t, rsafunc.PublicKeyToPem(key, &publicPem))
 				tt.Public = publicPem.Bytes()
 			})
 
@@ -66,7 +66,7 @@ func TestRsaRuby(t *testing.T) {
 				dir := t.TempDir()
 				testfile := path.Join(dir, "testcase.msgpack")
 
-				ciphertext, err := krypto.RsaEncrypt(&key.PublicKey, tt.Plaintext)
+				ciphertext, err := rsafunc.Encrypt(&key.PublicKey, tt.Plaintext)
 				require.NoError(t, err)
 				tt.Ciphertext = ciphertext
 
@@ -109,7 +109,7 @@ func TestRsaRuby(t *testing.T) {
 				var actual rsaCrossTestCase
 				require.NoError(t, msgpack.Unmarshal(base64Decode(t, string(res)), &actual))
 
-				plaintext, err := krypto.RsaDecrypt(key, actual.Ciphertext)
+				plaintext, err := rsafunc.Decrypt(key, actual.Ciphertext)
 				require.NoError(t, err)
 				require.Equal(t, tt.Plaintext, plaintext)
 			})
@@ -124,7 +124,7 @@ func TestRsaRuby(t *testing.T) {
 				dir := t.TempDir()
 				testfile := path.Join(dir, "testcase.msgpack")
 
-				sig, err := krypto.RsaSign(key, tt.Plaintext)
+				sig, err := rsafunc.Sign(key, tt.Plaintext)
 				require.NoError(t, err)
 				tt.Signature = sig
 
@@ -168,7 +168,7 @@ func TestRsaRuby(t *testing.T) {
 				var actual rsaCrossTestCase
 				require.NoError(t, msgpack.Unmarshal(base64Decode(t, string(res)), &actual))
 
-				verified := krypto.RsaVerify(&key.PublicKey, tt.Plaintext, actual.Signature)
+				verified := rsafunc.Verify(&key.PublicKey, tt.Plaintext, actual.Signature)
 				require.NoError(t, verified)
 			})
 		})
