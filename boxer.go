@@ -227,9 +227,9 @@ func (boxer boxMaker) DecodeRaw(data []byte) (*Box, error) {
 }
 
 func (boxer boxMaker) decodeInner(outer outerBox) (*Box, error) {
-	// if boxer.key == nil {
-	// 	return nil, errors.New("Can't decode without a key")
-	// }
+	if boxer.encoder == nil {
+		return nil, errors.New("cannot decode with out encoder")
+	}
 
 	var inner Box
 	if err := msgpack.Unmarshal(outer.Inner, &inner); err != nil {

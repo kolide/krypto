@@ -118,11 +118,11 @@ func TestRsaFingerprint(t *testing.T) {
 		expected string
 	}{
 		{
-			infile:   path.Join("test-data", "public.pem"),
+			infile:   path.Join("..", "..", "test-data", "public.pem"),
 			expected: "80:61:16:6c:86:e8:9f:a2:91:49:b4:75:f8:46:1a:ae:9d:a6:72:e9:dd:4a:c4:f5:b3:07:d1:3a:99:ba:d7:71",
 		},
 		{
-			infile:   path.Join("test-data", "private.pem"),
+			infile:   path.Join("..", "..", "test-data", "private.pem"),
 			expected: "80:61:16:6c:86:e8:9f:a2:91:49:b4:75:f8:46:1a:ae:9d:a6:72:e9:dd:4a:c4:f5:b3:07:d1:3a:99:ba:d7:71",
 		},
 	}
