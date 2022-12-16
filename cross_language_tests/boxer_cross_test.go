@@ -114,7 +114,7 @@ func TestBoxerRuby(t *testing.T) {
 				ciphertext = unpacked.Ciphertext
 			})
 
-			var testfunc = []struct {
+			var testFuncs = []struct {
 				name       string
 				fn         func(string) (*krypto.Box, error)
 				expectErr  bool
@@ -131,7 +131,7 @@ func TestBoxerRuby(t *testing.T) {
 				{name: "bare alice cannot verify and decode", ciphertext: ciphertext, fn: bareAliceBoxer.Decode, expectErr: true},
 			}
 
-			for _, tf := range testfunc {
+			for _, tf := range testFuncs {
 				tf := tf
 
 				t.Run(tf.name, func(t *testing.T) {
@@ -265,7 +265,7 @@ func TestBoxerRuby(t *testing.T) {
 				ciphertext = unpacked.Ciphertext
 			})
 
-			var testfunc = []struct {
+			var testFuncs = []struct {
 				name       string
 				fn         func(string) (*krypto.Box, error)
 				expectErr  bool
@@ -279,7 +279,7 @@ func TestBoxerRuby(t *testing.T) {
 				{name: "bare alice cannot verify", ciphertext: ciphertext, fn: bareAliceBoxer.Decode, expectErr: true},
 			}
 
-			for _, tf := range testfunc {
+			for _, tf := range testFuncs {
 				tf := tf
 				t.Run(tf.name, func(t *testing.T) {
 					t.Parallel()
