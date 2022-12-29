@@ -9,7 +9,6 @@ args = ARGV
 
 cmd = args.shift
 testcase = MessagePack.unpack(Base64.strict_decode64(File.read(args.shift)))
-outfile = args.shift
 
 key = OpenSSL::PKey::EC.new(testcase["Key"])
 counterparty = OpenSSL::PKey::EC.new(testcase["Counterparty"])

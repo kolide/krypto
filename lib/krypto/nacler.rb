@@ -2,7 +2,7 @@
 
 require "rbnacl"
 require "base64"
-require "OpenSSL"
+require "openssl"
 
 module Krypto
   class Nacler
