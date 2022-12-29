@@ -11,12 +11,12 @@ class TestKryptoNacler < Minitest::Test
 
   MESSAGE_TO_SEAL = "this is the plaintext of the sealed message"
 
-  define_method("test_alice_seal_bob_open") do
+  define_method(:test_alice_seal_bob_open) do
     cipertext = ALICENACLER.seal(MESSAGE_TO_SEAL)
     assert_equal(MESSAGE_TO_SEAL, BOBNACLER.open(cipertext))
   end
 
-  define_method("test_bob_seal_alice_open") do
+  define_method(:test_bob_seal_alice_open) do
     cipertext = BOBNACLER.seal(MESSAGE_TO_SEAL)
     assert_equal(MESSAGE_TO_SEAL, ALICENACLER.open(cipertext))
   end
