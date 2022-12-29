@@ -95,6 +95,7 @@ func TestNaclerRuby(t *testing.T) {
 	}
 }
 
+// #nosec G306 -- Need readable files
 func rubyNaclerExec(t *testing.T, rubyCmd string, inputData rubyCmdData) string {
 	testCaseBytes, err := msgpack.Marshal(inputData)
 	require.NoError(t, err)
