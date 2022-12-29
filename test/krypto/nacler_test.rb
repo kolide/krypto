@@ -3,8 +3,8 @@ require "test_helper"
 require "openssl"
 
 class TestKryptoNacler < Minitest::Test
-  ALICEKEY = OpenSSL::PKey::EC::generate("prime256v1")
-  BOBKEY = OpenSSL::PKey::EC::generate("prime256v1")
+  ALICEKEY = OpenSSL::PKey::EC.generate("prime256v1")
+  BOBKEY = OpenSSL::PKey::EC.generate("prime256v1")
 
   ALICENACLER = Krypto::Nacler.new(ALICEKEY, BOBKEY.public_key)
   BOBNACLER = Krypto::Nacler.new(BOBKEY, ALICEKEY.public_key)
