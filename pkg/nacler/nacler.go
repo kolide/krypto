@@ -29,7 +29,7 @@ func New(keyer Keyer, counterParty ecdsa.PublicKey) *Nacler {
 func (n *Nacler) Seal(plainText []byte) (string, error) {
 	sharedKey, err := n.keyer.SharedKey(n.counterParty)
 	if err != nil {
-		return "", fmt.Errorf("generating shared key")
+		return "", fmt.Errorf("generating shared key: %w", err)
 	}
 
 	var nonce [24]byte
@@ -44,7 +44,7 @@ func (n *Nacler) Seal(plainText []byte) (string, error) {
 func (n *Nacler) Open(b64 string) (string, error) {
 	sharedKey, err := n.keyer.SharedKey(n.counterParty)
 	if err != nil {
-		return "", fmt.Errorf("generating shared key")
+		return "", fmt.Errorf("generating shared key: %w", err)
 	}
 
 	raw, err := base64.StdEncoding.DecodeString(b64)
