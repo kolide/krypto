@@ -1,0 +1,24 @@
+require "test_helper"
+
+require "openssl"
+require "base64"
+
+class TestKryptoNacler < Minitest::Test
+  ALICEKEY = OpenSSL::PKey::EC::generate("prime256v1")
+  BOBKEY = OpenSSL::PKey::EC::generate("prime256v1")
+
+  ALICENACLER = Krypto::Nacler.new(ALICEKEY, BOBKEY.public_key)
+  BOBNACLER = Krypto::Nacler.new(BOBKEY, ALICEKEY.public_key)
+
+  MESSAGE_TO_SEAL = "this is the plaintext of the sealed message"
+
+  define_method("test_alice_seal_bob_open") do
+    cipertext = ALICENACLER.seal(MESSAGE_TO_SEAL)
+    assert_equal(MESSAGE_TO_SEAL, BOBNACLER.open(cipertext))
+  end
+
+  define_method("test_bob_seal_alice_open") do
+    cipertext = BOBNACLER.seal(MESSAGE_TO_SEAL)
+    assert_equal(MESSAGE_TO_SEAL, ALICENACLER.open(cipertext))
+  end
+end
