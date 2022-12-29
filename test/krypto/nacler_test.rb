@@ -1,7 +1,6 @@
 require "test_helper"
 
 require "openssl"
-require "base64"
 
 class TestKryptoNacler < Minitest::Test
   ALICEKEY = OpenSSL::PKey::EC::generate("prime256v1")

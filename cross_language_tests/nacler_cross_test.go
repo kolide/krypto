@@ -59,32 +59,32 @@ func TestNaclerRuby(t *testing.T) {
 		for _, messageToSeal := range testMessages {
 			messageToSeal := messageToSeal
 
-			t.Run("alice GO seal bob RUBY open", func(t *testing.T) {
+			t.Run("Alice seals in go, Bob opens in ruby", func(t *testing.T) {
 				t.Parallel()
 
 				sealed, err := aliceNacler.Seal(messageToSeal)
 				require.NoError(t, err)
 
 				rubyCmdData := rubyCmdData{
-					Key:          privateToPem(t, bobRubyKey),
-					Counterparty: publicToPem(t, &aliceGoKey.PublicKey),
+					Key:          privateEcKeyToPem(t, bobRubyKey),
+					Counterparty: publicEcKeyToPem(t, &aliceGoKey.PublicKey),
 					Ciphertext:   sealed,
 				}
 
-				plainText := rubyExec(t, "open", rubyCmdData)
+				plainText := rubyNaclerExec(t, "open", rubyCmdData)
 				require.Equal(t, string(messageToSeal), plainText)
 			})
 
-			t.Run("bob RUBY seal alice GO open", func(t *testing.T) {
+			t.Run("Bob seals in ruby, Alice opens in go", func(t *testing.T) {
 				t.Parallel()
 
 				rubyCmdData := rubyCmdData{
-					Key:          privateToPem(t, bobRubyKey),
-					Counterparty: publicToPem(t, &aliceGoKey.PublicKey),
+					Key:          privateEcKeyToPem(t, bobRubyKey),
+					Counterparty: publicEcKeyToPem(t, &aliceGoKey.PublicKey),
 					Plaintext:    string(messageToSeal),
 				}
 
-				cipherText := rubyExec(t, "seal", rubyCmdData)
+				cipherText := rubyNaclerExec(t, "seal", rubyCmdData)
 
 				plaintext, err := aliceNacler.Open(cipherText)
 				require.NoError(t, err)
@@ -95,8 +95,8 @@ func TestNaclerRuby(t *testing.T) {
 	}
 }
 
-func rubyExec(t *testing.T, rubyCmd string, data rubyCmdData) string {
-	testCaseBytes, err := msgpack.Marshal(data)
+func rubyNaclerExec(t *testing.T, rubyCmd string, inputData rubyCmdData) string {
+	testCaseBytes, err := msgpack.Marshal(inputData)
 	require.NoError(t, err)
 	testCaseBytesBase64 := []byte(base64.StdEncoding.EncodeToString(testCaseBytes))
 
@@ -122,13 +122,13 @@ func localEcdsaKeyer(t *testing.T) (nacler.Keyer, *ecdsa.PrivateKey) {
 	return localecdsa.New(localEcdsaKey), localEcdsaKey
 }
 
-func privateToPem(t *testing.T, private *ecdsa.PrivateKey) []byte {
+func privateEcKeyToPem(t *testing.T, private *ecdsa.PrivateKey) []byte {
 	bytes, err := x509.MarshalECPrivateKey(private)
 	require.NoError(t, err)
 	return pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: bytes})
 }
 
-func publicToPem(t *testing.T, public *ecdsa.PublicKey) []byte {
+func publicEcKeyToPem(t *testing.T, public *ecdsa.PublicKey) []byte {
 	bytes, err := x509.MarshalPKIXPublicKey(public)
 	require.NoError(t, err)
 	return pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: bytes})
