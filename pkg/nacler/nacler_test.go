@@ -15,13 +15,16 @@ func TestNacler(t *testing.T) {
 
 	messageToSeal := "this is the plaintext of the sealed message"
 
-	alicesLocalEcdsaKeyer, alicesPubKey := localEcdsaKeyer(t)
+	aliceKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
 
-	bobsKeyer, bobsPubKey := localEcdsaKeyer(t)
-	bobsNacler := New(bobsKeyer, alicesPubKey)
+	bobKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+
+	bobsNacler := New(localecdsa.New(bobKey), aliceKey.PublicKey)
 
 	naclers := []*Nacler{
-		New(alicesLocalEcdsaKeyer, bobsPubKey),
+		New(localecdsa.New(aliceKey), bobKey.PublicKey),
 		//TODO: add tpm keyer
 	}
 
@@ -37,7 +40,7 @@ func TestNacler(t *testing.T) {
 			opened, err := bobsNacler.Open(sealed)
 			require.NoError(t, err)
 
-			require.Equal(t, messageToSeal, opened)
+			require.Equal(t, messageToSeal, string(opened))
 		})
 
 		t.Run("bob seal alice open", func(t *testing.T) {
@@ -49,13 +52,7 @@ func TestNacler(t *testing.T) {
 			opened, err := aliceNacler.Open(sealed)
 			require.NoError(t, err)
 
-			require.Equal(t, messageToSeal, opened)
+			require.Equal(t, messageToSeal, string(opened))
 		})
 	}
-}
-
-func localEcdsaKeyer(t *testing.T) (Keyer, ecdsa.PublicKey) {
-	localEcdsaKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	require.NoError(t, err)
-	return localecdsa.New(localEcdsaKey), localEcdsaKey.PublicKey
 }

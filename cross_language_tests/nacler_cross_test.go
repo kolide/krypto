@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -24,7 +25,7 @@ import (
 type rubyCmdData struct {
 	Key          []byte
 	Counterparty []byte
-	Ciphertext   string
+	Ciphertext   []byte
 	Plaintext    string
 }
 
@@ -43,26 +44,32 @@ func TestNaclerRuby(t *testing.T) {
 		mkrand(t, 4096),
 	}
 
-	aliceGoLocalEcdsaKeyer, aliceGoKey := localEcdsaKeyer(t)
+	aliceGoKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
 
 	bobRubyKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	require.NoError(t, err)
 
-	naclers := []*nacler.Nacler{
-		nacler.New(aliceGoLocalEcdsaKeyer, bobRubyKey.PublicKey),
-		//TODO: add tpm keyer
+	naclerTests := []struct {
+		name   string
+		nacler *nacler.Nacler
+	}{
+		{
+			name:   "local ecdsa keyer",
+			nacler: nacler.New(localecdsa.New(aliceGoKey), bobRubyKey.PublicKey),
+		},
 	}
 
-	for _, aliceNacler := range naclers {
-		aliceNacler := aliceNacler
+	for _, naclerTest := range naclerTests {
+		nacler := naclerTest.nacler
 
 		for _, messageToSeal := range testMessages {
 			messageToSeal := messageToSeal
 
-			t.Run("Alice seals in go, Bob opens in ruby", func(t *testing.T) {
+			t.Run(fmt.Sprintf("Alice seals in go using %s, Bob opens in ruby", naclerTest.name), func(t *testing.T) {
 				t.Parallel()
 
-				sealed, err := aliceNacler.Seal(messageToSeal)
+				sealed, err := nacler.Seal(messageToSeal)
 				require.NoError(t, err)
 
 				rubyCmdData := rubyCmdData{
@@ -72,10 +79,10 @@ func TestNaclerRuby(t *testing.T) {
 				}
 
 				plainText := rubyNaclerExec(t, "open", rubyCmdData)
-				require.Equal(t, string(messageToSeal), plainText)
+				require.Equal(t, string(messageToSeal), string(plainText))
 			})
 
-			t.Run("Bob seals in ruby, Alice opens in go", func(t *testing.T) {
+			t.Run(fmt.Sprintf("Bob seals in ruby, Alice opens in go using %s", naclerTest.name), func(t *testing.T) {
 				t.Parallel()
 
 				rubyCmdData := rubyCmdData{
@@ -86,17 +93,17 @@ func TestNaclerRuby(t *testing.T) {
 
 				cipherText := rubyNaclerExec(t, "seal", rubyCmdData)
 
-				plaintext, err := aliceNacler.Open(cipherText)
+				plaintext, err := nacler.Open(cipherText)
 				require.NoError(t, err)
 
-				require.Equal(t, string(messageToSeal), plaintext)
+				require.Equal(t, string(messageToSeal), string(plaintext))
 			})
 		}
 	}
 }
 
 // #nosec G306 -- Need readable files
-func rubyNaclerExec(t *testing.T, rubyCmd string, inputData rubyCmdData) string {
+func rubyNaclerExec(t *testing.T, rubyCmd string, inputData rubyCmdData) []byte {
 	testCaseBytes, err := msgpack.Marshal(inputData)
 	require.NoError(t, err)
 	testCaseBytesBase64 := []byte(base64.StdEncoding.EncodeToString(testCaseBytes))
@@ -114,13 +121,8 @@ func rubyNaclerExec(t *testing.T, rubyCmd string, inputData rubyCmdData) string 
 	require.NoError(t, ctx.Err())
 	require.NoError(t, err, string(out))
 
-	return strings.TrimSuffix(string(out), "\n")
-}
-
-func localEcdsaKeyer(t *testing.T) (nacler.Keyer, *ecdsa.PrivateKey) {
-	localEcdsaKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	require.NoError(t, err)
-	return localecdsa.New(localEcdsaKey), localEcdsaKey
+	// trim the trailing \n in output
+	return []byte(strings.Trim(string(out), "\n"))
 }
 
 func privateEcKeyToPem(t *testing.T, private *ecdsa.PrivateKey) []byte {
