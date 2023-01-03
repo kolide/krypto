@@ -14,6 +14,9 @@ import (
 	"github.com/google/go-tpm/tpmutil"
 	"github.com/kolide/krypto/pkg/nacler/keyers/localecdsa"
 	"github.com/kolide/krypto/pkg/nacler/keyers/tpmkeyer"
+	"testing"
+
+	"github.com/kolide/krypto/pkg/nacler/keyers/localecdsa"
 	"github.com/stretchr/testify/require"
 )
 
