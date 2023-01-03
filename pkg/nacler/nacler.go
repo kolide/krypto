@@ -29,7 +29,6 @@ func New(keyer keyer, counterParty ecdsa.PublicKey) *Nacler {
 
 func (n *Nacler) Seal(plainText []byte) ([]byte, error) {
 	sharedKey, err := n.cachedSharedKey()
-
 	if err != nil {
 		return nil, fmt.Errorf("generating shared key: %w", err)
 	}
@@ -46,8 +45,8 @@ func (n *Nacler) Open(cipherText []byte) ([]byte, error) {
 	sharedKey, err := n.cachedSharedKey()
 	if err != nil {
 		return nil, fmt.Errorf("fetching shared key: %w", err)
-  }
-	sharedKey, err := n.keyer.SharedKey(n.counterParty)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("generating shared key: %w", err)
 	}

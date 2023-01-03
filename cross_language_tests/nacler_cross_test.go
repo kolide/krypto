@@ -71,7 +71,7 @@ func TestNaclerRuby(t *testing.T) {
 
 			t.Run(fmt.Sprintf("Alice seals in go using %s, Bob opens in ruby", naclerTest.name), func(t *testing.T) {
 				t.Parallel()
-        
+
 				sealed, err := aliceNacler.Seal(messageToSeal)
 				require.NoError(t, err, "Alice should be able to seal")
 
@@ -80,9 +80,6 @@ func TestNaclerRuby(t *testing.T) {
 					_, err = nacler.New(localecdsa.New(malloryKey), publicKey).Open(sealed)
 					require.Error(t, err, "Mallory should not be able to open")
 				}
-        
-				sealed, err := nacler.Seal(messageToSeal)
-				require.NoError(t, err)
 
 				rubyCmdData := rubyCmdData{
 					Key:          privateEcKeyToPem(t, bobRubyKey),
@@ -115,13 +112,6 @@ func TestNaclerRuby(t *testing.T) {
 					_, err = nacler.New(localecdsa.New(malloryKey), publicKey).Open(sealed)
 					require.Error(t, err, "Mallory should not be able to open")
 				}
-        
-				cipherText := rubyNaclerExec(t, "seal", rubyCmdData)
-
-				plaintext, err := nacler.Open(cipherText)
-				require.NoError(t, err)
-
-				require.Equal(t, string(messageToSeal), string(plaintext))
 			})
 		}
 	}
