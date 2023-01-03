@@ -11,11 +11,13 @@ import (
 
 type keyer interface {
 	SharedKey(counterParty ecdsa.PublicKey) ([32]byte, error)
+	PublicKey() (ecdsa.PublicKey, error)
 }
 
 type Nacler struct {
 	keyer        keyer
 	counterParty ecdsa.PublicKey
+	sharedKey    *[32]byte
 }
 
 func New(keyer keyer, counterParty ecdsa.PublicKey) *Nacler {
@@ -26,7 +28,7 @@ func New(keyer keyer, counterParty ecdsa.PublicKey) *Nacler {
 }
 
 func (n *Nacler) Seal(plainText []byte) ([]byte, error) {
-	sharedKey, err := n.keyer.SharedKey(n.counterParty)
+	sharedKey, err := n.cachedSharedKey()
 	if err != nil {
 		return nil, fmt.Errorf("generating shared key: %w", err)
 	}
@@ -40,9 +42,9 @@ func (n *Nacler) Seal(plainText []byte) ([]byte, error) {
 }
 
 func (n *Nacler) Open(cipherText []byte) ([]byte, error) {
-	sharedKey, err := n.keyer.SharedKey(n.counterParty)
+	sharedKey, err := n.cachedSharedKey()
 	if err != nil {
-		return nil, fmt.Errorf("generating shared key: %w", err)
+		return nil, fmt.Errorf("fetching shared key: %w", err)
 	}
 
 	var decryptNonce [24]byte
@@ -53,4 +55,19 @@ func (n *Nacler) Open(cipherText []byte) ([]byte, error) {
 		return nil, fmt.Errorf("decryption failed")
 	}
 	return decrypted, nil
+}
+
+func (n *Nacler) cachedSharedKey() ([32]byte, error) {
+	if n.sharedKey != nil {
+		return *n.sharedKey, nil
+	}
+
+	key, err := n.keyer.SharedKey(n.counterParty)
+	if err != nil {
+		return [32]byte{}, fmt.Errorf("generating shared key: %w", err)
+	}
+
+	n.sharedKey = &key
+
+	return key, nil
 }

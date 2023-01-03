@@ -50,6 +50,9 @@ func TestNaclerRuby(t *testing.T) {
 	bobRubyKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	require.NoError(t, err)
 
+	malloryKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+
 	naclerTests := []struct {
 		name   string
 		nacler *nacler.Nacler
@@ -61,7 +64,7 @@ func TestNaclerRuby(t *testing.T) {
 	}
 
 	for _, naclerTest := range naclerTests {
-		nacler := naclerTest.nacler
+		aliceNacler := naclerTest.nacler
 
 		for _, messageToSeal := range testMessages {
 			messageToSeal := messageToSeal
@@ -69,8 +72,14 @@ func TestNaclerRuby(t *testing.T) {
 			t.Run(fmt.Sprintf("Alice seals in go using %s, Bob opens in ruby", naclerTest.name), func(t *testing.T) {
 				t.Parallel()
 
-				sealed, err := nacler.Seal(messageToSeal)
-				require.NoError(t, err)
+				sealed, err := aliceNacler.Seal(messageToSeal)
+				require.NoError(t, err, "Alice should be able to seal")
+
+				// make sure mallory can't open
+				for _, publicKey := range []ecdsa.PublicKey{aliceGoKey.PublicKey, bobRubyKey.PublicKey} {
+					_, err = nacler.New(localecdsa.New(malloryKey), publicKey).Open(sealed)
+					require.Error(t, err, "Mallory should not be able to open")
+				}
 
 				rubyCmdData := rubyCmdData{
 					Key:          privateEcKeyToPem(t, bobRubyKey),
@@ -91,12 +100,18 @@ func TestNaclerRuby(t *testing.T) {
 					Plaintext:    string(messageToSeal),
 				}
 
-				cipherText := rubyNaclerExec(t, "seal", rubyCmdData)
+				sealed := rubyNaclerExec(t, "seal", rubyCmdData)
 
-				plaintext, err := nacler.Open(cipherText)
-				require.NoError(t, err)
+				plaintext, err := aliceNacler.Open(sealed)
+				require.NoError(t, err, "Alice should be able to open")
 
 				require.Equal(t, string(messageToSeal), string(plaintext))
+
+				// make sure mallory can't open
+				for _, publicKey := range []ecdsa.PublicKey{aliceGoKey.PublicKey, bobRubyKey.PublicKey} {
+					_, err = nacler.New(localecdsa.New(malloryKey), publicKey).Open(sealed)
+					require.Error(t, err, "Mallory should not be able to open")
+				}
 			})
 		}
 	}

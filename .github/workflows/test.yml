@@ -1,6 +1,7 @@
 name: Test
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -8,12 +9,13 @@ on:
 
 jobs:
   ruby:
-    name: Ruby ${{ matrix.ruby }}
+    name: Ruby ${{ matrix.ruby }} ${{ matrix.os }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
         ruby:
           - '3.1.2'
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
     - uses: actions/checkout@v3
     - name: Set up Ruby
@@ -23,17 +25,19 @@ jobs:
         bundler-cache: true
     - name: Lint
       run: bundle exec rake standard
+      shell: bash
     - name: Test
       run: bundle exec rake test
+      shell: bash
 
   go:
-    name: Go ${{ matrix.go }}
+    name: Go ${{ matrix.go }} ${{ matrix.os }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
         go:
-          - '1.16'
-          - '1.18'
+          - '1.19'
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
     - uses: actions/checkout@v3
     - name: Set up Go
@@ -41,10 +45,15 @@ jobs:
       with:
         go-version: ${{ matrix.go }}
         cache: true
+    - name: Install OpenSSL Windows
+      run: choco install openssl
+      # this dependency is required to run tpm simulator on windows
+      if: runner.os == 'Windows'
     - name: Lint
       uses: golangci/golangci-lint-action@v3
     - name: Test
       run: go test $(go list ./... | grep -v cross_language_tests) -race
+      shell: bash
 
   cross:
     name: Cross -- Go ${{ matrix.go }} Ruby ${{ matrix.ruby }}
@@ -52,8 +61,7 @@ jobs:
     strategy:
       matrix:
         go:
-          - '1.16'
-          - '1.18'
+          - '1.19'
         ruby:
           - '3.1.2'
     steps:
@@ -68,10 +76,14 @@ jobs:
       with:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: true
+    - name: Install OpenSSL Windows
+      run: choco install openssl
+      # this dependency is required to run tpm simulator on windows
+      if: runner.os == 'Windows'
     - name: Cross Language Tests
       # ruby bundler leaves a `vendor` director here, which confuses go mod, so we need to explicitly disable it.
-      run:
-        bundle exec go test ./cross_language_tests/... -mod=mod
+      run: bundle exec go test ./cross_language_tests/... -mod=mod
+      shell: bash
 
   mergeable:
     runs-on: ubuntu-latest
