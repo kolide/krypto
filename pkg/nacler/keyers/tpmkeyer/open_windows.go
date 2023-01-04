@@ -14,11 +14,11 @@ func (t *TpmKeyer) openTpm() (io.ReadWriteCloser, error) {
 		return t.externalTpm, nil
 	}
 
-	return tpm2.OpenTPM("/dev/tpm0")
+	return tpm2.OpenTPM()
 }
 
 func (t *TpmKeyer) TpmAvailable() bool {
-	tpm, err := tpm2.OpenTPM("/dev/tpm0")
+	tpm, err := tpm2.OpenTPM()
 	if err != nil {
 		return false
 	}
