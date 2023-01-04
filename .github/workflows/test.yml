@@ -88,7 +88,7 @@ jobs:
     - name: Install Libsodium on Windows
       if: runner.os == 'Windows'
       run: |
-        cd $env:temp
+        cd "$env:temp"
         Invoke-WebRequest "https://download.libsodium.org/libsodium/releases/libsodium-1.0.18-stable-msvc.zip" -OutFile "./libsodium.zip"
         Expand-Archive ".\libsodium.zip"
         Copy-Item ".\libsodium\libsodium\x64\Release\v142\dynamic\libsodium.dll" -Destination "C:\Windows\System32\sodium.dll"
