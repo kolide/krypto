@@ -97,7 +97,7 @@ func testTpmKeyer(t *testing.T) *tpmkeyer.TpmKeyer {
 
 	// have a working tpm
 	if tpmKeyer.TpmAvailable() {
-		t.Log("actual tpm avaliable, using for tests")
+		t.Log("actual tpm available, using for tests")
 		return tpmKeyer
 	}
 

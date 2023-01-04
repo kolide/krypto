@@ -12,8 +12,6 @@ import (
 	"github.com/google/go-tpm/tpmutil"
 )
 
-const tpmKeyBitCount = 2048
-
 type TpmKeyerOption func(*TpmKeyer)
 
 // WithExternalTpm lets the caller provide a tpm to use. This is useful for testing.
@@ -46,12 +44,17 @@ func (t *TpmKeyer) SharedKey(counterParty ecdsa.PublicKey) ([32]byte, error) {
 	if err != nil {
 		return [32]byte{}, fmt.Errorf("opening tpm: %w", err)
 	}
+
+	// nothing we can do here on error, consider logging?
+	// nolint: errcheck
 	defer t.closeInternalTpm(tpm)
 
 	handle, _, err := createKey(tpm)
 	if err != nil {
 		return [32]byte{}, fmt.Errorf("creating tpm key: %w", err)
 	}
+	// nothing we can do here on error, consider logging?
+	// nolint: errcheck
 	defer tpm2.FlushContext(tpm, handle)
 
 	shared, err := tpm2.ECDHZGen(tpm, handle, "", tpm2.ECPoint{
@@ -78,12 +81,18 @@ func (t *TpmKeyer) PublicKey() (ecdsa.PublicKey, error) {
 	if err != nil {
 		return ecdsa.PublicKey{}, fmt.Errorf("opening tpm: %w", err)
 	}
+
+	// nothing we can do here on error, consider logging?
+	// nolint: errcheck
 	defer t.closeInternalTpm(tpm)
 
 	handle, pub, err := createKey(tpm)
 	if err != nil {
 		return ecdsa.PublicKey{}, fmt.Errorf("creating key: %w", err)
 	}
+
+	// nothing we can do here on error, consider logging?
+	// nolint: errcheck
 	defer tpm2.FlushContext(tpm, handle)
 
 	t.publicKey = pub.(*ecdsa.PublicKey)
