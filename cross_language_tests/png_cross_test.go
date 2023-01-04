@@ -54,11 +54,12 @@ func TestPngRuby(t *testing.T) {
 			})
 
 			for _, routine := range []string{"decode-file", "decode-blob", "decode-io"} {
+				routine := routine
 
 				t.Run(routine, func(t *testing.T) {
 					t.Parallel()
 
-					ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+					ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 					defer cancel()
 
 					resultFile := path.Join(dir, ulid.New()+".dat")
