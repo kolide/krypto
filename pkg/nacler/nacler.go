@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"io"
+	"sync"
 
 	"golang.org/x/crypto/nacl/box"
 )
@@ -15,9 +16,10 @@ type keyer interface {
 }
 
 type Nacler struct {
-	keyer        keyer
-	counterParty ecdsa.PublicKey
-	sharedKey    *[32]byte
+	keyer         keyer
+	counterParty  ecdsa.PublicKey
+	sharedKey     *[32]byte
+	sharedKeyLock sync.Mutex
 }
 
 func New(keyer keyer, counterParty ecdsa.PublicKey) *Nacler {
@@ -62,6 +64,9 @@ func (n *Nacler) Open(cipherText []byte) ([]byte, error) {
 }
 
 func (n *Nacler) cachedSharedKey() ([32]byte, error) {
+	n.sharedKeyLock.Lock()
+	defer n.sharedKeyLock.Unlock()
+
 	if n.sharedKey != nil {
 		return *n.sharedKey, nil
 	}
