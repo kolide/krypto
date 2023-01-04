@@ -127,17 +127,22 @@ func rubyNaclerExec(t *testing.T, rubyCmd string, inputData rubyCmdData) []byte 
 	inFilePath := filepath.Join(dir, "in")
 	require.NoError(t, os.WriteFile(inFilePath, testCaseBytesBase64, 0644))
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, naclerRB, rubyCmd, inFilePath)
+	cmd := exec.CommandContext(ctx, "ruby", naclerRB, rubyCmd, inFilePath)
 	out, err := cmd.CombinedOutput()
 
 	require.NoError(t, ctx.Err())
 	require.NoError(t, err, string(out))
 
 	// trim the trailing \n in output
-	return []byte(strings.Trim(string(out), "\n"))
+	out = []byte(strings.Trim(string(out), "\n"))
+
+	out, err = base64.StdEncoding.DecodeString(string(out))
+	require.NoError(t, err)
+
+	return out
 }
 
 func privateEcKeyToPem(t *testing.T, private *ecdsa.PrivateKey) []byte {

@@ -67,7 +67,7 @@ func TestAesRuby(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
 
-				cmd := exec.CommandContext(ctx, aesRB, "decrypt", testfile, path.Join(dir, "ruby-decrypt-go"))
+				cmd := exec.CommandContext(ctx, "ruby", aesRB, "decrypt", testfile, path.Join(dir, "ruby-decrypt-go"))
 				out, err := cmd.CombinedOutput()
 				require.NoError(t, err, string(out))
 
@@ -83,7 +83,7 @@ func TestAesRuby(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
 
-				cmd := exec.CommandContext(ctx, aesRB, "encrypt", testfile, path.Join(dir, "ruby-encrypted"))
+				cmd := exec.CommandContext(ctx, "ruby", aesRB, "encrypt", testfile, path.Join(dir, "ruby-encrypted"))
 				out, err := cmd.CombinedOutput()
 				require.NoError(t, err, string(out))
 
