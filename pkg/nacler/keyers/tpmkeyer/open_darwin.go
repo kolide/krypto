@@ -1,7 +1,7 @@
 //go:build darwin
 // +build darwin
 
-package krypto
+package tpmkeyer
 
 import (
 	"errors"

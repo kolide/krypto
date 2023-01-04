@@ -58,7 +58,7 @@ func TestPngRuby(t *testing.T) {
 				t.Run(routine, func(t *testing.T) {
 					t.Parallel()
 
-					ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+					ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 					defer cancel()
 
 					resultFile := path.Join(dir, ulid.New()+".dat")
@@ -66,6 +66,7 @@ func TestPngRuby(t *testing.T) {
 					cmd := exec.CommandContext(ctx, pngRB, routine, pngfile, resultFile)
 					out, err := cmd.CombinedOutput()
 					require.NoError(t, err, string(out))
+					require.NoError(t, ctx.Err())
 
 					res, err := os.ReadFile(resultFile)
 					require.NoError(t, err)
