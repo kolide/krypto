@@ -74,7 +74,7 @@ func TestRsaRuby(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
-				cmd := exec.CommandContext(ctx, rsaRB, "decrypt", testfile, path.Join(dir, "ruby-decrypt"))
+				cmd := exec.CommandContext(ctx, "ruby", rsaRB, "decrypt", testfile, path.Join(dir, "ruby-decrypt"))
 				out, err := cmd.CombinedOutput()
 				require.NoError(t, err, string(out))
 
@@ -100,7 +100,7 @@ func TestRsaRuby(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
-				cmd := exec.CommandContext(ctx, rsaRB, "encrypt", testfile, path.Join(dir, "ruby-encrypt"))
+				cmd := exec.CommandContext(ctx, "ruby", rsaRB, "encrypt", testfile, path.Join(dir, "ruby-encrypt"))
 				out, err := cmd.CombinedOutput()
 				require.NoError(t, err, string(out))
 
@@ -132,7 +132,7 @@ func TestRsaRuby(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
-				cmd := exec.CommandContext(ctx, rsaRB, "verify", testfile, path.Join(dir, "ruby-verify"))
+				cmd := exec.CommandContext(ctx, "ruby", rsaRB, "verify", testfile, path.Join(dir, "ruby-verify"))
 				out, err := cmd.CombinedOutput()
 				require.NoError(t, err, string(out))
 
@@ -159,8 +159,9 @@ func TestRsaRuby(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
-				cmd := exec.CommandContext(ctx, rsaRB, "sign", testfile, path.Join(dir, "ruby-signed"))
+				cmd := exec.CommandContext(ctx, "ruby", rsaRB, "sign", testfile, path.Join(dir, "ruby-signed"))
 				out, err := cmd.CombinedOutput()
+				require.NoError(t, err, ctx.Err())
 				require.NoError(t, err, string(out))
 
 				res, err := os.ReadFile(path.Join(dir, "ruby-signed"))

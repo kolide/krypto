@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"runtime"
 	"testing"
 	"time"
 
@@ -187,6 +188,10 @@ func TestBoxerRuby(t *testing.T) {
 				t.Run("", func(t *testing.T) {
 					t.Parallel()
 
+					if runtime.GOOS == "windows" && tt.cmd == "decodepng" {
+						t.Skip("skip png decode test on windows because ruby library chunky_png is looking for CRLF png signature")
+					}
+
 					testfile := path.Join(dir, ulid.New()+".msgpack")
 					rubyout := path.Join(dir, ulid.New()+"ruby-out")
 
@@ -249,6 +254,7 @@ func TestBoxerRuby(t *testing.T) {
 				defer cancel()
 
 				cmd := exec.CommandContext(ctx, "ruby", boxerRB, "sign", rubyInFile, rubyOutFile)
+				require.NoError(t, ctx.Err())
 
 				out, err := cmd.CombinedOutput()
 				require.NoError(t, err, string(out))
