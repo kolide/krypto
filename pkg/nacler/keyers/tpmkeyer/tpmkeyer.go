@@ -4,8 +4,10 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
+	"runtime"
 	"sync"
 
 	"github.com/google/go-tpm/tpm2"
@@ -116,4 +118,25 @@ func (t *TpmKeyer) closeInternalTpm(tpm io.ReadWriteCloser) error {
 	}
 
 	return tpm.Close()
+}
+
+func (t *TpmKeyer) openTpm() (io.ReadWriteCloser, error) {
+	if t.externalTpm != nil {
+		return t.externalTpm, nil
+	}
+
+	if runtime.GOOS == "darwin" {
+		return nil, errors.New("external TPM required for darwin, but was nil")
+	}
+
+	return tpm2.OpenTPM()
+}
+
+func (t *TpmKeyer) TpmAvailable() bool {
+	tpm, err := tpm2.OpenTPM()
+	if err != nil {
+		return false
+	}
+	defer tpm.Close()
+	return true
 }
