@@ -46,11 +46,7 @@ func (n *Nacler) Seal(plainText []byte) ([]byte, error) {
 func (n *Nacler) Open(cipherText []byte) ([]byte, error) {
 	sharedKey, err := n.cachedSharedKey()
 	if err != nil {
-		return nil, fmt.Errorf("fetching shared key: %w", err)
-	}
-
-	if err != nil {
-		return nil, fmt.Errorf("generating shared key: %w", err)
+		return nil, fmt.Errorf("getting shared key: %w", err)
 	}
 
 	var decryptNonce [24]byte
