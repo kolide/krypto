@@ -107,20 +107,20 @@ func testTpmKeyer(t *testing.T) *tpmkeyer.TpmKeyer {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		CheckedClose(t, simulatedTpm)
+		checkTpmClose(t, simulatedTpm)
 	})
 
 	return tpmkeyer.New(tpmkeyer.WithExternalTpm(simulatedTpm))
 }
 
-// CheckedClose closes the simulator and asserts that there were no leaked handles.
-func CheckedClose(t *testing.T, rwc io.ReadWriteCloser) {
+// checkTpmClose closes the simulator and asserts that there were no leaked handles.
+func checkTpmClose(t *testing.T, rwc io.ReadWriteCloser) {
 	for _, handle := range []tpm2.HandleType{
 		tpm2.HandleTypeLoadedSession,
 		tpm2.HandleTypeSavedSession,
 		tpm2.HandleTypeTransient,
 	} {
-		handles, err := Handles(rwc, handle)
+		handles, err := tpmHandles(rwc, handle)
 		require.NoError(t, err)
 		require.Empty(t, len(handles), fmt.Sprintf("test leaked handles: %v", handles))
 	}
@@ -128,9 +128,9 @@ func CheckedClose(t *testing.T, rwc io.ReadWriteCloser) {
 	require.NoError(t, rwc.Close())
 }
 
-// Handles returns a slice of tpmutil.Handle objects of all handles within
+// tpmHandles returns a slice of tpmutil.Handle objects of all handles within
 // the TPM rw of type handleType.
-func Handles(rw io.ReadWriter, handleType tpm2.HandleType) ([]tpmutil.Handle, error) {
+func tpmHandles(rw io.ReadWriter, handleType tpm2.HandleType) ([]tpmutil.Handle, error) {
 	// Handle type is determined by the most-significant octet (MSO) of the property.
 	property := uint32(handleType) << 24
 
