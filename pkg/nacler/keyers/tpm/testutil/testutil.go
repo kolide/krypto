@@ -17,13 +17,13 @@ import (
 // otherwise it returns a tpm keyer using a tpm hardware chip simulator.
 func TpmKeyerSimulatorFallback(t *testing.T) *tpmkeyer.TpmKeyer {
 	tpmKeyer, err := tpmkeyer.New()
-	require.NoError(t, err)
-
-	// have a working tpm
-	if tpmKeyer.TpmAvailable() {
-		t.Log("actual tpm available, using for tests")
+	// we have a working TPM
+	if err == nil {
 		return tpmKeyer
 	}
+
+	// fail if we encounter any error other than TPM not available
+	require.ErrorContains(t, err, "TPM not available")
 
 	// no working tpm, use simulator
 	t.Log("no tpm found, using simulator")
