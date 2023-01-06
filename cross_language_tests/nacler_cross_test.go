@@ -18,6 +18,7 @@ import (
 
 	"github.com/kolide/krypto/pkg/nacler"
 	"github.com/kolide/krypto/pkg/nacler/keyers/localecdsa"
+	tpmTestUtil "github.com/kolide/krypto/pkg/nacler/keyers/tpm/testutil"
 	"github.com/stretchr/testify/require"
 	"github.com/vmihailenco/msgpack/v5"
 )
@@ -44,27 +45,37 @@ func TestNaclerRuby(t *testing.T) {
 		mkrand(t, 4096),
 	}
 
-	aliceGoKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	require.NoError(t, err)
-
 	bobRubyKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	require.NoError(t, err)
 
-	malloryKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	require.NoError(t, err)
-
-	naclerTests := []struct {
-		name   string
-		nacler *nacler.Nacler
+	tests := []struct {
+		name      string
+		makeKeyer func(*testing.T) nacler.Keyer
 	}{
 		{
-			name:   "local ecdsa keyer",
-			nacler: nacler.New(localecdsa.New(aliceGoKey), bobRubyKey.PublicKey),
+			name: "local ecdsa keyer",
+			makeKeyer: func(t *testing.T) nacler.Keyer {
+				aliceKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+				require.NoError(t, err)
+				return localecdsa.New(aliceKey)
+			},
+		},
+		{
+			name: "tpm keyer",
+			makeKeyer: func(t *testing.T) nacler.Keyer {
+				keyer := tpmTestUtil.TestTpmKeyer(t)
+				return keyer
+			},
 		},
 	}
 
-	for _, naclerTest := range naclerTests {
-		aliceNacler := naclerTest.nacler
+	for _, naclerTest := range tests {
+		aliceKeyer := naclerTest.makeKeyer(t)
+		aliceGoPublicKey, err := aliceKeyer.PublicKey()
+		require.NoError(t, err)
+
+		aliceNacler, err := nacler.New(naclerTest.makeKeyer(t), bobRubyKey.PublicKey)
+		require.NoError(t, err)
 
 		for _, messageToSeal := range testMessages {
 			messageToSeal := messageToSeal
@@ -75,15 +86,11 @@ func TestNaclerRuby(t *testing.T) {
 				sealed, err := aliceNacler.Seal(messageToSeal)
 				require.NoError(t, err, "Alice should be able to seal")
 
-				// make sure mallory can't open
-				for _, publicKey := range []ecdsa.PublicKey{aliceGoKey.PublicKey, bobRubyKey.PublicKey} {
-					_, err = nacler.New(localecdsa.New(malloryKey), publicKey).Open(sealed)
-					require.Error(t, err, "Mallory should not be able to open")
-				}
+				requireMalloryCantOpen(t, sealed, aliceGoPublicKey, bobRubyKey.PublicKey)
 
 				rubyCmdData := rubyCmdData{
 					Key:          privateEcKeyToPem(t, bobRubyKey),
-					Counterparty: publicEcKeyToPem(t, &aliceGoKey.PublicKey),
+					Counterparty: publicEcKeyToPem(t, &aliceGoPublicKey),
 					Ciphertext:   sealed,
 				}
 
@@ -96,7 +103,7 @@ func TestNaclerRuby(t *testing.T) {
 
 				rubyCmdData := rubyCmdData{
 					Key:          privateEcKeyToPem(t, bobRubyKey),
-					Counterparty: publicEcKeyToPem(t, &aliceGoKey.PublicKey),
+					Counterparty: publicEcKeyToPem(t, &aliceGoPublicKey),
 					Plaintext:    string(messageToSeal),
 				}
 
@@ -107,11 +114,7 @@ func TestNaclerRuby(t *testing.T) {
 
 				require.Equal(t, string(messageToSeal), string(plaintext))
 
-				// make sure mallory can't open
-				for _, publicKey := range []ecdsa.PublicKey{aliceGoKey.PublicKey, bobRubyKey.PublicKey} {
-					_, err = nacler.New(localecdsa.New(malloryKey), publicKey).Open(sealed)
-					require.Error(t, err, "Mallory should not be able to open")
-				}
+				requireMalloryCantOpen(t, sealed, aliceGoPublicKey, bobRubyKey.PublicKey)
 			})
 		}
 	}
@@ -155,4 +158,16 @@ func publicEcKeyToPem(t *testing.T, public *ecdsa.PublicKey) []byte {
 	bytes, err := x509.MarshalPKIXPublicKey(public)
 	require.NoError(t, err)
 	return pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: bytes})
+}
+
+func requireMalloryCantOpen(t *testing.T, sealed []byte, counterParties ...ecdsa.PublicKey) {
+	malloryKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+
+	for _, publicKey := range counterParties {
+		malloryNacler, err := nacler.New(localecdsa.New(malloryKey), publicKey)
+		require.NoError(t, err)
+		_, err = malloryNacler.Open(sealed)
+		require.Error(t, err, "Mallory should not be able to open")
+	}
 }

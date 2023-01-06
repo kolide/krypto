@@ -1,4 +1,4 @@
-package tpmkeyer
+package tpm
 
 import (
 	"crypto"
@@ -16,7 +16,8 @@ import (
 
 type TpmKeyerOption func(*TpmKeyer)
 
-// WithExternalTpm lets the caller provide a tpm to use. This is useful for testing.
+// WithExternalTpm lets the caller provide the tpm hardware interface to use instead of letting the keyer auto discover.
+// This is useful for testing in a CI environment where you may not have access to a TPM chip.
 // The caller is responsible for closing the external tpm.
 func WithExternalTpm(externalTpm io.ReadWriteCloser) TpmKeyerOption {
 	return func(t *TpmKeyer) {
