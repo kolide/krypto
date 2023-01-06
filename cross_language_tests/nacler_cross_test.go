@@ -74,7 +74,7 @@ func TestNaclerRuby(t *testing.T) {
 		aliceGoPublicKey, err := aliceKeyer.PublicKey()
 		require.NoError(t, err)
 
-		aliceNacler, err := nacler.New(naclerTest.makeKeyer(t), bobRubyKey.PublicKey)
+		aliceNacler, err := nacler.New(aliceKeyer, bobRubyKey.PublicKey)
 		require.NoError(t, err)
 
 		for _, messageToSeal := range testMessages {
