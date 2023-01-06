@@ -109,7 +109,7 @@ jobs:
         bundler-cache: false
     - name: Cross Language Tests
       # ruby bundler leaves a `vendor` director here, which confuses go mod, so we need to explicitly disable it.
-      run: bundle exec go test ./cross_language_tests/... -mod=mod
+      run: bundle install && bundle exec go test ./cross_language_tests/... -mod=mod
       shell: bash
 
   mergeable:
