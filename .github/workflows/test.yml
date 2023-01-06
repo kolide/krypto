@@ -110,7 +110,7 @@ jobs:
     - name: Set go C compiler on Windows
       if: runner.os == 'Windows'
       # the ruby installation adds a gcc and sets a path not compatible with tpm simulator
-      run: echo 'CC="C:\ProgramData\chocolatey\bin\gcc.exe"' >> $GITHUB_ENV
+      run: echo "CC=\"C:\ProgramData\chocolatey\bin\gcc.exe\"" >> $GITHUB_ENV
       shell: bash
     - name: Cross Language Tests
       # ruby bundler leaves a `vendor` director here, which confuses go mod, so we need to explicitly disable it.
