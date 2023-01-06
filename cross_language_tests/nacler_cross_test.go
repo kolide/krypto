@@ -63,7 +63,7 @@ func TestNaclerRuby(t *testing.T) {
 		{
 			name: "tpm keyer",
 			makeKeyer: func(t *testing.T) nacler.Keyer {
-				keyer := tpmTestUtil.TestTpmKeyer(t)
+				keyer := tpmTestUtil.TpmKeyerSimulatorFallback(t)
 				return keyer
 			},
 		},

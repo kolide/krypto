@@ -36,7 +36,7 @@ func TestNacler(t *testing.T) {
 		{
 			name: "tpm keyer",
 			makeKeyer: func(t *testing.T) Keyer {
-				keyer := tpmTestUtil.TestTpmKeyer(t)
+				keyer := tpmTestUtil.TpmKeyerSimulatorFallback(t)
 				return keyer
 			},
 		},

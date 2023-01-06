@@ -13,7 +13,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTpmKeyer(t *testing.T) *tpmkeyer.TpmKeyer {
+// TpmKeyerSimulatorFallback returns an tpm keyer using TPM hardware chip if available,
+// otherwise it returns a tpm keyer using a tpm hardware chip simulator.
+func TpmKeyerSimulatorFallback(t *testing.T) *tpmkeyer.TpmKeyer {
 	tpmKeyer := tpmkeyer.New()
 
 	// have a working tpm
