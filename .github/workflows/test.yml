@@ -80,16 +80,6 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Go
-      uses: actions/setup-go@v3
-      with:
-        go-version: ${{ matrix.go }}
-        cache: true
-    - name: Set up Ruby
-      uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: ${{ matrix.ruby }}
-        bundler-cache: true
     - name: Install OpenSSL on Windows
       if: runner.os == 'Windows'
       # this is required to be able to run the TPM simulator on Windows
@@ -107,6 +97,16 @@ jobs:
         Expand-Archive ".\libsodium.zip"
         Copy-Item ".\libsodium\libsodium\x64\Release\v142\dynamic\libsodium.dll" -Destination "C:\Windows\System32\sodium.dll"
       shell: pwsh
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: ${{ matrix.go }}
+        cache: false
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby }}
+        bundler-cache: false
     - name: Cross Language Tests
       # ruby bundler leaves a `vendor` director here, which confuses go mod, so we need to explicitly disable it.
       run: bundle exec go test ./cross_language_tests/... -mod=mod
