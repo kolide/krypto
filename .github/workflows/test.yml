@@ -77,7 +77,7 @@ jobs:
           - '1.19'
         ruby:
           - '3.1.2'
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-2019, macos-latest]
     steps:
     - uses: actions/checkout@v3
     - name: Set up Go
@@ -106,6 +106,7 @@ jobs:
         Invoke-WebRequest "https://download.libsodium.org/libsodium/releases/libsodium-1.0.18-stable-msvc.zip" -OutFile "./libsodium.zip"
         Expand-Archive ".\libsodium.zip"
         Copy-Item ".\libsodium\libsodium\x64\Release\v142\dynamic\libsodium.dll" -Destination "C:\Windows\System32\sodium.dll"
+      shell: pwsh
     - name: Cross Language Tests
       # ruby bundler leaves a `vendor` director here, which confuses go mod, so we need to explicitly disable it.
       run: bundle exec go test ./cross_language_tests/... -mod=mod
