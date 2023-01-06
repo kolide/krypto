@@ -16,7 +16,8 @@ import (
 // TpmKeyerSimulatorFallback returns an tpm keyer using TPM hardware chip if available,
 // otherwise it returns a tpm keyer using a tpm hardware chip simulator.
 func TpmKeyerSimulatorFallback(t *testing.T) *tpmkeyer.TpmKeyer {
-	tpmKeyer := tpmkeyer.New()
+	tpmKeyer, err := tpmkeyer.New()
+	require.NoError(t, err)
 
 	// have a working tpm
 	if tpmKeyer.TpmAvailable() {
@@ -33,7 +34,10 @@ func TpmKeyerSimulatorFallback(t *testing.T) *tpmkeyer.TpmKeyer {
 		checkTpmClose(t, simulatedTpm)
 	})
 
-	return tpmkeyer.New(tpmkeyer.WithExternalTpm(simulatedTpm))
+	tpmKeyer, err = tpmkeyer.New(tpmkeyer.WithExternalTpm(simulatedTpm))
+	require.NoError(t, err)
+
+	return tpmKeyer
 }
 
 // checkTpmClose closes the simulator and asserts that there were no leaked handles.

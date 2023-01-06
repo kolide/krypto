@@ -31,12 +31,23 @@ type TpmKeyer struct {
 	publicKey   *ecdsa.PublicKey
 }
 
-func New(opts ...TpmKeyerOption) *TpmKeyer {
+func New(opts ...TpmKeyerOption) (*TpmKeyer, error) {
 	tpmKeyer := &TpmKeyer{}
 	for _, opt := range opts {
 		opt(tpmKeyer)
 	}
-	return tpmKeyer
+
+	// have external TPM assume it works and move on
+	if tpmKeyer.externalTpm != nil {
+		return tpmKeyer, nil
+	}
+
+	// check that we can access the tpm
+	if !tpmKeyer.TpmAvailable() {
+		return nil, errors.New("TPM not available")
+	}
+
+	return tpmKeyer, nil
 }
 
 func (t *TpmKeyer) SharedKey(counterParty ecdsa.PublicKey) ([32]byte, error) {
@@ -56,6 +67,7 @@ func (t *TpmKeyer) SharedKey(counterParty ecdsa.PublicKey) ([32]byte, error) {
 	if err != nil {
 		return [32]byte{}, fmt.Errorf("creating tpm key: %w", err)
 	}
+
 	// nothing we can do here on error, consider logging?
 	// nolint: errcheck
 	defer tpm2.FlushContext(tpm, handle)
