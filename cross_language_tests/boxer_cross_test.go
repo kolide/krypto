@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"runtime"
 	"testing"
 	"time"
 
@@ -97,7 +98,7 @@ func TestBoxerRuby(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
 
-				cmd := exec.CommandContext(ctx, boxerRB, "encode", rubyInFile, rubyOutFile)
+				cmd := exec.CommandContext(ctx, "ruby", boxerRB, "encode", rubyInFile, rubyOutFile)
 
 				out, err := cmd.CombinedOutput()
 				require.NoError(t, err, string(out))
@@ -187,6 +188,10 @@ func TestBoxerRuby(t *testing.T) {
 				t.Run("", func(t *testing.T) {
 					t.Parallel()
 
+					if runtime.GOOS == "windows" && tt.cmd == "decodepng" {
+						t.Skip("skip png decode test on windows because ruby library chunky_png is looking for CRLF png signature")
+					}
+
 					testfile := path.Join(dir, ulid.New()+".msgpack")
 					rubyout := path.Join(dir, ulid.New()+"ruby-out")
 
@@ -201,7 +206,7 @@ func TestBoxerRuby(t *testing.T) {
 					defer cancel()
 
 					//#nosec G204 -- No taint on hardcoded input
-					cmd := exec.CommandContext(ctx, boxerRB, tt.cmd, testfile, rubyout)
+					cmd := exec.CommandContext(ctx, "ruby", boxerRB, tt.cmd, testfile, rubyout)
 					out, err := cmd.CombinedOutput()
 
 					//
@@ -248,7 +253,8 @@ func TestBoxerRuby(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
 
-				cmd := exec.CommandContext(ctx, boxerRB, "sign", rubyInFile, rubyOutFile)
+				cmd := exec.CommandContext(ctx, "ruby", boxerRB, "sign", rubyInFile, rubyOutFile)
+				require.NoError(t, ctx.Err())
 
 				out, err := cmd.CombinedOutput()
 				require.NoError(t, err, string(out))

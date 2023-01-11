@@ -10,20 +10,17 @@ module Krypto
       @key = key
       raise "Missing counter party" unless counterparty
       @counterparty = counterparty
+
+      shared_key = OpenSSL::Digest::SHA256.digest(@key.dh_compute_key(@counterparty))
+      @box = RbNaCl::SimpleBox.from_secret_key(shared_key)
     end
 
     def seal(plaintext)
-      shared = @key.dh_compute_key(@counterparty)
-      shared_key = OpenSSL::Digest::SHA256.digest(shared)
-      box = RbNaCl::SimpleBox.from_secret_key(shared_key)
-      box.encrypt(plaintext)
+      @box.encrypt(plaintext)
     end
 
     def open(ciphertext)
-      shared = @key.dh_compute_key(@counterparty)
-      shared_key = OpenSSL::Digest::SHA256.digest(shared)
-      box = RbNaCl::SimpleBox.from_secret_key(shared_key)
-      box.decrypt(ciphertext)
+      @box.decrypt(ciphertext)
     end
   end
 end

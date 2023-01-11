@@ -21,3 +21,7 @@ func (l *localecdsa) SharedKey(counterParty ecdsa.PublicKey) ([32]byte, error) {
 	generated, _ := counterParty.Curve.ScalarMult(counterParty.X, counterParty.Y, l.key.D.Bytes())
 	return sha256.Sum256(generated.Bytes()), nil
 }
+
+func (l *localecdsa) PublicKey() (ecdsa.PublicKey, error) {
+	return l.key.PublicKey, nil
+}

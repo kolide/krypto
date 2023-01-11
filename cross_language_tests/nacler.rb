@@ -16,9 +16,9 @@ nacler = Krypto::Nacler.new(key, counterparty.public_key)
 
 case cmd
 when "seal"
-  puts(nacler.seal(testcase["Plaintext"]))
+  puts(Base64.strict_encode64(nacler.seal(testcase["Plaintext"])))
 when "open"
-  puts(nacler.open(testcase["Ciphertext"]))
+  puts(Base64.strict_encode64(nacler.open(testcase["Ciphertext"])))
 else
   puts "What are we doing here?"
   exit(1)

@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"runtime"
 	"testing"
 	"time"
 
@@ -54,18 +55,24 @@ func TestPngRuby(t *testing.T) {
 			})
 
 			for _, routine := range []string{"decode-file", "decode-blob", "decode-io"} {
+				routine := routine
 
 				t.Run(routine, func(t *testing.T) {
 					t.Parallel()
 
-					ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+					if runtime.GOOS == "windows" {
+						t.Skip("skip png decode test on windows because ruby library chunky_png is looking for CRLF png signature")
+					}
+
+					ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 					defer cancel()
 
 					resultFile := path.Join(dir, ulid.New()+".dat")
 
-					cmd := exec.CommandContext(ctx, pngRB, routine, pngfile, resultFile)
+					cmd := exec.CommandContext(ctx, "ruby", pngRB, routine, pngfile, resultFile)
 					out, err := cmd.CombinedOutput()
 					require.NoError(t, err, string(out))
+					require.NoError(t, ctx.Err())
 
 					res, err := os.ReadFile(resultFile)
 					require.NoError(t, err)
