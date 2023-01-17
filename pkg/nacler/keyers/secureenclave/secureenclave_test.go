@@ -27,6 +27,7 @@ const (
 
 // TestSecureEnclaveTestRunner creates a MacOS app with the binary of this packages tests, then signs the app with entitlements and runs the tests.
 // This is done because in order to access secure enclave to run tests, we need MacOS entitlements.
+// #nosec G306 -- Need readable files
 func TestSecureEnclaveTestRunner(t *testing.T) {
 	t.Parallel()
 
