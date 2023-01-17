@@ -164,7 +164,7 @@ func findKey(publicKey ecdsa.PublicKey) (*ecdsa.PublicKey, error) {
 	}
 
 	cHash := C.CBytes(lookupHash)
-	defer C.free(unsafe.Pointer(cHash))
+	defer C.free(cHash)
 
 	wrapper := C.wrapFindKey(cHash)
 	result, err := unwrap(wrapper)

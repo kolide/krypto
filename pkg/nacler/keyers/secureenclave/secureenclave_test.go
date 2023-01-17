@@ -188,6 +188,7 @@ func copyFile(t *testing.T, source, destination string) {
 	require.NoError(t, os.WriteFile(destination, bytes, 0700))
 }
 
+// #nosec G204 -- This triggers due to using env var in cmd, making exception for test
 func signApp(t *testing.T, appRootDir string) {
 	codeSignId := os.Getenv("MACOS_CODESIGN_IDENTITY")
 	require.NotEmpty(t, codeSignId, "need MACOS_CODESIGN_IDENTITY env var to sign app, such as [Mac Developer: Jane Doe (ABCD123456)]")
