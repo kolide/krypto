@@ -181,6 +181,7 @@ func requireMalloryCantOpen(t *testing.T, sealed []byte, publicKeys ...ecdsa.Pub
 	}
 }
 
+// #nosec G306 -- Need readable files
 func copyFile(t *testing.T, source, destination string) {
 	bytes, err := os.ReadFile(source)
 	require.NoError(t, err)
