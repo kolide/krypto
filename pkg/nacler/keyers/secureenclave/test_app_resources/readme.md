@@ -1,5 +1,7 @@
 # Running Tests
 
+The files in this directory are used only for testing.
+
 The secure enclave keyer requires apple entitlements in order to be able to access the secure encalve to generate keys and perform cryptographic operations. In order to do this we build the secure enclave go tests to a binary, sign that binary with the required MacOS entitlements, then execute the binary and inspect the output. This is all done via the `TestSecureEnclaveTestRunner` function.
 
 In order to add entitlements we first need to create a MacOS app with the following structure:
