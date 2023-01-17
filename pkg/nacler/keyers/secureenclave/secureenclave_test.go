@@ -22,7 +22,7 @@ import (
 
 const (
 	testWrappedEnvVarKey = "SECURE_ENCLAVE_TEST_WRAPPED"
-	macOsAppResourceDir  = "./app_resources"
+	macOsAppResourceDir  = "./test_app_resources"
 )
 
 // TestSecureEnclaveTestRunner creates a MacOS app with the binary of this packages tests, then signs the app with entitlements and runs the tests.
