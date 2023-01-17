@@ -150,7 +150,7 @@ func TestSecureEnclaveKeyerErrors(t *testing.T) {
 		require.Nil(t, emptyKey.Y)
 
 		_, err := New(WithExistingKey(*emptyKey))
-		require.Error(t, err, "new secure encalve keyer should error with nil existing key")
+		require.Error(t, err, "new secure enclave keyer should error with nil existing key")
 	})
 
 	t.Run("shared key with null counter party", func(t *testing.T) {
