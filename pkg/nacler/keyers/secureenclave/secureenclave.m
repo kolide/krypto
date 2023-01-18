@@ -237,3 +237,30 @@ size_t ecdh(unsigned char* hash, unsigned char* counterParty, int counterPartySi
     CFRelease(shared);
     return size;
 }
+
+Wrapper *wrapCreateKey() {
+	Wrapper *res = (Wrapper *)malloc(sizeof(Wrapper));
+	if (!res)
+		return NULL;
+	memset(res, 0, sizeof(Wrapper));
+	res->size = createKey(&res->buf, &res->error);
+	return res;
+}
+
+Wrapper *wrapFindKey(void *hash) {
+	Wrapper *res = (Wrapper *)malloc(sizeof(Wrapper));
+	if (!res)
+		return NULL;
+	memset(res, 0, sizeof(Wrapper));
+	res->size = findKey((unsigned char *)hash, &res->buf, &res->error);
+	return res;
+}
+
+Wrapper *wrapECDH(void *hash, void *counterParty, int counterPartySize) {
+	Wrapper *res = (Wrapper *)malloc(sizeof(Wrapper));
+	if (!res)
+		return NULL;
+	memset(res, 0, sizeof(Wrapper));
+	res->size = ecdh((unsigned char *)hash, (unsigned char *)counterParty, counterPartySize, &res->buf, &res->error);
+	return res;
+}
