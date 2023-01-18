@@ -145,7 +145,8 @@ OSStatus findPrivateKey(CFDataRef pubKeySha1, SecKeyRef *key) {
 }
 
 size_t findKey(unsigned char* hash, unsigned char** ret, char** retErr){
-    CFDataRef cfHash = CFDataCreateWithBytesNoCopy(kCFAllocatorDefault, (UInt8*)hash, 20, kCFAllocatorNull);
+    #define sha1HashSize 20
+    CFDataRef cfHash = CFDataCreateWithBytesNoCopy(kCFAllocatorDefault, (UInt8*)hash, sha1HashSize, kCFAllocatorNull);
     SecKeyRef privateKey = NULL;
     OSStatus status = findPrivateKey(cfHash, (__bridge void *)&privateKey);
 
