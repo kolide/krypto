@@ -26,6 +26,8 @@ type SecureEnclaveKeyer struct {
 	publicKey *ecdsa.PublicKey
 }
 
+// New verifies that the provided public key already exists in the secure enclave.
+// Then returns a new Secure Enclave Keyer using the provided public key.
 func New(publicKey ecdsa.PublicKey) (*SecureEnclaveKeyer, error) {
 	se := &SecureEnclaveKeyer{
 		publicKey: &publicKey,
@@ -53,9 +55,9 @@ func (s *SecureEnclaveKeyer) SharedKey(counterParty ecdsa.PublicKey) ([32]byte, 
 		return [32]byte{}, err
 	}
 
-	marshalled := elliptic.Marshal(counterParty.Curve, counterParty.X, counterParty.Y)
-	cCounterParty := C.CBytes(marshalled)
-	cCounterPartySize := C.int(len(marshalled))
+	counterPartyMarshalled := elliptic.Marshal(counterParty.Curve, counterParty.X, counterParty.Y)
+	cCounterParty := C.CBytes(counterPartyMarshalled)
+	cCounterPartySize := C.int(len(counterPartyMarshalled))
 
 	cHash := C.CBytes(lookupHash)
 	defer C.free(cHash)
@@ -69,6 +71,7 @@ func (s *SecureEnclaveKeyer) SharedKey(counterParty ecdsa.PublicKey) ([32]byte, 
 	return sha256.Sum256(result), err
 }
 
+// CreateKey creates a new secure enclave key and returns it.
 func CreateKey() (*ecdsa.PublicKey, error) {
 	wrapper := C.wrapCreateKey()
 	result, err := unwrap(wrapper)
@@ -103,7 +106,7 @@ func unwrap(w *C.Wrapper) ([]byte, error) {
 	return res, err
 }
 
-// findKey finds a key in secure enclave with a specific label, tag, & SHA1 hash of the public key
+// findKey finds a key in secure enclave by looking it up with the SHA1 hash of the public key
 func findKey(publicKey ecdsa.PublicKey) (*ecdsa.PublicKey, error) {
 	lookupHash, err := publicKeyLookUpHash(&publicKey)
 	if err != nil {
