@@ -22,41 +22,20 @@ import (
 	"unsafe"
 )
 
-type SecureEnclaveKeyerOption func(*SecureEnclaveKeyer)
-
-func WithExistingKey(publicKey ecdsa.PublicKey) SecureEnclaveKeyerOption {
-	return func(s *SecureEnclaveKeyer) {
-		s.publicKey = &publicKey
-	}
-}
-
 type SecureEnclaveKeyer struct {
 	publicKey *ecdsa.PublicKey
 }
 
-func New(opts ...SecureEnclaveKeyerOption) (*SecureEnclaveKeyer, error) {
-	se := &SecureEnclaveKeyer{}
-
-	for _, opt := range opts {
-		opt(se)
+func New(publicKey ecdsa.PublicKey) (*SecureEnclaveKeyer, error) {
+	se := &SecureEnclaveKeyer{
+		publicKey: &publicKey,
 	}
 
-	// if the call provided a public key, make sure we can find it in secure enclave
-	if se.publicKey != nil {
-		_, err := findKey(*se.publicKey)
-		if err != nil {
-			return nil, fmt.Errorf("finding existing public key: %w", err)
-		}
-
-		return se, nil
-	}
-
-	publicKey, err := createKey()
+	_, err := findKey(*se.publicKey)
 	if err != nil {
-		return nil, fmt.Errorf("creating new public key: %w", err)
+		return nil, fmt.Errorf("finding existing public key: %w", err)
 	}
 
-	se.publicKey = publicKey
 	return se, nil
 }
 
@@ -90,6 +69,16 @@ func (s *SecureEnclaveKeyer) SharedKey(counterParty ecdsa.PublicKey) ([32]byte, 
 	return sha256.Sum256(result), err
 }
 
+func CreateKey() (*ecdsa.PublicKey, error) {
+	wrapper := C.wrapCreateKey()
+	result, err := unwrap(wrapper)
+	if err != nil {
+		return nil, err
+	}
+
+	return rawToEcdsa(result), nil
+}
+
 // unwrap a Wrapper struct to a Go byte slice
 // Free the underlying bufs so caller won't have to deal with them
 func unwrap(w *C.Wrapper) ([]byte, error) {
@@ -112,16 +101,6 @@ func unwrap(w *C.Wrapper) ([]byte, error) {
 		C.free(unsafe.Pointer(w.buf))
 	}
 	return res, err
-}
-
-func createKey() (*ecdsa.PublicKey, error) {
-	wrapper := C.wrapCreateKey()
-	result, err := unwrap(wrapper)
-	if err != nil {
-		return nil, err
-	}
-
-	return rawToEcdsa(result), nil
 }
 
 // findKey finds a key in secure enclave with a specific label, tag, & SHA1 hash of the public key

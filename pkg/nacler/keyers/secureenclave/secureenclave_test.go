@@ -86,19 +86,16 @@ func TestSecureEnclaveKeyerHappyPath(t *testing.T) {
 
 	messageToSeal := "this is the plaintext of the sealed message"
 
-	alicesSeKeyer, err := New()
-	require.NoError(t, err, "should be able to create a brand new secure enclave keyer")
-
-	alicesPublicKey, err := alicesSeKeyer.PublicKey()
+	alicesSePublicKey, err := CreateKey()
 	require.NoError(t, err)
 
-	alicesSeKeyer, err = New(WithExistingKey(alicesPublicKey))
+	alicesSeKeyer, err := New(*alicesSePublicKey)
 	require.NoError(t, err, "should be able to create a secure enclave keyer from an existing key")
 
 	bobKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	require.NoError(t, err)
 
-	bobsLocalEcdsaNacler, err := nacler.New(localecdsa.New(bobKey), alicesPublicKey)
+	bobsLocalEcdsaNacler, err := nacler.New(localecdsa.New(bobKey), *alicesSePublicKey)
 	require.NoError(t, err)
 
 	alicesSecureEnclaveNacler, err := nacler.New(alicesSeKeyer, bobKey.PublicKey)
@@ -115,7 +112,7 @@ func TestSecureEnclaveKeyerHappyPath(t *testing.T) {
 
 		require.Equal(t, messageToSeal, string(opened))
 
-		requireMalloryCantOpen(t, sealed, alicesPublicKey, bobKey.PublicKey)
+		requireMalloryCantOpen(t, sealed, *alicesSePublicKey, bobKey.PublicKey)
 	})
 
 	t.Run("Bob seals, Alice opens", func(t *testing.T) {
@@ -129,7 +126,7 @@ func TestSecureEnclaveKeyerHappyPath(t *testing.T) {
 
 		require.Equal(t, messageToSeal, string(opened))
 
-		requireMalloryCantOpen(t, sealed, alicesPublicKey, bobKey.PublicKey)
+		requireMalloryCantOpen(t, sealed, *alicesSePublicKey, bobKey.PublicKey)
 	})
 }
 
@@ -150,7 +147,7 @@ func TestSecureEnclaveKeyerErrors(t *testing.T) {
 		require.Nil(t, emptyKey.X)
 		require.Nil(t, emptyKey.Y)
 
-		_, err := New(WithExistingKey(*emptyKey))
+		_, err := New(*emptyKey)
 		require.Error(t, err, "new secure enclave keyer should error with nil existing key")
 	})
 
@@ -161,7 +158,10 @@ func TestSecureEnclaveKeyerErrors(t *testing.T) {
 		require.Nil(t, emptyKey.X)
 		require.Nil(t, emptyKey.Y)
 
-		keyer, err := New()
+		pubkey, err := CreateKey()
+		require.NoError(t, err)
+
+		keyer, err := New(*pubkey)
 		require.NoError(t, err, "should be able to create a brand new secure enclave keyer")
 
 		_, err = keyer.SharedKey(*emptyKey)
