@@ -8,30 +8,35 @@
 // converted to UTF-8 encoding.
 char* CFStringToCString(CFStringRef data) {
   CFIndex len = CFStringGetLength(data);
-  if (!len)
+  if (!len){
     return NULL;
+  }
 
   CFIndex realLen = CFStringGetMaximumSizeForEncoding(len, kCFStringEncodingUTF8);
   char* buf = (char*)malloc((size_t)realLen + 1);
-  if (!buf)
+  if (!buf){
     return NULL;
+  }
   memset(buf, 0, (size_t)realLen + 1);
 
   Boolean ok = CFStringGetCString(data, buf, realLen + 1, kCFStringEncodingUTF8);
-  if (!ok)
+  if (!ok){
     return NULL;
+  }
 
   return buf;
 }
 
 unsigned char* CFDataToUint8(CFDataRef data) {
   CFIndex len = CFDataGetLength(data);
-  if (!len)
+  if (!len){
     return NULL;
+  }
 
   UInt8* buf = (UInt8*)malloc((size_t)len);
-  if (!buf)
+  if (!buf){
     return NULL;
+  }
   memset(buf, 0, (size_t)len);
 
   CFRange range = CFRangeMake(0, len);
@@ -46,14 +51,18 @@ CFDataRef ExtractPubKey(SecKeyRef pubKey) {
   CFDataRef val = NULL;
   CFDataRef res = NULL;
   CFDictionaryRef keyAttrs = SecKeyCopyAttributes(pubKey);
-  if (CFDictionaryContainsKey(keyAttrs, kSecValueData) == true)
+  if (CFDictionaryContainsKey(keyAttrs, kSecValueData) == true){
     val = (CFDataRef)CFDictionaryGetValue(keyAttrs, kSecValueData);
+  }
 
-  if (val)
+  if (val){
     res = CFDataCreateCopy(kCFAllocatorDefault, val);
+  }
 
-  if (keyAttrs)
+  if (keyAttrs){
     CFRelease((CFTypeRef)keyAttrs);
+    keyAttrs = NULL;
+  }
 
   return res;
 }
@@ -74,8 +83,10 @@ size_t createKey(unsigned char** ret, char** retErr){
     if (error) {
         CFStringRef errStr = CFErrorCopyDescription(error);
         CFRelease(error);
+        error = NULL;
         *retErr = CFStringToCString(errStr);
         CFRelease(errStr);
+        errStr = NULL;
         return 0;
     }
 
@@ -93,7 +104,9 @@ size_t createKey(unsigned char** ret, char** retErr){
     SecKeyRef privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)attributes, &error);
 
     CFRelease(access);
+    access = NULL;
     CFRelease(attributes);
+    attributes = NULL;
 
     if ((error) || (!privateKey)) {
         CFStringRef errStr = NULL;
@@ -102,21 +115,25 @@ size_t createKey(unsigned char** ret, char** retErr){
         } else {
           errStr = CFErrorCopyDescription(error);
           CFRelease(error);
+          error = NULL;
         }
 
         *retErr = CFStringToCString(errStr);
         CFRelease(errStr);
+        errStr = NULL;
         return 0;
     }
 
     // get public key from private key
     SecKeyRef publicKey = SecKeyCopyPublicKey(privateKey);
     CFRelease(privateKey);
+    privateKey = NULL;
 
     if (!publicKey) {
       CFStringRef errStr = CFSTR("public key was not able to be derived from private key by SecKeyCopyPublicKey");
       *retErr = CFStringToCString(errStr);
       CFRelease(errStr);
+      errStr = NULL;
       return 0;
     }
 
@@ -125,6 +142,7 @@ size_t createKey(unsigned char** ret, char** retErr){
     *ret = CFDataToUint8(publicKeyRef);
     CFIndex size = CFDataGetLength(publicKeyRef);
     CFRelease(publicKeyRef);
+    publicKeyRef = NULL;
     return size;
 }
 
@@ -141,6 +159,7 @@ OSStatus findPrivateKey(CFDataRef pubKeySha1, SecKeyRef *key) {
 
     OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)attributes, (__bridge void *)key);
     CFRelease(attributes);
+    attributes = NULL;
     return status;
 }
 
@@ -151,22 +170,26 @@ size_t findKey(unsigned char* hash, unsigned char** ret, char** retErr){
     OSStatus status = findPrivateKey(cfHash, (__bridge void *)&privateKey);
 
     CFRelease(cfHash);
+    cfHash = NULL;
 
     if ((status != 0) || (!privateKey)) {
       NSString *msg = [NSString stringWithFormat:@"finding key pair: status %i", (int)status];
       *retErr = CFStringToCString((__bridge CFStringRef)msg);
       CFRelease(msg);
+      msg = NULL;
       return 0;
     }
 
     // get public key from private key
     SecKeyRef publicKey = SecKeyCopyPublicKey(privateKey);
     CFRelease(privateKey);
+    privateKey = NULL;
 
     if (!publicKey) {
       CFStringRef errStr = CFSTR("failed to copy public key");
       *retErr = CFStringToCString(errStr);
       CFRelease(errStr);
+      errStr = NULL;
       return 0;
     }
 
@@ -175,6 +198,7 @@ size_t findKey(unsigned char* hash, unsigned char** ret, char** retErr){
     *ret = CFDataToUint8(publicKeyRef);
     CFIndex size = CFDataGetLength(publicKeyRef);
     CFRelease(publicKeyRef);
+    publicKeyRef = NULL;
     return size;
 }
 
@@ -187,6 +211,7 @@ size_t ecdh(unsigned char* hash, unsigned char* counterParty, int counterPartySi
       NSString *msg = [NSString stringWithFormat:@"finding key: status %i", (int)status];
       *retErr = CFStringToCString((__bridge CFStringRef)msg);
       CFRelease(msg);
+      msg = NULL;
       return 0;
     }
 
@@ -208,10 +233,12 @@ size_t ecdh(unsigned char* hash, unsigned char* counterParty, int counterPartySi
         } else {
           errStr = CFErrorCopyDescription(error);
           CFRelease(error);
+          error = NULL;
         }
 
         *retErr = CFStringToCString(errStr);
         CFRelease(errStr);
+        errStr = NULL;
         return 0;
     }
 
@@ -230,14 +257,17 @@ size_t ecdh(unsigned char* hash, unsigned char* counterParty, int counterPartySi
     if ((error) || (!shared)) {
         CFStringRef errStr = CFErrorCopyDescription(error);
         CFRelease(error);
+        error = NULL;
         *retErr = CFStringToCString(errStr);
         CFRelease(errStr);
+        errStr = NULL;
         return 0;
     }
 
     *ret = CFDataToUint8(shared);
     CFIndex size = CFDataGetLength(shared);
     CFRelease(shared);
+    shared = NULL;
     return size;
 }
 
