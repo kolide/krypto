@@ -61,8 +61,10 @@ CFDataRef ExtractPubKey(SecKeyRef pubKey) {
 size_t createKey(unsigned char** ret, char** retErr){
     CFErrorRef error = NULL;
 
-    // ignoring the depreciated warning becuase this is the setting we need to be able to access secure enclave
-    // for this particualar key even when device is locked, this was depreciated without providing an alternative
+    // ignoring the depreciated warning for "kSecAttrAccessibleAlwaysThisDeviceOnly" becuase this is the setting
+    // we need to be able to access secure enclave for this particualar key even when device is locked
+    // this was depreciated without providing an alternative
+    // it's expected that a new key would need to be generated on a full re-install of launcher that removes the launcher.db
     #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     SecAccessControlRef access = SecAccessControlCreateWithFlags(kCFAllocatorDefault,
                                                                  kSecAttrAccessibleAlwaysThisDeviceOnly,
