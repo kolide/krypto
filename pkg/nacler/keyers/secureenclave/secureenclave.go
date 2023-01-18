@@ -93,10 +93,10 @@ func (s *SecureEnclaveKeyer) SharedKey(counterParty ecdsa.PublicKey) ([32]byte, 
 // unwrap a Wrapper struct to a Go byte slice
 // Free the underlying bufs so caller won't have to deal with them
 func unwrap(w *C.Wrapper) (res []byte, err error) {
-	defer C.free(unsafe.Pointer(w))
 	if w == nil {
 		return nil, errors.New("tried to unwrap empty response")
 	}
+	defer C.free(unsafe.Pointer(w))
 
 	if w.error != nil {
 		msg := C.GoString(w.error)

@@ -1,9 +1,13 @@
 #include <string.h>
 
+// Wrapper is used to provide a common interface for calling c functions that return go like results of
+// return value and error. The size is the size of the return value buffer.
 typedef struct wrapper {
+    // result
 	unsigned char *buf;
-	int status;
+    // size of returned value
 	size_t size;
+    // errors
 	char *error;
 } Wrapper;
 
