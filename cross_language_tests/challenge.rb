@@ -10,20 +10,20 @@ args = ARGV
 
 cmd = args.shift
 
-testFilePath = args.shift
-testFileDir = File.dirname(testFilePath)
-testcase = MessagePack.unpack(Base64.strict_decode64(File.read(testFilePath)))
+test_file_path = args.shift
+test_file_dir = File.dirname(test_file_path)
+test_case = MessagePack.unpack(Base64.strict_decode64(File.read(test_file_path)))
 
-privateEncrytionKeyPath = testFileDir + "/private_encryption_key"
+private_encryption_key_path = test_file_dir + "/private_encryption_key"
 
 challenge = Krypto::Challenge.new
 
 case cmd
 when "generate"
   # write the private encryption key to the test directory to retrieve in later tests
-  key = OpenSSL::PKey::EC.new(testcase["RubyPrivateSigningKey"])
-  result = challenge.generate(key, testcase["ChallengeData"])
-  File.write(privateEncrytionKeyPath, Base64.strict_encode64(result[1]))
+  key = OpenSSL::PKey::EC.new(test_case["RubyPrivateSigningKey"])
+  result = challenge.generate(key, test_case["ChallengeData"])
+  File.write(private_encryption_key_path, Base64.strict_encode64(result[1]))
 
   # return the challenge
   puts(
@@ -35,18 +35,18 @@ when "generate"
   )
 
 when "respond"
-  signingKey = OpenSSL::PKey::EC.generate("prime256v1")
-  counterparty = OpenSSL::PKey::EC.new(testcase["ChallengerPublicKey"])
-  outerChallenge = Krypto::Challenge::OuterChallenge.new(MessagePack.unpack(testcase["ChallengePack"]))
-  data = testcase["ResponseData"]
+  signing_key = OpenSSL::PKey::EC.generate("prime256v1")
+  counter_party = OpenSSL::PKey::EC.new(test_case["ChallengerPublicKey"])
+  outer_challenge = Krypto::Challenge::OuterChallenge.new(MessagePack.unpack(test_case["ChallengePack"]))
+  data = test_case["ResponseData"]
 
   puts(
     Base64.strict_encode64(
       MessagePack.pack(
         challenge.respond(
-          signingKey,
-          counterparty,
-          outerChallenge,
+          signing_key,
+          counter_party,
+          outer_challenge,
           data
         )
       )
@@ -55,17 +55,17 @@ when "respond"
 
 when "open_response"
   # read the encryption key from generate test
-  privateEncryptionKeyBytes = Base64.strict_decode64(File.read(privateEncrytionKeyPath))
-  privateEncryptionKey = RbNaCl::PrivateKey.new(privateEncryptionKeyBytes)
+  private_encryption_key_bytes = Base64.strict_decode64(File.read(private_encryption_key_path))
+  private_encryption_key = RbNaCl::PrivateKey.new(private_encryption_key_bytes)
 
-  outerResponse = Krypto::Challenge::OuterResponse.new(MessagePack.unpack(testcase["ResponsePack"]))
+  outer_response = Krypto::Challenge::OuterResponse.new(MessagePack.unpack(test_case["ResponsePack"]))
 
   puts(
     Base64.strict_encode64(
       MessagePack.pack(
         challenge.open_response(
-          privateEncryptionKey,
-          outerResponse
+          private_encryption_key,
+          outer_response
         )
       )
     )

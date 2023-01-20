@@ -60,11 +60,11 @@ func TestChallengeRuby(t *testing.T) {
 				ChallengeData:         testChallenge,
 			}
 
-			rubyChallengeOuterBytes, err := rubyChallengeExec("generate", dir, rubyChallengeCmdData)
-			require.NoError(t, err)
+			out, err := rubyChallengeExec("generate", dir, rubyChallengeCmdData)
+			require.NoError(t, err, string(out))
 
 			var rubyChallengeOuter challenge.OuterChallenge
-			require.NoError(t, msgpack.Unmarshal(rubyChallengeOuterBytes, &rubyChallengeOuter))
+			require.NoError(t, msgpack.Unmarshal(out, &rubyChallengeOuter))
 
 			response, err := challenge.Respond(responderKey, rubyPrivateSignignKey.PublicKey, rubyChallengeOuter, responderData)
 			require.NoError(t, err)
@@ -76,11 +76,11 @@ func TestChallengeRuby(t *testing.T) {
 				ResponsePack: packedResonse,
 			}
 
-			innerResponseBytes, err := rubyChallengeExec("open_response", dir, rubyChallengeCmdData)
-			require.NoError(t, err)
+			out, err = rubyChallengeExec("open_response", dir, rubyChallengeCmdData)
+			require.NoError(t, err, string(out))
 
 			var innerResponse challenge.InnerResponse
-			require.NoError(t, msgpack.Unmarshal(innerResponseBytes, &innerResponse))
+			require.NoError(t, msgpack.Unmarshal(out, &innerResponse))
 
 			require.Equal(t, testChallenge, innerResponse.ChallengeData)
 			require.Equal(t, responderData, innerResponse.ResponseData)
@@ -104,11 +104,11 @@ func TestChallengeRuby(t *testing.T) {
 				ResponseData:        responderData,
 			}
 
-			rubyResponseOuterBytes, err := rubyChallengeExec("respond", dir, rubyChallengeCmdData)
-			require.NoError(t, err)
+			out, err := rubyChallengeExec("respond", dir, rubyChallengeCmdData)
+			require.NoError(t, err, string(out))
 
 			var rubyResponseOuter challenge.OuterResponse
-			require.NoError(t, msgpack.Unmarshal(rubyResponseOuterBytes, &rubyResponseOuter))
+			require.NoError(t, msgpack.Unmarshal(out, &rubyResponseOuter))
 
 			innerResponse, err := challenge.OpenResponse(*privEncryptionKey, rubyResponseOuter)
 			require.NoError(t, err)
@@ -137,11 +137,11 @@ func TestChallengeRubyTampering(t *testing.T) {
 			ChallengeData:         testChallenge,
 		}
 
-		rubyChallengeOuterBytes, err := rubyChallengeExec("generate", dir, rubyChallengeCmdData)
-		require.NoError(t, err)
+		out, err := rubyChallengeExec("generate", dir, rubyChallengeCmdData)
+		require.NoError(t, err, string(out))
 
 		var rubyChallengeOuter challenge.OuterChallenge
-		require.NoError(t, msgpack.Unmarshal(rubyChallengeOuterBytes, &rubyChallengeOuter))
+		require.NoError(t, msgpack.Unmarshal(out, &rubyChallengeOuter))
 
 		tamperPub, _, err := box.GenerateKey(rand.Reader)
 		require.NoError(t, err)
@@ -188,7 +188,7 @@ func TestChallengeRubyTampering(t *testing.T) {
 		}
 
 		out, err := rubyChallengeExec("respond", dir, rubyChallengeCmdData)
-		require.Error(t, err)
+		require.Error(t, err, string(out))
 		require.Contains(t, string(out), "invalid signature")
 	})
 }
