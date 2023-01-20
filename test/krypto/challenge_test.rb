@@ -9,7 +9,7 @@ class TestKryptoChallenge < Minitest::Test
   RESPONDER_DATA = "this is some responder data"
 
   def test_challenge
-    challenger = Krypto::Challenge.new()
+    challenger = Krypto::Challenge.new
     challenge, privateEncryptionKey = challenger.generate(CHALLENGER_KEY, CHALLENGE_DATA)
 
     challengerPublic = OpenSSL::PKey::EC.new(CHALLENGER_KEY.public_to_pem)

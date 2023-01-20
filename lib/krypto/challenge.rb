@@ -21,22 +21,22 @@ module Krypto
     end
 
     def generate(signingKey, challengeData)
-      privateEncryptionKey = RbNaCl::PrivateKey.generate()
+      privateEncryptionKey = RbNaCl::PrivateKey.generate
       publicEncryptionKey = privateEncryptionKey.public_key
 
       inner = MessagePack.pack(
         InnerChallenge.new(
-          publicEncryptionKey: publicEncryptionKey.to_bytes(),
+          publicEncryptionKey: publicEncryptionKey.to_bytes,
           challengeData: challengeData
         )
       )
 
       outer = OuterChallenge.new(
-        signature: signingKey.sign(OpenSSL::Digest::SHA256.new, inner),
+        signature: signingKey.sign(OpenSSL::Digest.new("SHA256"), inner),
         inner: inner
       )
 
-      return outer, privateEncryptionKey.to_bytes
+      [outer, privateEncryptionKey.to_bytes]
     end
 
     OUTER_RESPONSE_FIELDS = %i[publicEncryptionKey signature inner].freeze
@@ -68,15 +68,15 @@ module Krypto
         )
       )
 
-      signature = signingKey.sign(OpenSSL::Digest::SHA256.new, inner)
-      privateEncryptionKey = RbNaCl::PrivateKey.generate()
+      signature = signingKey.sign(OpenSSL::Digest.new("SHA256"), inner)
+      privateEncryptionKey = RbNaCl::PrivateKey.generate
 
       box = RbNaCl::SimpleBox.from_keypair(challengeInner.publicEncryptionKey, privateEncryptionKey)
       sealed = box.encrypt(inner)
 
       OuterResponse.new(
         signature: signature,
-        publicEncryptionKey: privateEncryptionKey.public_key.to_bytes(),
+        publicEncryptionKey: privateEncryptionKey.public_key.to_bytes,
         inner: sealed
       )
     end
@@ -100,11 +100,11 @@ module Krypto
         return true
       end
 
-      return false
+      false
     end
 
     def signing_hash(data)
-      OpenSSL::Digest::SHA256.new().digest(data)
+      OpenSSL::Digest.new("SHA256").digest(data)
     end
   end
 end

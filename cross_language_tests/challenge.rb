@@ -16,7 +16,7 @@ testcase = MessagePack.unpack(Base64.strict_decode64(File.read(testFilePath)))
 
 privateEncrytionKeyPath = testFileDir + "/private_encryption_key"
 
-challenge = Krypto::Challenge.new()
+challenge = Krypto::Challenge.new
 
 case cmd
 when "generate"
