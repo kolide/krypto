@@ -82,9 +82,9 @@ module Krypto
     end
 
     def self.open_response_png(private_encryption_key, outer_response)
-      data = self.unpng(outer_response)
+      data = unpng(outer_response)
       outer = OuterResponse.new(MessagePack.unpack(data))
-      self.open_response(private_encryption_key, outer)
+      open_response(private_encryption_key, outer)
     end
 
     def self.open_response(private_encryption_key, outer_response)
@@ -102,7 +102,7 @@ module Krypto
     end
 
     def self.verify(key, data, signature)
-      if key.dsa_verify_asn1(self.signing_hash(data), signature)
+      if key.dsa_verify_asn1(signing_hash(data), signature)
         return true
       end
 
