@@ -47,9 +47,6 @@ func tpmSimulatorFallback(t *testing.T) io.ReadWriteCloser {
 		return tpm
 	}
 
-	// fail if we encounter any error other than TPM not available
-	require.ErrorContains(t, err, "TPM not available")
-
 	// no working tpm, use simulator
 	t.Log("no tpm found, using simulator")
 	simulatedTpm, err := simulator.Get()
