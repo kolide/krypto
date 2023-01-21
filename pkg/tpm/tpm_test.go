@@ -15,6 +15,8 @@ import (
 )
 
 func TestTpmSigning(t *testing.T) {
+	t.Parallel()
+
 	tpm := tpmSimulatorFallback(t)
 
 	priv, pub, err := CreateKey(WithExternalTpm(tpm))

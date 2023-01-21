@@ -44,18 +44,21 @@ func New(private []byte, public []byte, opts ...TpmSignerOption) (*TpmSigner, er
 	if err != nil {
 		return nil, fmt.Errorf("opening tpm: %w", err)
 	}
+	// nolint: errcheck
 	defer tpmKeyer.closeInternalTpm(tpm)
 
 	parentHandle, err := parentHandle(tpm)
 	if err != nil {
 		return nil, fmt.Errorf("loading parent handle: %w", err)
 	}
+	// nolint: errcheck
 	defer tpm2.FlushContext(tpm, parentHandle)
 
 	signerHandle, publicKey, err := loadSignerHandle(tpm, parentHandle, public, private)
 	if err != nil {
 		return nil, fmt.Errorf("loading signer handle: %w", err)
 	}
+	// nolint: errcheck
 	defer tpm2.FlushContext(tpm, signerHandle)
 
 	tpmKeyer.publicKey = publicKey
@@ -75,12 +78,14 @@ func CreateKey(opts ...TpmSignerOption) (private []byte, public []byte, err erro
 	if err != nil {
 		return nil, nil, fmt.Errorf("opening tpm: %w", err)
 	}
+	//nolint: errcheck
 	defer tpmSigner.closeInternalTpm(tpm)
 
 	primaryHandle, err := parentHandle(tpm)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating primary key: %w", err)
 	}
+	//nolint: errcheck
 	defer tpm2.FlushContext(tpm, primaryHandle)
 
 	private, public, _, _, _, err = tpm2.CreateKey(tpm, primaryHandle, tpm2.PCRSelection{}, "", "", tpm2.Public{
@@ -111,18 +116,21 @@ func (s *TpmSigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) 
 	if err != nil {
 		return nil, fmt.Errorf("opening tpm: %w", err)
 	}
+	//nolint: errcheck
 	defer s.closeInternalTpm(tpm)
 
 	parentHandle, err := parentHandle(tpm)
 	if err != nil {
 		return nil, fmt.Errorf("getting parent handle: %w", err)
 	}
+	//nolint: errcheck
 	defer tpm2.FlushContext(tpm, parentHandle)
 
 	signingHandle, _, err := loadSignerHandle(tpm, parentHandle, s.publicBlob, s.privateBlob)
 	if err != nil {
 		return nil, fmt.Errorf("loading signer handle: %w", err)
 	}
+	//nolint: errcheck
 	defer tpm2.FlushContext(tpm, signingHandle)
 
 	sig, err := tpm2.Sign(tpm, signingHandle, "", digest, nil, &tpm2.SigScheme{
