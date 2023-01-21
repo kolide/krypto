@@ -44,21 +44,21 @@ func TestTpmErrors(t *testing.T) {
 	require.NoError(t, err)
 
 	_, _, err = CreateKey(WithExternalTpm(nil))
-	require.NoError(t, err)
+	require.Error(t, err, "should get error with nil external tpm")
 
 	alteredPriv := []byte("some random stuff")
 	_, err = New(alteredPriv, pub, WithExternalTpm(tpm))
-	require.Error(t, err)
+	require.Error(t, err, "should get error with malformed private bytes")
 
 	alteredPub := []byte("some more random stuff")
 	_, err = New(priv, alteredPub, WithExternalTpm(tpm))
-	require.Error(t, err)
+	require.Error(t, err, "should get error with malformed public bytes")
 
 	_, err = New(nil, nil, WithExternalTpm(tpm))
-	require.Error(t, err)
+	require.Error(t, err, "should get error with nil private and public bytes")
 
 	_, err = New(nil, nil, WithExternalTpm(nil))
-	require.Error(t, err)
+	require.Error(t, err, "should get error with nil tpm")
 }
 
 // tpmSimulatorFallback returns an tpm keyer using TPM hardware chip if available,
