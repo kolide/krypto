@@ -25,10 +25,10 @@ func TestChallenge(t *testing.T) {
 
 	responderData := []byte("this is some responder data")
 
-	responseOuterbox, err := Respond(responderPrivateKey, challengerPrivateKey.PublicKey, *challengeOuterBox, responderData)
+	responseOuterbox, err := RespondPng(responderPrivateKey, challengerPrivateKey.PublicKey, *challengeOuterBox, responderData)
 	require.NoError(t, err)
 
-	innerResponse, err := OpenResponse(*challengePrivEncKey, *responseOuterbox)
+	innerResponse, err := OpenResponsePng(*challengePrivEncKey, responseOuterbox)
 	require.NoError(t, err)
 
 	require.Equal(t, challenge, innerResponse.ChallengeData)

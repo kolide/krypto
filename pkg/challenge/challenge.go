@@ -1,6 +1,7 @@
 package challenge
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/rand"
@@ -11,6 +12,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/kolide/krypto"
 	"github.com/vmihailenco/msgpack/v5"
 	"golang.org/x/crypto/nacl/box"
 )
@@ -67,6 +69,25 @@ type InnerResponse struct {
 	ResponseData     []byte `msgpack:"responseData"`
 }
 
+func RespondPng(signer crypto.Signer, counterParty ecdsa.PublicKey, challengeOuter OuterChallenge, responseData []byte) ([]byte, error) {
+	response, err := Respond(signer, counterParty, challengeOuter, responseData)
+	if err != nil {
+		return nil, err
+	}
+
+	packedResponse, err := msgpack.Marshal(response)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling response: %w", err)
+	}
+
+	var buf bytes.Buffer
+	if err := krypto.ToPng(&buf, packedResponse); err != nil {
+		return nil, fmt.Errorf("encoding data to png")
+	}
+
+	return buf.Bytes(), nil
+}
+
 func Respond(signer crypto.Signer, counterParty ecdsa.PublicKey, challengeOuter OuterChallenge, responseData []byte) (*OuterResponse, error) {
 	if err := VerifySignature(counterParty, challengeOuter.Inner, challengeOuter.Signature); err != nil {
 		return nil, fmt.Errorf("verifying challenge: %w", err)
@@ -107,6 +128,26 @@ func Respond(signer crypto.Signer, counterParty ecdsa.PublicKey, challengeOuter 
 		Signature:           signature,
 		Inner:               sealed,
 	}, nil
+}
+
+func OpenResponsePng(privateEncryptionKey [32]byte, pngData []byte) (*InnerResponse, error) {
+	var out bytes.Buffer
+	in := bytes.NewBuffer(pngData)
+	if err := krypto.FromPng(in, &out); err != nil {
+		return nil, fmt.Errorf("decoding png data: %w", err)
+	}
+
+	var outerResponse OuterResponse
+	if err := msgpack.Unmarshal(out.Bytes(), &outerResponse); err != nil {
+		return nil, fmt.Errorf("unmarshaling outer box: %w", err)
+	}
+
+	innerResponse, err := OpenResponse(privateEncryptionKey, outerResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	return innerResponse, nil
 }
 
 func OpenResponse(privateEncryptionKey [32]byte, responseOuter OuterResponse) (*InnerResponse, error) {

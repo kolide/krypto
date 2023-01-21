@@ -48,7 +48,7 @@ func TestChallengeRuby(t *testing.T) {
 	for _, testChallenge := range testChallenges {
 		testChallenge := testChallenge
 
-		t.Run("Ruby challenges, Go responds", func(t *testing.T) {
+		t.Run("Ruby challenges, Go responds with png", func(t *testing.T) {
 			t.Parallel()
 
 			rubyPrivateSignignKey := ecdsaKey(t)
@@ -66,17 +66,14 @@ func TestChallengeRuby(t *testing.T) {
 			var rubyChallengeOuter challenge.OuterChallenge
 			require.NoError(t, msgpack.Unmarshal(out, &rubyChallengeOuter))
 
-			response, err := challenge.Respond(responderKey, rubyPrivateSignignKey.PublicKey, rubyChallengeOuter, responderData)
-			require.NoError(t, err)
-
-			packedResonse, err := msgpack.Marshal(response)
+			response, err := challenge.RespondPng(responderKey, rubyPrivateSignignKey.PublicKey, rubyChallengeOuter, responderData)
 			require.NoError(t, err)
 
 			rubyChallengeCmdData = rubyChallengeCmd{
-				ResponsePack: packedResonse,
+				ResponsePack: response,
 			}
 
-			out, err = rubyChallengeExec("open_response", dir, rubyChallengeCmdData)
+			out, err = rubyChallengeExec("open_response_png", dir, rubyChallengeCmdData)
 			require.NoError(t, err, string(out))
 
 			var innerResponse challenge.InnerResponse

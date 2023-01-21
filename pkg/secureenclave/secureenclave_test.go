@@ -5,7 +5,6 @@ package secureenclave
 
 import (
 	"context"
-	"crypto"
 	"crypto/ecdsa"
 	"fmt"
 	"os"
@@ -85,18 +84,17 @@ func TestSecureEnclaveSigning(t *testing.T) {
 	alicesSePublicKey, err := CreateKey()
 	require.NoError(t, err)
 
-	var signer crypto.Signer
-	signer, err = New(*alicesSePublicKey)
+	seSigner, err := New(*alicesSePublicKey)
 	require.NoError(t, err, "should be able to create a secure enclave keyer from an existing key")
 
 	dataToSign := []byte("here is some data to sign")
 
-	signature, err := challenge.Sign(signer, dataToSign)
+	signature, err := challenge.Sign(seSigner, dataToSign)
 	require.NoError(t, err, "should be able to sign data")
 
-	publicKey := signer.Public().(ecdsa.PublicKey)
+	publicKey := seSigner.Public().(ecdsa.PublicKey)
 
-	require.NoError(t, challenge.Verify(publicKey, dataToSign, signature))
+	require.NoError(t, challenge.VerifySignature(publicKey, dataToSign, signature))
 }
 
 func TestSecureEnclaveErrors(t *testing.T) {
@@ -108,17 +106,8 @@ func TestSecureEnclaveErrors(t *testing.T) {
 
 	t.Log("\nrunning wrapped tests with codesigned app and entitlements")
 
-	t.Run("new secure enclave keyer with null existing key", func(t *testing.T) {
-		t.Parallel()
-
-		// make empty key, make sure coordinates are nil
-		emptyKey := new(ecdsa.PublicKey)
-		require.Nil(t, emptyKey.X)
-		require.Nil(t, emptyKey.Y)
-
-		_, err := New(*emptyKey)
-		require.Error(t, err, "new secure enclave keyer should error with nil existing key")
-	})
+	_, err := New(*new(ecdsa.PublicKey))
+	require.Error(t, err, "new secure enclave keyer should error with nil existing key")
 }
 
 // #nosec G306 -- Need readable files

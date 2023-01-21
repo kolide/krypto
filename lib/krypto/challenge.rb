@@ -81,6 +81,12 @@ module Krypto
       )
     end
 
+    def open_response_png(private_encryption_key, outer_response)
+      data = unpng(outer_response)
+      outer = OuterResponse.new(MessagePack.unpack(data))
+      open_response(private_encryption_key, outer)
+    end
+
     def open_response(private_encryption_key, outer_response)
       public_encryption_key = RbNaCl::PublicKey.new(outer_response.publicEncryptionKey)
       box = RbNaCl::SimpleBox.from_keypair(public_encryption_key, private_encryption_key)
@@ -105,6 +111,10 @@ module Krypto
 
     def signing_hash(data)
       OpenSSL::Digest.new("SHA256").digest(data)
+    end
+
+    def unpng(data)
+      ::Krypto::Png.decode_blob(data)
     end
   end
 end
