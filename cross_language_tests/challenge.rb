@@ -16,13 +16,11 @@ test_case = MessagePack.unpack(Base64.strict_decode64(File.read(test_file_path))
 
 private_encryption_key_path = test_file_dir + "/private_encryption_key"
 
-challenge = Krypto::Challenge.new
-
 case cmd
 when "generate"
   # write the private encryption key to the test directory to retrieve in later tests
   key = OpenSSL::PKey::EC.new(test_case["RubyPrivateSigningKey"])
-  result = challenge.generate(key, test_case["ChallengeData"])
+  result = ::Krypto::Challenge.generate(key, test_case["ChallengeData"])
   File.write(private_encryption_key_path, Base64.strict_encode64(result[1]))
 
   # return the challenge
@@ -43,7 +41,7 @@ when "respond"
   puts(
     Base64.strict_encode64(
       MessagePack.pack(
-        challenge.respond(
+        ::Krypto::Challenge.respond(
           signing_key,
           counter_party,
           outer_challenge,
@@ -61,7 +59,7 @@ when "open_response_png"
   puts(
     Base64.strict_encode64(
       MessagePack.pack(
-        challenge.open_response_png(
+        ::Krypto::Challenge.open_response_png(
           private_encryption_key,
           test_case["ResponsePack"]
         )

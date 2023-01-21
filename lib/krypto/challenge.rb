@@ -20,7 +20,7 @@ module Krypto
       end
     end
 
-    def generate(signing_key, challenge_data)
+    def self.generate(signing_key, challenge_data)
       private_encryption_key = RbNaCl::PrivateKey.generate
       public_encryption_key = private_encryption_key.public_key
 
@@ -53,7 +53,7 @@ module Krypto
       end
     end
 
-    def respond(signing_key, counter_party, outer_challenge, response_data)
+    def self.respond(signing_key, counter_party, outer_challenge, response_data)
       if !verify(counter_party, outer_challenge.inner, outer_challenge.signature)
         raise "invalid signature"
       end
@@ -81,13 +81,13 @@ module Krypto
       )
     end
 
-    def open_response_png(private_encryption_key, outer_response)
-      data = unpng(outer_response)
+    def self.open_response_png(private_encryption_key, outer_response)
+      data = self.unpng(outer_response)
       outer = OuterResponse.new(MessagePack.unpack(data))
-      open_response(private_encryption_key, outer)
+      self.open_response(private_encryption_key, outer)
     end
 
-    def open_response(private_encryption_key, outer_response)
+    def self.open_response(private_encryption_key, outer_response)
       public_encryption_key = RbNaCl::PublicKey.new(outer_response.publicEncryptionKey)
       box = RbNaCl::SimpleBox.from_keypair(public_encryption_key, private_encryption_key)
       opened = box.open(outer_response.inner)
@@ -101,19 +101,19 @@ module Krypto
       raise "invalid signature"
     end
 
-    def verify(key, data, signature)
-      if key.dsa_verify_asn1(signing_hash(data), signature)
+    def self.verify(key, data, signature)
+      if key.dsa_verify_asn1(self.signing_hash(data), signature)
         return true
       end
 
       false
     end
 
-    def signing_hash(data)
+    def self.signing_hash(data)
       OpenSSL::Digest.new("SHA256").digest(data)
     end
 
-    def unpng(data)
+    def self.unpng(data)
       ::Krypto::Png.decode_blob(data)
     end
   end
