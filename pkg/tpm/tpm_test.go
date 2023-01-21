@@ -32,7 +32,33 @@ func TestTpmSigning(t *testing.T) {
 
 	publicKey := tpmSigner.Public().(ecdsa.PublicKey)
 
-	require.NoError(t, challenge.Verify(publicKey, dataToSign, signature))
+	require.NoError(t, challenge.VerifySignature(publicKey, dataToSign, signature))
+}
+
+func TestTpmErrors(t *testing.T) {
+	t.Parallel()
+
+	tpm := tpmSimulatorFallback(t)
+
+	priv, pub, err := CreateKey(WithExternalTpm(tpm))
+	require.NoError(t, err)
+
+	_, _, err = CreateKey(WithExternalTpm(nil))
+	require.NoError(t, err)
+
+	alteredPriv := []byte("some random stuff")
+	_, err = New(alteredPriv, pub, WithExternalTpm(tpm))
+	require.Error(t, err)
+
+	alteredPub := []byte("some more random stuff")
+	_, err = New(priv, alteredPub, WithExternalTpm(tpm))
+	require.Error(t, err)
+
+	_, err = New(nil, nil, WithExternalTpm(tpm))
+	require.Error(t, err)
+
+	_, err = New(nil, nil, WithExternalTpm(nil))
+	require.Error(t, err)
 }
 
 // tpmSimulatorFallback returns an tpm keyer using TPM hardware chip if available,

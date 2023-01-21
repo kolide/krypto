@@ -21,6 +21,8 @@ type OuterChallenge struct {
 }
 
 type InnerChallenge struct {
+	// PublicEncryptionKey is the public half of the NaCl encryption key to be used by the
+	// responder to NaCl seal the response
 	PublicEncryptionKey [32]byte `msgpack:"publicEncryptionKey"`
 	ChallengeData       []byte   `msgpack:"challengeData"`
 }
@@ -52,6 +54,8 @@ func Generate(signer crypto.Signer, challengeData []byte) (*OuterChallenge, *[32
 }
 
 type OuterResponse struct {
+	// PublicEncryptionKey is the public half of the NaCL encryption key that was used to
+	// ECDH the challenger provided PublicEncryptionKey
 	PublicEncryptionKey [32]byte `msgpack:"publicEncryptionKey"`
 	Signature           []byte   `msgpack:"signature"`
 	Inner               []byte   `msgpack:"inner"`
@@ -64,7 +68,7 @@ type InnerResponse struct {
 }
 
 func Respond(signer crypto.Signer, counterParty ecdsa.PublicKey, challengeOuter OuterChallenge, responseData []byte) (*OuterResponse, error) {
-	if err := Verify(counterParty, challengeOuter.Inner, challengeOuter.Signature); err != nil {
+	if err := VerifySignature(counterParty, challengeOuter.Inner, challengeOuter.Signature); err != nil {
 		return nil, fmt.Errorf("verifying challenge: %w", err)
 	}
 
@@ -121,7 +125,7 @@ func OpenResponse(privateEncryptionKey [32]byte, responseOuter OuterResponse) (*
 		return nil, fmt.Errorf("unmarshalling public ecdsa signing key from pem: %w", err)
 	}
 
-	if err := Verify(*counterPartyPubKey, innerResponseBytes, responseOuter.Signature); err != nil {
+	if err := VerifySignature(*counterPartyPubKey, innerResponseBytes, responseOuter.Signature); err != nil {
 		return nil, fmt.Errorf("verifying challenge: %w", err)
 	}
 
@@ -142,7 +146,7 @@ func Sign(signer crypto.Signer, data []byte) ([]byte, error) {
 	return signature, nil
 }
 
-func Verify(counterParty ecdsa.PublicKey, data []byte, signature []byte) error {
+func VerifySignature(counterParty ecdsa.PublicKey, data []byte, signature []byte) error {
 	digest, err := hashForSignature(data)
 	if err != nil {
 		return fmt.Errorf("hashing inner box: %w", err)

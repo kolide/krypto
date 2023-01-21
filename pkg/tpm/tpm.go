@@ -35,7 +35,11 @@ type TpmSigner struct {
 }
 
 func New(private []byte, public []byte, opts ...TpmSignerOption) (*TpmSigner, error) {
-	tpmKeyer := &TpmSigner{}
+	tpmKeyer := &TpmSigner{
+		privateBlob: private,
+		publicBlob:  public,
+	}
+
 	for _, opt := range opts {
 		opt(tpmKeyer)
 	}
@@ -62,8 +66,6 @@ func New(private []byte, public []byte, opts ...TpmSignerOption) (*TpmSigner, er
 	defer tpm2.FlushContext(tpm, signerHandle)
 
 	tpmKeyer.publicKey = publicKey
-	tpmKeyer.privateBlob = private
-	tpmKeyer.publicBlob = public
 
 	return tpmKeyer, nil
 }
@@ -142,6 +144,10 @@ func (s *TpmSigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) 
 		return nil, fmt.Errorf("signing digest: %w", err)
 	}
 
+	return encodeAns1(*sig)
+}
+
+func encodeAns1(sig tpm2.Signature) ([]byte, error) {
 	bigInts := struct {
 		R, S *big.Int
 	}{
@@ -149,12 +155,7 @@ func (s *TpmSigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) 
 		S: sig.ECC.S,
 	}
 
-	asn1Encoded, err := asn1.Marshal(bigInts)
-	if err != nil {
-		return nil, fmt.Errorf("marshaling asn1: %w", err)
-	}
-
-	return asn1Encoded, nil
+	return asn1.Marshal(bigInts)
 }
 
 func parentHandle(tpm io.ReadWriteCloser) (tpmutil.Handle, error) {
