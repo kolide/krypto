@@ -5,6 +5,7 @@ import (
 	"crypto"
 	"crypto/rand"
 	"fmt"
+	"time"
 
 	"github.com/kolide/krypto"
 	"github.com/kolide/krypto/pkg/echelper"
@@ -22,6 +23,7 @@ type InnerChallenge struct {
 	// responder to NaCl seal the response
 	PublicEncryptionKey [32]byte `msgpack:"publicEncryptionKey"`
 	ChallengeData       []byte   `msgpack:"challengeData"`
+	TimeStamp           int64    `msgpack:"timeStamp"`
 }
 
 func Generate(signer crypto.Signer, challengeData []byte) (*OuterChallenge, *[32]byte, error) {
@@ -33,6 +35,7 @@ func Generate(signer crypto.Signer, challengeData []byte) (*OuterChallenge, *[32
 	inner, err := msgpack.Marshal(InnerChallenge{
 		PublicEncryptionKey: *pubEncKey,
 		ChallengeData:       challengeData,
+		TimeStamp:           time.Now().Unix(),
 	})
 
 	if err != nil {

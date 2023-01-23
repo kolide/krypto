@@ -13,7 +13,7 @@ module Krypto
       end
     end
 
-    INNER_CHALLENGE_FIELDS = %i[publicEncryptionKey challengeData].freeze
+    INNER_CHALLENGE_FIELDS = %i[publicEncryptionKey challengeData timeStamp].freeze
     class InnerChallenge < Struct.new(*INNER_CHALLENGE_FIELDS, keyword_init: true)
       def to_msgpack(out = "")
         to_h.to_msgpack(out)
@@ -27,7 +27,8 @@ module Krypto
       msg = MessagePack.pack(
         InnerChallenge.new(
           publicEncryptionKey: public_encryption_key.to_bytes,
-          challengeData: challenge_data
+          challengeData: challenge_data,
+          timeStamp: Time.now.to_i,
         )
       )
 
@@ -46,7 +47,7 @@ module Krypto
       end
     end
 
-    INNER_RESPONSE_FIELDS = %i[publicSigningKey challengeData responseData].freeze
+    INNER_RESPONSE_FIELDS = %i[publicSigningKey challengeData responseData timeStamp].freeze
     class InnerResponse < Struct.new(*INNER_RESPONSE_FIELDS, keyword_init: true)
       def to_msgpack(out = "")
         to_h.to_msgpack(out)
@@ -64,7 +65,8 @@ module Krypto
         InnerResponse.new(
           publicSigningKey: signing_key.public_to_pem,
           challengeData: challenge_msg.challengeData,
-          responseData: response_data
+          responseData: response_data,
+          timeStamp: Time.now.to_i,
         )
       )
 

@@ -5,6 +5,7 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"fmt"
+	"time"
 
 	"github.com/kolide/krypto"
 	"github.com/kolide/krypto/pkg/echelper"
@@ -23,6 +24,7 @@ type InnerResponse struct {
 	PublicSigningKey []byte `msgpack:"publicSigningKey"`
 	ChallengeData    []byte `msgpack:"challengeData"`
 	ResponseData     []byte `msgpack:"responseData"`
+	TimeStamp        int64  `msgpack:"timeStamp"`
 }
 
 func RespondPng(signer crypto.Signer, counterParty ecdsa.PublicKey, challengeOuter OuterChallenge, responseData []byte) ([]byte, error) {
@@ -63,6 +65,7 @@ func Respond(signer crypto.Signer, counterParty ecdsa.PublicKey, challengeOuter 
 		PublicSigningKey: pubSigningKeyPem,
 		ChallengeData:    innerChallenge.ChallengeData,
 		ResponseData:     responseData,
+		TimeStamp:        time.Now().Unix(),
 	})
 
 	if err != nil {

@@ -81,6 +81,7 @@ func TestChallengeRuby(t *testing.T) {
 
 			require.Equal(t, testChallenge, innerResponse.ChallengeData)
 			require.Equal(t, responderData, innerResponse.ResponseData)
+			require.WithinDuration(t, time.Now(), time.Unix(innerResponse.TimeStamp, 0), time.Second*5)
 		})
 
 		t.Run("Go challenges, Ruby responds", func(t *testing.T) {
@@ -112,6 +113,7 @@ func TestChallengeRuby(t *testing.T) {
 
 			require.Equal(t, testChallenge, innerResponse.ChallengeData)
 			require.Equal(t, responderData, innerResponse.ResponseData)
+			require.WithinDuration(t, time.Now(), time.Unix(innerResponse.TimeStamp, 0), time.Second*5)
 		})
 	}
 }
