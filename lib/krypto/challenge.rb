@@ -28,7 +28,7 @@ module Krypto
         InnerChallenge.new(
           publicEncryptionKey: public_encryption_key.to_bytes,
           challengeData: challenge_data,
-          timeStamp: Time.now.to_i,
+          timeStamp: Time.now.to_i
         )
       )
 
@@ -66,7 +66,7 @@ module Krypto
           publicSigningKey: signing_key.public_to_pem,
           challengeData: challenge_msg.challengeData,
           responseData: response_data,
-          timeStamp: Time.now.to_i,
+          timeStamp: Time.now.to_i
         )
       )
 
