@@ -84,7 +84,7 @@ func PublicPemToEcdsaKey(keyBytes []byte) (*ecdsa.PublicKey, error) {
 
 	key, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parsing pkix public key: %w", err)
 	}
 
 	pub, ok := key.(*ecdsa.PublicKey)

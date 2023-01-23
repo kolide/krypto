@@ -40,7 +40,7 @@ func RespondPng(signer crypto.Signer, counterParty ecdsa.PublicKey, challengeOut
 
 	var buf bytes.Buffer
 	if err := krypto.ToPng(&buf, packedResponse); err != nil {
-		return nil, fmt.Errorf("encoding data to png")
+		return nil, fmt.Errorf("encoding data to png: %w", err)
 	}
 
 	return buf.Bytes(), nil
