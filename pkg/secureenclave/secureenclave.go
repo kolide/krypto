@@ -68,7 +68,7 @@ func (s *SecureEnclaveSigner) Sign(rand io.Reader, digest []byte, opts crypto.Si
 	return result, nil
 }
 
-// CreateKey creates a new secure enclave key and returns it.
+// CreateKey creates a new secure enclave key and returns the hash used to access it.
 func CreateKey() ([]byte, error) {
 	wrapper := C.wrapCreateKey()
 	result, err := unwrap(wrapper)

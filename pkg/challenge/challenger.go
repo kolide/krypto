@@ -65,12 +65,7 @@ func OpenResponsePng(privateEncryptionKey [32]byte, pngData []byte) (*InnerRespo
 		return nil, fmt.Errorf("unmarshaling outer box: %w", err)
 	}
 
-	innerResponse, err := OpenResponse(privateEncryptionKey, outerResponse)
-	if err != nil {
-		return nil, err
-	}
-
-	return innerResponse, nil
+	return OpenResponse(privateEncryptionKey, outerResponse)
 }
 
 func OpenResponse(privateEncryptionKey [32]byte, responseOuter OuterResponse) (*InnerResponse, error) {
