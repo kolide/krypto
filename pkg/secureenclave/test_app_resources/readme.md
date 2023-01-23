@@ -22,5 +22,5 @@ In order to succesfully sign the app with entitlements, there are a few steps th
 1. Download and install a certificate from the Apple Developer account of type "Mac Development" https://developer.apple.com/account/resources/certificates/list
 2. Add you device to the developer account using the "Provisioning UDID" found at Desktop Menu Applie Icon> About This Mac > More Info > System Report https://developer.apple.com/account/resources/devices/list
 3. Create a provisioing profile that includes the device https://developer.apple.com/account/resources/profiles/list ... should probably include all devices on the team and be updated in the repo
-4. Replace the `mbedded.provisionprofile` file with the new profile
+4. Replace the `embedded.provisionprofile` file with the new profile
 5. Run the `TestSecureEnclaveTestRunner` and examine the output

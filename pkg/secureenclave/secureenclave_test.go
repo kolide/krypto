@@ -69,6 +69,7 @@ func TestSecureEnclaveTestRunner(t *testing.T) {
 	// ensure the test ran
 	require.Contains(t, string(out), "PASS: TestSecureEnclaveSigning")
 	require.Contains(t, string(out), "PASS: TestSecureEnclaveErrors")
+	require.NotContains(t, string(out), "FAIL")
 	t.Log(string(out))
 }
 

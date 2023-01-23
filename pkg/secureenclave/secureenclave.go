@@ -30,16 +30,16 @@ type SecureEnclaveSigner struct {
 // New verifies that the provided public key already exists in the secure enclave.
 // Then returns a new Secure Enclave Keyer using the provided public key.
 func New(publicKey ecdsa.PublicKey) (*SecureEnclaveSigner, error) {
-	se := &SecureEnclaveSigner{
+	s := &SecureEnclaveSigner{
 		publicKey: &publicKey,
 	}
 
-	_, err := findKey(*se.publicKey)
+	_, err := findKey(*s.publicKey)
 	if err != nil {
 		return nil, fmt.Errorf("finding existing public key: %w", err)
 	}
 
-	return se, nil
+	return s, nil
 }
 
 func (s *SecureEnclaveSigner) Public() crypto.PublicKey {
