@@ -43,22 +43,27 @@ func TestTpmErrors(t *testing.T) {
 	priv, pub, err := CreateKey(WithExternalTpm(tpm))
 	require.NoError(t, err)
 
-	_, _, err = CreateKey(WithExternalTpm(nil))
-	require.Error(t, err, "should get error with nil external tpm")
-
 	alteredPriv := []byte("some random stuff")
 	_, err = New(alteredPriv, pub, WithExternalTpm(tpm))
 	require.Error(t, err, "should get error with malformed private bytes")
+	require.ErrorContains(t, err, "loading signer handle")
 
 	alteredPub := []byte("some more random stuff")
 	_, err = New(priv, alteredPub, WithExternalTpm(tpm))
 	require.Error(t, err, "should get error with malformed public bytes")
+	require.ErrorContains(t, err, "loading signer handle")
 
 	_, err = New(nil, nil, WithExternalTpm(tpm))
 	require.Error(t, err, "should get error with nil private and public bytes")
+	require.ErrorContains(t, err, "loading signer handle")
 
-	_, err = New(nil, nil, WithExternalTpm(nil))
-	require.Error(t, err, "should get error with nil tpm")
+	_, err = New(priv, nil, WithExternalTpm(tpm))
+	require.Error(t, err, "should get error with nil public bytes")
+	require.ErrorContains(t, err, "loading signer handle")
+
+	_, err = New(nil, pub, WithExternalTpm(tpm))
+	require.Error(t, err, "should get error with nil private bytes")
+	require.ErrorContains(t, err, "loading signer handle")
 }
 
 // tpmSimulatorFallback returns an tpm keyer using TPM hardware chip if available,

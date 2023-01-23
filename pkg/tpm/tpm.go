@@ -214,12 +214,3 @@ func (t *TpmSigner) openTpm() (io.ReadWriteCloser, error) {
 
 	return tpm2.OpenTPM()
 }
-
-func (t *TpmSigner) TpmAvailable() bool {
-	tpm, err := tpm2.OpenTPM()
-	if err != nil {
-		return false
-	}
-	defer tpm.Close()
-	return true
-}
