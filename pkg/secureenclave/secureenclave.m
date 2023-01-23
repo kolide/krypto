@@ -139,6 +139,14 @@ size_t createKey(unsigned char** ret, char** retErr){
 
     // extract just the public key data
     CFDataRef publicKeyRef = ExtractPubKey(publicKey);
+    if (!publicKeyRef){
+      CFStringRef errStr = CFSTR("public key was not able to be extracted from private key");
+      *retErr = CFStringToCString(errStr);
+      CFRelease(errStr);
+      errStr = NULL;
+      return 0;
+    }
+
     *ret = CFDataToUint8(publicKeyRef);
     CFIndex size = CFDataGetLength(publicKeyRef);
     CFRelease(publicKeyRef);
@@ -169,7 +177,9 @@ size_t findKey(unsigned char* hash, unsigned char** ret, char** retErr){
     SecKeyRef privateKey = NULL;
     OSStatus status = findPrivateKey(cfHash, (__bridge void *)&privateKey);
 
-    CFRelease(cfHash);
+    if (cfHash != NULL) {
+      CFRelease(cfHash);
+    }
     cfHash = NULL;
 
     if ((status != 0) || (!privateKey)) {
@@ -203,7 +213,8 @@ size_t findKey(unsigned char* hash, unsigned char** ret, char** retErr){
 }
 
 size_t sign(unsigned char* hash, unsigned char* data, int dataSize, unsigned char** ret, char** retErr){
-    CFDataRef cfHash = CFDataCreateWithBytesNoCopy(kCFAllocatorDefault, (UInt8*)hash, 20, kCFAllocatorNull);
+    #define sha1HashSize 20
+    CFDataRef cfHash = CFDataCreateWithBytesNoCopy(kCFAllocatorDefault, (UInt8*)hash, sha1HashSize, kCFAllocatorNull);
     SecKeyRef privateKey = NULL;
     OSStatus status = findPrivateKey(cfHash, (__bridge void *)&privateKey);
 
@@ -216,6 +227,14 @@ size_t sign(unsigned char* hash, unsigned char* data, int dataSize, unsigned cha
     }
 
     CFDataRef dataRef = CFDataCreateWithBytesNoCopy(kCFAllocatorDefault, (UInt8*)data, dataSize, kCFAllocatorNull);
+    if (!dataRef) {
+        CFStringRef errStr = CFSTR("failed to create CFDataRef from data to sign");
+        *retErr = CFStringToCString(errStr);
+        CFRelease(errStr);
+        errStr = NULL;
+        return 0;
+    }
+
     CFErrorRef error = NULL;
 
     CFDataRef signature = SecKeyCreateSignature(privateKey, kSecKeyAlgorithmECDSASignatureDigestX962, dataRef, &error);
