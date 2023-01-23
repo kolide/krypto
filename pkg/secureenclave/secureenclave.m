@@ -12,14 +12,14 @@ char* CFStringToCString(CFStringRef data) {
     return NULL;
   }
 
-  CFIndex realLen = CFStringGetMaximumSizeForEncoding(len, kCFStringEncodingUTF8);
-  char* buf = (char*)malloc((size_t)realLen + 1);
+  CFIndex realLen = CFStringGetMaximumSizeForEncoding(len + 1, kCFStringEncodingUTF8);
+  char* buf = (char*)malloc((size_t)realLen);
   if (!buf){
     return NULL;
   }
-  memset(buf, 0, (size_t)realLen + 1);
+  memset(buf, 0, (size_t)realLen);
 
-  Boolean ok = CFStringGetCString(data, buf, realLen + 1, kCFStringEncodingUTF8);
+  Boolean ok = CFStringGetCString(data, buf, realLen, kCFStringEncodingUTF8);
   if (!ok){
     return NULL;
   }
