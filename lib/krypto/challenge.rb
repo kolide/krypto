@@ -6,7 +6,7 @@ require "openssl"
 
 module Krypto
   class Challenge
-    OUTER_CHALLENGE_FIELDS = %i[signature inner].freeze
+    OUTER_CHALLENGE_FIELDS = %i[sig msg].freeze
     class OuterChallenge < Struct.new(*OUTER_CHALLENGE_FIELDS, keyword_init: true)
       def to_msgpack(out = "")
         to_h.to_msgpack(out)
@@ -24,7 +24,7 @@ module Krypto
       private_encryption_key = RbNaCl::PrivateKey.generate
       public_encryption_key = private_encryption_key.public_key
 
-      inner = MessagePack.pack(
+      msg = MessagePack.pack(
         InnerChallenge.new(
           publicEncryptionKey: public_encryption_key.to_bytes,
           challengeData: challenge_data
@@ -32,14 +32,14 @@ module Krypto
       )
 
       outer = OuterChallenge.new(
-        signature: signing_key.sign(OpenSSL::Digest.new("SHA256"), inner),
-        inner: inner
+        sig: signing_key.sign(OpenSSL::Digest.new("SHA256"), msg),
+        msg: msg
       )
 
       [outer, private_encryption_key.to_bytes]
     end
 
-    OUTER_RESPONSE_FIELDS = %i[publicEncryptionKey signature inner].freeze
+    OUTER_RESPONSE_FIELDS = %i[publicEncryptionKey sig msg].freeze
     class OuterResponse < Struct.new(*OUTER_RESPONSE_FIELDS, keyword_init: true)
       def to_msgpack(out = "")
         to_h.to_msgpack(out)
@@ -54,30 +54,30 @@ module Krypto
     end
 
     def self.respond(signing_key, counter_party, outer_challenge, response_data)
-      if !verify(counter_party, outer_challenge.inner, outer_challenge.signature)
+      if !verify(counter_party, outer_challenge.msg, outer_challenge.sig)
         raise "invalid signature"
       end
 
-      challenge_inner = InnerChallenge.new(MessagePack.unpack(outer_challenge.inner))
+      challenge_msg = InnerChallenge.new(MessagePack.unpack(outer_challenge.msg))
 
-      inner = MessagePack.pack(
+      msg = MessagePack.pack(
         InnerResponse.new(
           publicSigningKey: signing_key.public_to_pem,
-          challengeData: challenge_inner.challengeData,
+          challengeData: challenge_msg.challengeData,
           responseData: response_data
         )
       )
 
-      signature = signing_key.sign(OpenSSL::Digest.new("SHA256"), inner)
+      sig = signing_key.sign(OpenSSL::Digest.new("SHA256"), msg)
       private_encryption_key = RbNaCl::PrivateKey.generate
 
-      box = RbNaCl::SimpleBox.from_keypair(challenge_inner.publicEncryptionKey, private_encryption_key)
-      sealed = box.encrypt(inner)
+      box = RbNaCl::SimpleBox.from_keypair(challenge_msg.publicEncryptionKey, private_encryption_key)
+      sealed = box.encrypt(msg)
 
       OuterResponse.new(
-        signature: signature,
+        sig: sig,
         publicEncryptionKey: private_encryption_key.public_key.to_bytes,
-        inner: sealed
+        msg: sealed
       )
     end
 
@@ -90,19 +90,19 @@ module Krypto
     def self.open_response(private_encryption_key, outer_response)
       public_encryption_key = RbNaCl::PublicKey.new(outer_response.publicEncryptionKey)
       box = RbNaCl::SimpleBox.from_keypair(public_encryption_key, private_encryption_key)
-      opened = box.open(outer_response.inner)
-      inner = InnerResponse.new(MessagePack.unpack(opened))
+      opened = box.open(outer_response.msg)
+      msg = InnerResponse.new(MessagePack.unpack(opened))
 
-      public_signing_key = OpenSSL::PKey::EC.new(inner.publicSigningKey)
-      if verify(public_signing_key, opened, outer_response.signature)
-        return inner
+      public_signing_key = OpenSSL::PKey::EC.new(msg.publicSigningKey)
+      if verify(public_signing_key, opened, outer_response.sig)
+        return msg
       end
 
       raise "invalid signature"
     end
 
-    def self.verify(key, data, signature)
-      if key.dsa_verify_asn1(signing_hash(data), signature)
+    def self.verify(key, data, sig)
+      if key.dsa_verify_asn1(signing_hash(data), sig)
         return true
       end
 

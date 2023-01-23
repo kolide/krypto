@@ -1,4 +1,4 @@
-package challenge
+package echelper
 
 import (
 	"crypto"
@@ -69,16 +69,7 @@ func OpenNaCl(sealed []byte, counterPartyPublicKey, privateKey *[32]byte) ([]byt
 	return opened, nil
 }
 
-func hashForSignature(data []byte) ([]byte, error) {
-	hash := sha256.New()
-	_, err := hash.Write(data)
-	if err != nil {
-		return nil, err
-	}
-	return hash.Sum(nil), nil
-}
-
-func publicEcdsaKeyToPem(pub *ecdsa.PublicKey) ([]byte, error) {
+func PublicEcdsaKeyToPem(pub *ecdsa.PublicKey) ([]byte, error) {
 	bytes, err := x509.MarshalPKIXPublicKey(pub)
 	if err != nil {
 		return nil, err
@@ -87,7 +78,7 @@ func publicEcdsaKeyToPem(pub *ecdsa.PublicKey) ([]byte, error) {
 	return pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: bytes}), nil
 }
 
-func publicPemToEcdsaKey(keyBytes []byte) (*ecdsa.PublicKey, error) {
+func PublicPemToEcdsaKey(keyBytes []byte) (*ecdsa.PublicKey, error) {
 	block, _ := pem.Decode(keyBytes)
 
 	key, err := x509.ParsePKIXPublicKey(block.Bytes)
@@ -100,4 +91,13 @@ func publicPemToEcdsaKey(keyBytes []byte) (*ecdsa.PublicKey, error) {
 		return nil, errors.New("public key is not an ECDSA public key")
 	}
 	return pub, nil
+}
+
+func hashForSignature(data []byte) ([]byte, error) {
+	hash := sha256.New()
+	_, err := hash.Write(data)
+	if err != nil {
+		return nil, err
+	}
+	return hash.Sum(nil), nil
 }

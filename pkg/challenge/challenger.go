@@ -7,13 +7,14 @@ import (
 	"fmt"
 
 	"github.com/kolide/krypto"
+	"github.com/kolide/krypto/pkg/echelper"
 	"github.com/vmihailenco/msgpack/v5"
 	"golang.org/x/crypto/nacl/box"
 )
 
 type OuterChallenge struct {
-	Signature []byte `msgpack:"signature"`
-	Inner     []byte `msgpack:"inner"`
+	Sig []byte `msgpack:"sig"`
+	Msg []byte `msgpack:"msg"`
 }
 
 type InnerChallenge struct {
@@ -38,14 +39,14 @@ func Generate(signer crypto.Signer, challengeData []byte) (*OuterChallenge, *[32
 		return nil, nil, fmt.Errorf("marshaling inner challenge box: %w", err)
 	}
 
-	signature, err := Sign(signer, inner)
+	signature, err := echelper.Sign(signer, inner)
 	if err != nil {
 		return nil, nil, fmt.Errorf("signing challenge: %w", err)
 	}
 
 	return &OuterChallenge{
-		Signature: signature,
-		Inner:     inner,
+		Sig: signature,
+		Msg: inner,
 	}, privEncKey, nil
 }
 
@@ -70,7 +71,7 @@ func OpenResponsePng(privateEncryptionKey [32]byte, pngData []byte) (*InnerRespo
 }
 
 func OpenResponse(privateEncryptionKey [32]byte, responseOuter OuterResponse) (*InnerResponse, error) {
-	innerResponseBytes, err := OpenNaCl(responseOuter.Inner, &responseOuter.PublicEncryptionKey, &privateEncryptionKey)
+	innerResponseBytes, err := echelper.OpenNaCl(responseOuter.Msg, &responseOuter.PublicEncryptionKey, &privateEncryptionKey)
 	if err != nil {
 		return nil, fmt.Errorf("opening challenge response box: %w", err)
 	}
@@ -80,12 +81,12 @@ func OpenResponse(privateEncryptionKey [32]byte, responseOuter OuterResponse) (*
 		return nil, fmt.Errorf("unmarshaling inner box: %w", err)
 	}
 
-	counterPartyPubKey, err := publicPemToEcdsaKey(innerResponse.PublicSigningKey)
+	counterPartyPubKey, err := echelper.PublicPemToEcdsaKey(innerResponse.PublicSigningKey)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshalling public ecdsa signing key from pem: %w", err)
 	}
 
-	if err := VerifySignature(*counterPartyPubKey, innerResponseBytes, responseOuter.Signature); err != nil {
+	if err := echelper.VerifySignature(*counterPartyPubKey, innerResponseBytes, responseOuter.Sig); err != nil {
 		return nil, fmt.Errorf("verifying challenge: %w", err)
 	}
 

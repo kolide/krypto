@@ -149,7 +149,7 @@ func TestChallengeRubyTampering(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		rubyChallengeOuter.Inner = tamperedInner
+		rubyChallengeOuter.Msg = tamperedInner
 
 		_, err = challenge.Respond(responderKey, rubyPrivateSignignKey.PublicKey, rubyChallengeOuter, responderData)
 		require.ErrorContains(t, err, "invalid signature")
@@ -173,7 +173,7 @@ func TestChallengeRubyTampering(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		generatedChallenge.Inner = tamperedInner
+		generatedChallenge.Msg = tamperedInner
 
 		challengePack, err := msgpack.Marshal(generatedChallenge)
 		require.NoError(t, err)

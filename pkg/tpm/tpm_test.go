@@ -10,7 +10,7 @@ import (
 	"github.com/google/go-tpm-tools/simulator"
 	"github.com/google/go-tpm/tpm2"
 	"github.com/google/go-tpm/tpmutil"
-	"github.com/kolide/krypto/pkg/challenge"
+	"github.com/kolide/krypto/pkg/echelper"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,12 +27,12 @@ func TestTpmSigning(t *testing.T) {
 
 	dataToSign := []byte("here is some data to sign")
 
-	signature, err := challenge.Sign(tpmSigner, dataToSign)
+	signature, err := echelper.Sign(tpmSigner, dataToSign)
 	require.NoError(t, err, "should be able to sign data")
 
 	publicKey := tpmSigner.Public().(ecdsa.PublicKey)
 
-	require.NoError(t, challenge.VerifySignature(publicKey, dataToSign, signature))
+	require.NoError(t, echelper.VerifySignature(publicKey, dataToSign, signature))
 }
 
 func TestTpmErrors(t *testing.T) {

@@ -29,14 +29,14 @@ type SecureEnclaveSigner struct {
 
 // New verifies that the provided public key already exists in the secure enclave.
 // Then returns a new Secure Enclave Keyer using the provided public key.
-func New(publicKey ecdsa.PublicKey) (*SecureEnclaveSigner, error) {
-	s := &SecureEnclaveSigner{
-		publicKey: &publicKey,
-	}
-
-	_, err := findKey(*s.publicKey)
+func New(publicKeySha1 []byte) (*SecureEnclaveSigner, error) {
+	pubKey, err := findKey(publicKeySha1)
 	if err != nil {
 		return nil, fmt.Errorf("finding existing public key: %w", err)
+	}
+
+	s := &SecureEnclaveSigner{
+		publicKey: pubKey,
 	}
 
 	return s, nil
@@ -69,14 +69,18 @@ func (s *SecureEnclaveSigner) Sign(rand io.Reader, digest []byte, opts crypto.Si
 }
 
 // CreateKey creates a new secure enclave key and returns it.
-func CreateKey() (*ecdsa.PublicKey, error) {
+func CreateKey() ([]byte, error) {
 	wrapper := C.wrapCreateKey()
 	result, err := unwrap(wrapper)
 	if err != nil {
 		return nil, err
 	}
 
-	return rawToEcdsa(result), nil
+	sha1 := sha1.New()
+	if _, err := sha1.Write(result); err != nil {
+		return nil, fmt.Errorf("hashing secure enclave create key result to sha1: %w", err)
+	}
+	return sha1.Sum(nil), nil
 }
 
 // unwrap a Wrapper struct to a Go byte slice
@@ -104,13 +108,8 @@ func unwrap(w *C.Wrapper) ([]byte, error) {
 }
 
 // findKey finds a key in secure enclave by looking it up with the SHA1 hash of the public key
-func findKey(publicKey ecdsa.PublicKey) (*ecdsa.PublicKey, error) {
-	lookupHash, err := publicKeyLookUpHash(&publicKey)
-	if err != nil {
-		return nil, err
-	}
-
-	cHash := C.CBytes(lookupHash)
+func findKey(publicKeySha1 []byte) (*ecdsa.PublicKey, error) {
+	cHash := C.CBytes(publicKeySha1)
 	defer C.free(cHash)
 
 	wrapper := C.wrapFindKey(cHash)

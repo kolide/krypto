@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/kolide/krypto"
+	"github.com/kolide/krypto/pkg/echelper"
 	"github.com/vmihailenco/msgpack/v5"
 )
 
@@ -14,8 +15,8 @@ type OuterResponse struct {
 	// PublicEncryptionKey is the public half of the NaCL encryption key that was used to
 	// ECDH the challenger provided PublicEncryptionKey
 	PublicEncryptionKey [32]byte `msgpack:"publicEncryptionKey"`
-	Signature           []byte   `msgpack:"signature"`
-	Inner               []byte   `msgpack:"inner"`
+	Sig                 []byte   `msgpack:"sig"`
+	Msg                 []byte   `msgpack:"msg"`
 }
 
 type InnerResponse struct {
@@ -44,16 +45,16 @@ func RespondPng(signer crypto.Signer, counterParty ecdsa.PublicKey, challengeOut
 }
 
 func Respond(signer crypto.Signer, counterParty ecdsa.PublicKey, challengeOuter OuterChallenge, responseData []byte) (*OuterResponse, error) {
-	if err := VerifySignature(counterParty, challengeOuter.Inner, challengeOuter.Signature); err != nil {
+	if err := echelper.VerifySignature(counterParty, challengeOuter.Msg, challengeOuter.Sig); err != nil {
 		return nil, fmt.Errorf("verifying challenge: %w", err)
 	}
 
 	var innerChallenge InnerChallenge
-	if err := msgpack.Unmarshal(challengeOuter.Inner, &innerChallenge); err != nil {
+	if err := msgpack.Unmarshal(challengeOuter.Msg, &innerChallenge); err != nil {
 		return nil, fmt.Errorf("unmarshaling inner box: %w", err)
 	}
 
-	pubSigningKeyPem, err := publicEcdsaKeyToPem(signer.Public().(*ecdsa.PublicKey))
+	pubSigningKeyPem, err := echelper.PublicEcdsaKeyToPem(signer.Public().(*ecdsa.PublicKey))
 	if err != nil {
 		return nil, fmt.Errorf("marshalling public signing key to pem: %w", err)
 	}
@@ -68,19 +69,19 @@ func Respond(signer crypto.Signer, counterParty ecdsa.PublicKey, challengeOuter 
 		return nil, fmt.Errorf("marshaling inner box: %w", err)
 	}
 
-	signature, err := Sign(signer, innerResponse)
+	signature, err := echelper.Sign(signer, innerResponse)
 	if err != nil {
 		return nil, fmt.Errorf("signing challenge: %w", err)
 	}
 
-	sealed, pub, err := SealNaCl(innerResponse, &innerChallenge.PublicEncryptionKey)
+	sealed, pub, err := echelper.SealNaCl(innerResponse, &innerChallenge.PublicEncryptionKey)
 	if err != nil {
 		return nil, fmt.Errorf("sealing challenge inner box: %w", err)
 	}
 
 	return &OuterResponse{
 		PublicEncryptionKey: *pub,
-		Signature:           signature,
-		Inner:               sealed,
+		Sig:                 signature,
+		Msg:                 sealed,
 	}, nil
 }

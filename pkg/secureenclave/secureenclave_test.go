@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kolide/krypto/pkg/challenge"
+	"github.com/kolide/krypto/pkg/echelper"
 	"github.com/stretchr/testify/require"
 )
 
@@ -82,20 +82,20 @@ func TestSecureEnclaveSigning(t *testing.T) {
 
 	t.Log("\nrunning wrapped tests with codesigned app and entitlements")
 
-	alicesSePublicKey, err := CreateKey()
+	pubKeyLookup, err := CreateKey()
 	require.NoError(t, err)
 
-	seSigner, err := New(*alicesSePublicKey)
+	seSigner, err := New(pubKeyLookup)
 	require.NoError(t, err, "should be able to create a secure enclave keyer from an existing key")
 
 	dataToSign := []byte("here is some data to sign")
 
-	signature, err := challenge.Sign(seSigner, dataToSign)
+	signature, err := echelper.Sign(seSigner, dataToSign)
 	require.NoError(t, err, "should be able to sign data")
 
 	publicKey := seSigner.Public().(ecdsa.PublicKey)
 
-	require.NoError(t, challenge.VerifySignature(publicKey, dataToSign, signature))
+	require.NoError(t, echelper.VerifySignature(publicKey, dataToSign, signature))
 }
 
 func TestSecureEnclaveErrors(t *testing.T) {
@@ -107,7 +107,7 @@ func TestSecureEnclaveErrors(t *testing.T) {
 
 	t.Log("\nrunning wrapped tests with codesigned app and entitlements")
 
-	_, err := New(*new(ecdsa.PublicKey))
+	_, err := New(nil)
 	require.Error(t, err, "new secure enclave keyer should error with nil existing key")
 }
 
