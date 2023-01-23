@@ -3,6 +3,7 @@ package echelper
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
@@ -91,6 +92,10 @@ func PublicPemToEcdsaKey(keyBytes []byte) (*ecdsa.PublicKey, error) {
 		return nil, errors.New("public key is not an ECDSA public key")
 	}
 	return pub, nil
+}
+
+func GenerateEcdsaKey() (*ecdsa.PrivateKey, error) {
+	return ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 }
 
 func hashForSignature(data []byte) ([]byte, error) {
