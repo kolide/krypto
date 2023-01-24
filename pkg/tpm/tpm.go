@@ -106,6 +106,14 @@ func CreateKey(opts ...TpmSignerOption) (private []byte, public []byte, err erro
 	return private, public, nil
 }
 
+func (s *TpmSigner) Type() string {
+	if s.externalTpm != nil {
+		return "tpm-external"
+	}
+
+	return "tpm"
+}
+
 func (s *TpmSigner) Public() crypto.PublicKey {
 	return *s.publicKey
 }
