@@ -93,9 +93,9 @@ func TestSecureEnclaveSigning(t *testing.T) {
 	signature, err := echelper.Sign(seSigner, dataToSign)
 	require.NoError(t, err, "should be able to sign data")
 
-	publicKey := seSigner.Public().(ecdsa.PublicKey)
+	publicKey := seSigner.Public().(*ecdsa.PublicKey)
 
-	require.NoError(t, echelper.VerifySignature(publicKey, dataToSign, signature))
+	require.NoError(t, echelper.VerifySignature(*publicKey, dataToSign, signature))
 }
 
 func TestSecureEnclaveErrors(t *testing.T) {

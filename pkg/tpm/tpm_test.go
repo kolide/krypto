@@ -30,9 +30,9 @@ func TestTpmSigning(t *testing.T) {
 	signature, err := echelper.Sign(tpmSigner, dataToSign)
 	require.NoError(t, err, "should be able to sign data")
 
-	publicKey := tpmSigner.Public().(ecdsa.PublicKey)
+	publicKey := tpmSigner.Public().(*ecdsa.PublicKey)
 
-	require.NoError(t, echelper.VerifySignature(publicKey, dataToSign, signature))
+	require.NoError(t, echelper.VerifySignature(*publicKey, dataToSign, signature))
 }
 
 func TestTpmErrors(t *testing.T) {
