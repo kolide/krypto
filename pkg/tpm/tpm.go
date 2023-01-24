@@ -29,7 +29,7 @@ func WithExternalTpm(externalTpm io.ReadWriteCloser) TpmSignerOption {
 type TpmSigner struct {
 	externalTpm io.ReadWriteCloser
 	tpmLock     sync.Mutex
-	publicKey   *ecdsa.PublicKey
+	publicKey   ecdsa.PublicKey
 	privateBlob []byte
 	publicBlob  []byte
 }
@@ -65,7 +65,7 @@ func New(private []byte, public []byte, opts ...TpmSignerOption) (*TpmSigner, er
 	// nolint: errcheck
 	defer tpm2.FlushContext(tpm, signerHandle)
 
-	tpmKeyer.publicKey = publicKey
+	tpmKeyer.publicKey = *publicKey
 
 	return tpmKeyer, nil
 }
@@ -115,7 +115,7 @@ func (s *TpmSigner) Type() string {
 }
 
 func (s *TpmSigner) Public() crypto.PublicKey {
-	return *s.publicKey
+	return &s.publicKey
 }
 
 func (s *TpmSigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) (signature []byte, err error) {
