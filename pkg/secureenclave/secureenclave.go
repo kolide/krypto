@@ -24,7 +24,7 @@ import (
 )
 
 type SecureEnclaveSigner struct {
-	publicKey *ecdsa.PublicKey
+	publicKey ecdsa.PublicKey
 }
 
 // New verifies that the provided public key already exists in the secure enclave.
@@ -36,7 +36,7 @@ func New(publicKeySha1 []byte) (*SecureEnclaveSigner, error) {
 	}
 
 	s := &SecureEnclaveSigner{
-		publicKey: pubKey,
+		publicKey: *pubKey,
 	}
 
 	return s, nil
@@ -47,11 +47,11 @@ func (s *SecureEnclaveSigner) Type() string {
 }
 
 func (s *SecureEnclaveSigner) Public() crypto.PublicKey {
-	return *s.publicKey
+	return &s.publicKey
 }
 
 func (s *SecureEnclaveSigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) (signature []byte, err error) {
-	lookupHash, err := publicKeyLookUpHash(s.publicKey)
+	lookupHash, err := publicKeyLookUpHash(&s.publicKey)
 	if err != nil {
 		return nil, err
 	}
