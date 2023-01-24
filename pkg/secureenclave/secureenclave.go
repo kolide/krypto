@@ -42,6 +42,10 @@ func New(publicKeySha1 []byte) (*SecureEnclaveSigner, error) {
 	return s, nil
 }
 
+func (s *SecureEnclaveSigner) Type() string {
+	return "secure-enclave"
+}
+
 func (s *SecureEnclaveSigner) Public() crypto.PublicKey {
 	return *s.publicKey
 }
