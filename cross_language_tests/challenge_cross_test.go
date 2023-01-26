@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kolide/kit/ulid"
 	"github.com/kolide/krypto/pkg/challenge"
 	"github.com/stretchr/testify/require"
 	"github.com/vmihailenco/msgpack/v5"
@@ -25,6 +26,7 @@ type rubyChallengeCmd struct {
 	RubyPrivateSigningKey []byte
 	ChallengePack         []byte
 	ChallengerPublicKey   []byte
+	ChallengeId           []byte
 	ChallengeData         []byte
 	ResponsePack          []byte
 	ResponseData          []byte
@@ -55,9 +57,12 @@ func TestChallengeRuby(t *testing.T) {
 			responderKey := ecdsaKey(t)
 			dir := t.TempDir()
 
+			challengeId := []byte(ulid.New())
+
 			rubyChallengeCmdData := rubyChallengeCmd{
 				RubyPrivateSigningKey: privateEcKeyToPem(t, rubyPrivateSigningKey),
 				ChallengeData:         testChallenge,
+				ChallengeId:           challengeId,
 			}
 
 			out, err := rubyChallengeExec("generate", dir, rubyChallengeCmdData)
@@ -90,7 +95,9 @@ func TestChallengeRuby(t *testing.T) {
 			challengerKey := ecdsaKey(t)
 			dir := t.TempDir()
 
-			generatedChallenge, privEncryptionKey, err := challenge.Generate(challengerKey, testChallenge)
+			challengeId := []byte(ulid.New())
+
+			generatedChallenge, privEncryptionKey, err := challenge.Generate(challengerKey, challengeId, testChallenge)
 			require.NoError(t, err)
 
 			challengePack, err := msgpack.Marshal(generatedChallenge)
@@ -113,6 +120,7 @@ func TestChallengeRuby(t *testing.T) {
 
 			require.Equal(t, testChallenge, innerResponse.ChallengeData)
 			require.Equal(t, responderData, innerResponse.ResponseData)
+			require.Equal(t, challengeId, rubyResponseOuter.ChallengeId)
 			require.WithinDuration(t, time.Now(), time.Unix(innerResponse.TimeStamp, 0), time.Second*5)
 		})
 	}
@@ -163,7 +171,7 @@ func TestChallengeRubyTampering(t *testing.T) {
 		challengerKey := ecdsaKey(t)
 		dir := t.TempDir()
 
-		generatedChallenge, _, err := challenge.Generate(challengerKey, testChallenge)
+		generatedChallenge, _, err := challenge.Generate(challengerKey, []byte(ulid.New()), testChallenge)
 		require.NoError(t, err)
 
 		tamperPub, _, err := box.GenerateKey(rand.Reader)

@@ -24,9 +24,10 @@ type InnerChallenge struct {
 	PublicEncryptionKey [32]byte `msgpack:"publicEncryptionKey"`
 	ChallengeData       []byte   `msgpack:"challengeData"`
 	TimeStamp           int64    `msgpack:"timeStamp"`
+	ChallengeId         []byte   `msgpack:"challengeId"`
 }
 
-func Generate(signer crypto.Signer, challengeData []byte) (*OuterChallenge, *[32]byte, error) {
+func Generate(signer crypto.Signer, challengeId []byte, challengeData []byte) (*OuterChallenge, *[32]byte, error) {
 	pubEncKey, privEncKey, err := box.GenerateKey(rand.Reader)
 	if err != nil {
 		return nil, nil, fmt.Errorf("generating encryption keys: %w", err)
@@ -36,6 +37,7 @@ func Generate(signer crypto.Signer, challengeData []byte) (*OuterChallenge, *[32
 		PublicEncryptionKey: *pubEncKey,
 		ChallengeData:       challengeData,
 		TimeStamp:           time.Now().Unix(),
+		ChallengeId:         challengeId,
 	})
 
 	if err != nil {
