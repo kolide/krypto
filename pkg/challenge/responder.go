@@ -18,6 +18,7 @@ type OuterResponse struct {
 	PublicEncryptionKey [32]byte `msgpack:"publicEncryptionKey"`
 	Sig                 []byte   `msgpack:"sig"`
 	Msg                 []byte   `msgpack:"msg"`
+	ChallengeId         []byte   `msgpack:"challengeId"`
 }
 
 type InnerResponse struct {
@@ -86,5 +87,6 @@ func Respond(signer crypto.Signer, counterParty ecdsa.PublicKey, challengeOuter 
 		PublicEncryptionKey: *pub,
 		Sig:                 signature,
 		Msg:                 sealed,
+		ChallengeId:         innerChallenge.ChallengeId,
 	}, nil
 }

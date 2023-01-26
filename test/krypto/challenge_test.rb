@@ -8,11 +8,15 @@ class TestKryptoChallenge < Minitest::Test
   CHALLENGE_DATA = "this is a challenge"
   RESPONDER_DATA = "this is some responder data"
 
+  CHALLENGE_ID = "this is a challenge id"
+
   def test_challenge
-    challenge, private_encryption_key = ::Krypto::Challenge.generate(CHALLENGER_KEY, CHALLENGE_DATA)
+    challenge, private_encryption_key = ::Krypto::Challenge.generate(CHALLENGER_KEY, CHALLENGE_ID, CHALLENGE_DATA)
 
     challenger_public_key = OpenSSL::PKey::EC.new(CHALLENGER_KEY.public_to_pem)
     response = ::Krypto::Challenge.respond(RESPONDER_KEY, challenger_public_key, challenge, RESPONDER_DATA)
+
+    assert_equal(response.challengeId, CHALLENGE_ID)
 
     opened_response = ::Krypto::Challenge.open_response(private_encryption_key, response)
 

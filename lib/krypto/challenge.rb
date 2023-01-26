@@ -13,14 +13,14 @@ module Krypto
       end
     end
 
-    INNER_CHALLENGE_FIELDS = %i[publicEncryptionKey challengeData timeStamp].freeze
+    INNER_CHALLENGE_FIELDS = %i[publicEncryptionKey challengeData timeStamp challengeId].freeze
     class InnerChallenge < Struct.new(*INNER_CHALLENGE_FIELDS, keyword_init: true)
       def to_msgpack(out = "")
         to_h.to_msgpack(out)
       end
     end
 
-    def self.generate(signing_key, challenge_data)
+    def self.generate(signing_key, challenge_id, challenge_data)
       private_encryption_key = RbNaCl::PrivateKey.generate
       public_encryption_key = private_encryption_key.public_key
 
@@ -28,7 +28,8 @@ module Krypto
         InnerChallenge.new(
           publicEncryptionKey: public_encryption_key.to_bytes,
           challengeData: challenge_data,
-          timeStamp: Time.now.to_i
+          timeStamp: Time.now.to_i,
+          challengeId: challenge_id
         )
       )
 
@@ -40,7 +41,7 @@ module Krypto
       [outer, private_encryption_key.to_bytes]
     end
 
-    OUTER_RESPONSE_FIELDS = %i[publicEncryptionKey sig msg].freeze
+    OUTER_RESPONSE_FIELDS = %i[publicEncryptionKey sig msg challengeId].freeze
     class OuterResponse < Struct.new(*OUTER_RESPONSE_FIELDS, keyword_init: true)
       def to_msgpack(out = "")
         to_h.to_msgpack(out)
@@ -79,7 +80,8 @@ module Krypto
       OuterResponse.new(
         sig: sig,
         publicEncryptionKey: private_encryption_key.public_key.to_bytes,
-        msg: sealed
+        msg: sealed,
+        challengeId: challenge_msg.challengeId
       )
     end
 
