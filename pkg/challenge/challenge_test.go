@@ -39,9 +39,16 @@ func TestChallenge(t *testing.T) {
 		challengeOuterBox, err := UnmarshalChallenge(challengeOuterBoxBytes)
 		require.NoError(t, err)
 
+		responderPrivateSigningKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		require.NoError(t, err)
+
 		// try to get info before verifying, shouldn't work
 		require.Empty(t, challengeOuterBox.RequestData())
 		require.Equal(t, challengeOuterBox.Timestamp(), int64(-1))
+
+		// try to response before verifying, shouldn't work
+		_, err = challengeOuterBox.Respond(responderPrivateSigningKey, responderData)
+		require.Error(t, err)
 
 		// try to verify with bad key
 		malloryPrivateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -56,8 +63,6 @@ func TestChallenge(t *testing.T) {
 		require.Equal(t, requestData, challengeOuterBox.RequestData())
 
 		// generate response
-		responderPrivateSigningKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-		require.NoError(t, err)
 		outerResponsePngBytes, err = challengeOuterBox.RespondPng(responderPrivateSigningKey, responderData)
 		require.NoError(t, err)
 	})

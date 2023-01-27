@@ -45,7 +45,7 @@ type InnerResponse struct {
 	PublicSigningKey []byte `msgpack:"publicSigningKey"`
 	ChallengeData    []byte `msgpack:"challengeData"`
 	ResponseData     []byte `msgpack:"responseData"`
-	Timestamp        int64  `msgpack:"timeStamp"`
+	Timestamp        int64  `msgpack:"timestamp"`
 }
 
 func UnmarshalResponse(outerResponseBytes []byte) (*OuterResponse, error) {

@@ -35,7 +35,7 @@ module Krypto
       end
     end
 
-    INNER_RESPONSE_FIELDS = %i[publicSigningKey challengeData responseData timeStamp].freeze
+    INNER_RESPONSE_FIELDS = %i[publicSigningKey challengeData responseData timestamp].freeze
     class InnerResponse < Struct.new(*INNER_RESPONSE_FIELDS, keyword_init: true)
       def to_msgpack(out = "")
         to_h.to_msgpack(out)

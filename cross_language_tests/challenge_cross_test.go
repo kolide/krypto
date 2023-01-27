@@ -1,255 +1,268 @@
 package cross_language_tests
 
-// import (
-// 	"context"
-// 	"crypto/ecdsa"
-// 	"crypto/elliptic"
-// 	"crypto/rand"
-// 	"crypto/x509"
-// 	"encoding/base64"
-// 	"encoding/pem"
-// 	"os"
-// 	"os/exec"
-// 	"path/filepath"
-// 	"strings"
-// 	"testing"
-// 	"time"
+import (
+	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
 
-// 	"github.com/kolide/kit/ulid"
-// 	"github.com/kolide/krypto/pkg/challenge"
-// 	"github.com/stretchr/testify/require"
-// 	"github.com/vmihailenco/msgpack/v5"
-// 	"golang.org/x/crypto/nacl/box"
-// )
+	"github.com/kolide/kit/ulid"
+	"github.com/kolide/krypto/pkg/challenge"
+	"github.com/stretchr/testify/require"
+	"github.com/vmihailenco/msgpack/v5"
+	"golang.org/x/crypto/nacl/box"
+)
 
-// type rubyChallengeCmd struct {
-// 	RubyPrivateSigningKey []byte
-// 	ChallengePack         []byte
-// 	ChallengerPublicKey   []byte
-// 	ChallengeId           []byte
-// 	ChallengeData         []byte
-// 	ResponsePack          []byte
-// 	ResponseData          []byte
-// }
+type rubyChallengeCmd struct {
+	RubyPrivateSigningKey []byte
+	ChallengePack         []byte
+	ChallengerPublicKey   []byte
+	ChallengeId           []byte
+	ChallengeData         []byte
+	RequestData           []byte
+	ResponsePack          []byte
+	ResponseData          []byte
+}
 
-// func TestChallengeRuby(t *testing.T) {
-// 	t.Parallel()
+func TestChallengeRuby(t *testing.T) {
+	t.Parallel()
 
-// 	testChallenges := [][]byte{
-// 		[]byte("a"),
-// 		[]byte("Hello World"),
-// 		[]byte("This isn't super long, but it's at least a little long?"),
-// 		[]byte(randomString(t, 1024)),
-// 		mkrand(t, 1024),
-// 		[]byte(randomString(t, 4096)),
-// 		mkrand(t, 4096),
-// 	}
+	testChallenges := [][]byte{
+		[]byte("a"),
+		[]byte("Hello World"),
+		[]byte("This isn't super long, but it's at least a little long?"),
+		[]byte(randomString(t, 1024)),
+		mkrand(t, 1024),
+		[]byte(randomString(t, 4096)),
+		mkrand(t, 4096),
+	}
 
-// 	responderData := []byte("here is some data about the responder")
+	responderData := []byte("here is some data about the responder")
 
-// 	for _, testChallenge := range testChallenges {
-// 		testChallenge := testChallenge
+	for _, testChallenge := range testChallenges {
+		testChallenge := testChallenge
 
-// 		t.Run("Ruby challenges, Go responds with png", func(t *testing.T) {
-// 			t.Parallel()
+		t.Run("Ruby challenges, Go responds with png", func(t *testing.T) {
+			t.Parallel()
 
-// 			rubyPrivateSigningKey := ecdsaKey(t)
-// 			responderKey := ecdsaKey(t)
-// 			dir := t.TempDir()
+			rubyPrivateSigningKey := ecdsaKey(t)
+			responderKey := ecdsaKey(t)
+			dir := t.TempDir()
 
-// 			challengeId := []byte(ulid.New())
+			challengeId := []byte(ulid.New())
+			requestData := []byte(ulid.New())
 
-// 			rubyChallengeCmdData := rubyChallengeCmd{
-// 				RubyPrivateSigningKey: privateEcKeyToPem(t, rubyPrivateSigningKey),
-// 				ChallengeData:         testChallenge,
-// 				ChallengeId:           challengeId,
-// 			}
+			rubyChallengeCmdData := rubyChallengeCmd{
+				RubyPrivateSigningKey: privateEcKeyToPem(t, rubyPrivateSigningKey),
+				ChallengeData:         testChallenge,
+				ChallengeId:           challengeId,
+				RequestData:           requestData,
+			}
 
-// 			out, err := rubyChallengeExec("generate", dir, rubyChallengeCmdData)
-// 			require.NoError(t, err, string(out))
+			out, err := rubyChallengeExec("generate", dir, rubyChallengeCmdData)
+			require.NoError(t, err, string(out))
 
-// 			var rubyChallengeOuter challenge.OuterChallenge
-// 			require.NoError(t, msgpack.Unmarshal(out, &rubyChallengeOuter))
+			challengeBox, err := challenge.UnmarshalChallenge(out)
+			require.NoError(t, err, string(out))
 
-// 			response, err := challenge.RespondPng(responderKey, rubyPrivateSigningKey.PublicKey, rubyChallengeOuter, responderData)
-// 			require.NoError(t, err)
+			require.NoError(t, challengeBox.Verify(rubyPrivateSigningKey.PublicKey))
 
-// 			rubyChallengeCmdData = rubyChallengeCmd{
-// 				ResponsePack: response,
-// 			}
+			response, err := challengeBox.RespondPng(responderKey, responderData)
+			require.NoError(t, err)
 
-// 			out, err = rubyChallengeExec("open_response_png", dir, rubyChallengeCmdData)
-// 			require.NoError(t, err, string(out))
+			rubyChallengeCmdData = rubyChallengeCmd{
+				ResponsePack: response,
+			}
 
-// 			var innerResponse challenge.InnerResponse
-// 			require.NoError(t, msgpack.Unmarshal(out, &innerResponse))
+			out, err = rubyChallengeExec("open_response_png", dir, rubyChallengeCmdData)
+			require.NoError(t, err, string(out))
 
-// 			require.Equal(t, testChallenge, innerResponse.ChallengeData)
-// 			require.Equal(t, responderData, innerResponse.ResponseData)
-// 			require.WithinDuration(t, time.Now(), time.Unix(innerResponse.TimeStamp, 0), time.Second*5)
-// 		})
+			var innerResponse challenge.InnerResponse
+			require.NoError(t, msgpack.Unmarshal(out, &innerResponse))
 
-// 		t.Run("Go challenges, Ruby responds", func(t *testing.T) {
-// 			t.Parallel()
+			require.Equal(t, testChallenge, innerResponse.ChallengeData)
+			require.Equal(t, responderData, innerResponse.ResponseData)
+			require.WithinDuration(t, time.Now(), time.Unix(innerResponse.Timestamp, 0), time.Second*5)
+		})
 
-// 			challengerKey := ecdsaKey(t)
-// 			dir := t.TempDir()
+		t.Run("Go challenges, Ruby responds", func(t *testing.T) {
+			t.Parallel()
 
-// 			challengeId := []byte(ulid.New())
+			challengerKey := ecdsaKey(t)
+			dir := t.TempDir()
 
-// 			generatedChallenge, privEncryptionKey, err := challenge.Generate(challengerKey, challengeId, testChallenge)
-// 			require.NoError(t, err)
+			challengeId := []byte(ulid.New())
+			requestData := []byte(ulid.New())
 
-// 			challengePack, err := msgpack.Marshal(generatedChallenge)
-// 			require.NoError(t, err)
+			generatedChallenge, privEncryptionKey, err := challenge.Generate(challengerKey, challengeId, testChallenge, requestData)
+			require.NoError(t, err)
 
-// 			rubyChallengeCmdData := rubyChallengeCmd{
-// 				ChallengerPublicKey: publicEcKeyToPem(t, &challengerKey.PublicKey),
-// 				ChallengePack:       challengePack,
-// 				ResponseData:        responderData,
-// 			}
+			rubyChallengeCmdData := rubyChallengeCmd{
+				ChallengerPublicKey: publicEcKeyToPem(t, &challengerKey.PublicKey),
+				ChallengePack:       generatedChallenge,
+				ResponseData:        responderData,
+			}
 
-// 			out, err := rubyChallengeExec("respond", dir, rubyChallengeCmdData)
-// 			require.NoError(t, err, string(out))
+			out, err := rubyChallengeExec("respond", dir, rubyChallengeCmdData)
+			require.NoError(t, err, string(out))
 
-// 			var rubyResponseOuter challenge.OuterResponse
-// 			require.NoError(t, msgpack.Unmarshal(out, &rubyResponseOuter))
+			// var rubyResponseOuter challenge.OuterResponse
+			// require.NoError(t, msgpack.Unmarshal(out, &rubyResponseOuter))
 
-// 			innerResponse, err := challenge.OpenResponse(*privEncryptionKey, rubyResponseOuter)
-// 			require.NoError(t, err)
+			responseBox, err := challenge.UnmarshalResponse(out)
+			require.NoError(t, err, string(out))
 
-// 			require.Equal(t, testChallenge, innerResponse.ChallengeData)
-// 			require.Equal(t, responderData, innerResponse.ResponseData)
-// 			require.Equal(t, challengeId, rubyResponseOuter.ChallengeId)
-// 			require.WithinDuration(t, time.Now(), time.Unix(innerResponse.TimeStamp, 0), time.Second*5)
-// 		})
-// 	}
-// }
+			innerResponse, err := responseBox.Open(*privEncryptionKey)
+			require.NoError(t, err)
 
-// func TestChallengeRubyTampering(t *testing.T) {
-// 	t.Parallel()
+			require.Equal(t, testChallenge, innerResponse.ChallengeData)
+			require.Equal(t, responderData, innerResponse.ResponseData)
+			// require.Equal(t, challengeId, rubyResponseOuter.ChallengeId)
+			require.WithinDuration(t, time.Now(), time.Unix(innerResponse.Timestamp, 0), time.Second*5)
+		})
+	}
+}
 
-// 	testChallenge := []byte("this is the original message")
-// 	responderData := []byte("here is some data about the responder")
+func TestChallengeRubyTampering(t *testing.T) {
+	t.Parallel()
 
-// 	t.Run("Ruby challenges, Go responds, Tamper With Challenge", func(t *testing.T) {
-// 		t.Parallel()
+	testChallenge := []byte("this is the original message")
+	responderData := []byte("here is some data about the responder")
 
-// 		rubyPrivateSignignKey := ecdsaKey(t)
-// 		responderKey := ecdsaKey(t)
-// 		dir := t.TempDir()
+	t.Run("Ruby challenges, Go responds, Tamper With Challenge", func(t *testing.T) {
+		t.Parallel()
 
-// 		rubyChallengeCmdData := rubyChallengeCmd{
-// 			RubyPrivateSigningKey: privateEcKeyToPem(t, rubyPrivateSignignKey),
-// 			ChallengeData:         testChallenge,
-// 		}
+		rubyPrivateSignignKey := ecdsaKey(t)
+		responderKey := ecdsaKey(t)
+		dir := t.TempDir()
+		challengeId := []byte(ulid.New())
+		requestData := []byte(ulid.New())
 
-// 		out, err := rubyChallengeExec("generate", dir, rubyChallengeCmdData)
-// 		require.NoError(t, err, string(out))
+		rubyChallengeCmdData := rubyChallengeCmd{
+			RubyPrivateSigningKey: privateEcKeyToPem(t, rubyPrivateSignignKey),
+			ChallengeData:         testChallenge,
+			ChallengeId:           challengeId,
+			RequestData:           requestData,
+		}
 
-// 		var rubyChallengeOuter challenge.OuterChallenge
-// 		require.NoError(t, msgpack.Unmarshal(out, &rubyChallengeOuter))
+		out, err := rubyChallengeExec("generate", dir, rubyChallengeCmdData)
+		require.NoError(t, err, string(out))
 
-// 		tamperPub, _, err := box.GenerateKey(rand.Reader)
-// 		require.NoError(t, err)
+		challengeBox, err := challenge.UnmarshalChallenge(out)
+		require.NoError(t, err, string(out))
 
-// 		tamperedInner, err := msgpack.Marshal(challenge.InnerChallenge{
-// 			PublicEncryptionKey: *tamperPub,
-// 			ChallengeData:       testChallenge,
-// 		})
-// 		require.NoError(t, err)
+		tamperPub, _, err := box.GenerateKey(rand.Reader)
+		require.NoError(t, err)
 
-// 		rubyChallengeOuter.Msg = tamperedInner
+		tamperedInner, err := msgpack.Marshal(challenge.InnerChallenge{
+			PublicEncryptionKey: *tamperPub,
+			ChallengeData:       testChallenge,
+		})
+		require.NoError(t, err)
 
-// 		_, err = challenge.Respond(responderKey, rubyPrivateSignignKey.PublicKey, rubyChallengeOuter, responderData)
-// 		require.ErrorContains(t, err, "invalid signature")
-// 	})
+		challengeBox.Msg = tamperedInner
 
-// 	t.Run("Go challenges, Ruby responds, Tamper With Challenge", func(t *testing.T) {
-// 		t.Parallel()
+		_, err = challengeBox.Respond(responderKey, responderData)
+		require.ErrorContains(t, err, "no inner. unverified?")
+	})
 
-// 		challengerKey := ecdsaKey(t)
-// 		dir := t.TempDir()
+	t.Run("Go challenges, Ruby responds, Tamper With Challenge", func(t *testing.T) {
+		t.Parallel()
 
-// 		generatedChallenge, _, err := challenge.Generate(challengerKey, []byte(ulid.New()), testChallenge)
-// 		require.NoError(t, err)
+		challengerKey := ecdsaKey(t)
+		dir := t.TempDir()
 
-// 		tamperPub, _, err := box.GenerateKey(rand.Reader)
-// 		require.NoError(t, err)
+		challengeBytes, _, err := challenge.Generate(challengerKey, []byte(ulid.New()), testChallenge, []byte(ulid.New()))
+		require.NoError(t, err)
 
-// 		tamperedInner, err := msgpack.Marshal(challenge.InnerChallenge{
-// 			PublicEncryptionKey: *tamperPub,
-// 			ChallengeData:       testChallenge,
-// 		})
-// 		require.NoError(t, err)
+		tamperPub, _, err := box.GenerateKey(rand.Reader)
+		require.NoError(t, err)
 
-// 		generatedChallenge.Msg = tamperedInner
+		tamperedInner, err := msgpack.Marshal(challenge.InnerChallenge{
+			PublicEncryptionKey: *tamperPub,
+			ChallengeData:       testChallenge,
+		})
+		require.NoError(t, err)
 
-// 		challengePack, err := msgpack.Marshal(generatedChallenge)
-// 		require.NoError(t, err)
+		challengeBox, err := challenge.UnmarshalChallenge(challengeBytes)
+		require.NoError(t, err, string(challengeBytes))
 
-// 		rubyChallengeCmdData := rubyChallengeCmd{
-// 			ChallengerPublicKey: publicEcKeyToPem(t, &challengerKey.PublicKey),
-// 			ChallengePack:       challengePack,
-// 			ResponseData:        responderData,
-// 		}
+		challengeBox.Msg = tamperedInner
 
-// 		out, err := rubyChallengeExec("respond", dir, rubyChallengeCmdData)
-// 		require.Error(t, err, string(out))
-// 		require.Contains(t, string(out), "invalid signature")
-// 	})
-// }
+		challengeBytes, err = challengeBox.Marshal()
+		require.NoError(t, err)
 
-// // #nosec G306 -- Need readable files
-// func rubyChallengeExec(rubyCmd, dir string, inputData rubyChallengeCmd) ([]byte, error) {
-// 	testCaseBytes, err := msgpack.Marshal(inputData)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+		rubyChallengeCmdData := rubyChallengeCmd{
+			ChallengerPublicKey: publicEcKeyToPem(t, &challengerKey.PublicKey),
+			ChallengePack:       challengeBytes,
+			ResponseData:        responderData,
+		}
 
-// 	testCaseBytesBase64 := []byte(base64.StdEncoding.EncodeToString(testCaseBytes))
+		out, err := rubyChallengeExec("respond", dir, rubyChallengeCmdData)
+		require.Error(t, err, string(out))
+		require.Contains(t, string(out), "challenge verification failed")
+	})
+}
 
-// 	inFilePath := filepath.Join(dir, "in")
+// #nosec G306 -- Need readable files
+func rubyChallengeExec(rubyCmd, dir string, inputData rubyChallengeCmd) ([]byte, error) {
+	testCaseBytes, err := msgpack.Marshal(inputData)
+	if err != nil {
+		return nil, err
+	}
 
-// 	if err := os.WriteFile(inFilePath, testCaseBytesBase64, 0644); err != nil {
-// 		return nil, err
-// 	}
+	testCaseBytesBase64 := []byte(base64.StdEncoding.EncodeToString(testCaseBytes))
 
-// 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-// 	defer cancel()
+	inFilePath := filepath.Join(dir, "in")
 
-// 	cmd := exec.CommandContext(ctx, "ruby", "./challenge.rb", rubyCmd, inFilePath)
-// 	out, err := cmd.CombinedOutput()
+	if err := os.WriteFile(inFilePath, testCaseBytesBase64, 0644); err != nil {
+		return nil, err
+	}
 
-// 	// trim the trailing \n in output
-// 	out = []byte(strings.Trim(string(out), "\n"))
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-// 	if err != nil {
-// 		return out, err
-// 	}
+	cmd := exec.CommandContext(ctx, "ruby", "./challenge.rb", rubyCmd, inFilePath)
+	out, err := cmd.CombinedOutput()
 
-// 	out, err = base64.StdEncoding.DecodeString(string(out))
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	// trim the trailing \n in output
+	out = []byte(strings.Trim(string(out), "\n"))
 
-// 	return out, nil
-// }
+	if err != nil {
+		return out, err
+	}
 
-// func ecdsaKey(t *testing.T) *ecdsa.PrivateKey {
-// 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-// 	require.NoError(t, err)
-// 	return key
-// }
+	out, err = base64.StdEncoding.DecodeString(string(out))
+	if err != nil {
+		return nil, err
+	}
 
-// func privateEcKeyToPem(t *testing.T, private *ecdsa.PrivateKey) []byte {
-// 	bytes, err := x509.MarshalECPrivateKey(private)
-// 	require.NoError(t, err)
-// 	return pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: bytes})
-// }
+	return out, nil
+}
 
-// func publicEcKeyToPem(t *testing.T, public *ecdsa.PublicKey) []byte {
-// 	bytes, err := x509.MarshalPKIXPublicKey(public)
-// 	require.NoError(t, err)
-// 	return pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: bytes})
-// }
+func ecdsaKey(t *testing.T) *ecdsa.PrivateKey {
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	return key
+}
+
+func privateEcKeyToPem(t *testing.T, private *ecdsa.PrivateKey) []byte {
+	bytes, err := x509.MarshalECPrivateKey(private)
+	require.NoError(t, err)
+	return pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: bytes})
+}
+
+func publicEcKeyToPem(t *testing.T, public *ecdsa.PublicKey) []byte {
+	bytes, err := x509.MarshalPKIXPublicKey(public)
+	require.NoError(t, err)
+	return pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: bytes})
+}

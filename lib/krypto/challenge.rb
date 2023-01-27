@@ -15,7 +15,7 @@ module Krypto
           publicEncryptionKey: public_encryption_key.to_bytes,
           challengeData: challenge_data,
           requestData: request_data,
-          timeStamp: Time.now.to_i,
+          timestamp: Time.now.to_i,
           challengeId: challenge_id
         )
       )
@@ -44,7 +44,7 @@ module Krypto
       end
 
       def timestamp
-        @inner&.timeStamp
+        @inner&.timestamp
       end
 
       def request_data
@@ -59,7 +59,7 @@ module Krypto
             publicSigningKey: signing_key.public_to_pem,
             challengeData: @inner.challengeData,
             responseData: response_data,
-            timeStamp: Time.now.to_i
+            timestamp: Time.now.to_i
           )
         )
 
@@ -78,7 +78,7 @@ module Krypto
       end
     end
 
-    INNER_CHALLENGE_FIELDS = %i[publicEncryptionKey challengeData requestData timeStamp challengeId].freeze
+    INNER_CHALLENGE_FIELDS = %i[publicEncryptionKey challengeData requestData timestamp challengeId].freeze
     class InnerChallenge < Struct.new(*INNER_CHALLENGE_FIELDS, keyword_init: true)
       def to_msgpack(out = "")
         to_h.to_msgpack(out)
