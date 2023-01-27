@@ -83,6 +83,11 @@ func TestChallengeRuby(t *testing.T) {
 				ResponsePack: response,
 			}
 
+			// make sure the challenge id persisted
+			responseBox, err := challenge.UnmarshalResponsePng(response)
+			require.NoError(t, err, string(response))
+			require.Equal(t, challengeId, responseBox.ChallengeId)
+
 			out, err = rubyChallengeExec("open_response_png", dir, rubyChallengeCmdData)
 			require.NoError(t, err, string(out))
 
@@ -115,9 +120,6 @@ func TestChallengeRuby(t *testing.T) {
 			out, err := rubyChallengeExec("respond", dir, rubyChallengeCmdData)
 			require.NoError(t, err, string(out))
 
-			// var rubyResponseOuter challenge.OuterResponse
-			// require.NoError(t, msgpack.Unmarshal(out, &rubyResponseOuter))
-
 			responseBox, err := challenge.UnmarshalResponse(out)
 			require.NoError(t, err, string(out))
 
@@ -126,7 +128,7 @@ func TestChallengeRuby(t *testing.T) {
 
 			require.Equal(t, testChallenge, innerResponse.ChallengeData)
 			require.Equal(t, responderData, innerResponse.ResponseData)
-			// require.Equal(t, challengeId, rubyResponseOuter.ChallengeId)
+			require.Equal(t, challengeId, responseBox.ChallengeId)
 			require.WithinDuration(t, time.Now(), time.Unix(innerResponse.Timestamp, 0), time.Second*5)
 		})
 	}
@@ -142,7 +144,6 @@ func TestChallengeRubyTampering(t *testing.T) {
 		t.Parallel()
 
 		rubyPrivateSignignKey := ecdsaKey(t)
-		responderKey := ecdsaKey(t)
 		dir := t.TempDir()
 		challengeId := []byte(ulid.New())
 		requestData := []byte(ulid.New())
@@ -157,6 +158,7 @@ func TestChallengeRubyTampering(t *testing.T) {
 		out, err := rubyChallengeExec("generate", dir, rubyChallengeCmdData)
 		require.NoError(t, err, string(out))
 
+		// open up the box and change the inner message
 		challengeBox, err := challenge.UnmarshalChallenge(out)
 		require.NoError(t, err, string(out))
 
@@ -171,8 +173,8 @@ func TestChallengeRubyTampering(t *testing.T) {
 
 		challengeBox.Msg = tamperedInner
 
-		_, err = challengeBox.Respond(responderKey, responderData)
-		require.ErrorContains(t, err, "no inner. unverified?")
+		// should fail verification now
+		require.Error(t, challengeBox.Verify(rubyPrivateSignignKey.PublicKey))
 	})
 
 	t.Run("Go challenges, Ruby responds, Tamper With Challenge", func(t *testing.T) {
@@ -193,6 +195,7 @@ func TestChallengeRubyTampering(t *testing.T) {
 		})
 		require.NoError(t, err)
 
+		// open up the box and add a new inner message
 		challengeBox, err := challenge.UnmarshalChallenge(challengeBytes)
 		require.NoError(t, err, string(challengeBytes))
 
