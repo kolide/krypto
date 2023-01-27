@@ -1,15 +1,12 @@
 package challenge
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"testing"
 
-	"github.com/kolide/krypto"
 	"github.com/stretchr/testify/require"
-	"github.com/vmihailenco/msgpack/v5"
 )
 
 func TestChallenge(t *testing.T) {
@@ -19,29 +16,53 @@ func TestChallenge(t *testing.T) {
 	require.NoError(t, err)
 
 	challengeId := []byte("this is the challeng id")
-	challenge := []byte("this is a challenge")
-
-	challengeOuterBox, challengePrivEncKey, err := Generate(challengerPrivateKey, challengeId, challenge)
-	require.NoError(t, err)
-
-	responderPrivateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	require.NoError(t, err)
-
+	challengeData := []byte("this is a challenge")
+	requestData := []byte("this is the request data")
 	responderData := []byte("this is some responder data")
 
-	responseOuterbox, err := RespondPng(responderPrivateKey, challengerPrivateKey.PublicKey, *challengeOuterBox, responderData)
-	require.NoError(t, err)
+	var challengeOuterBoxBytes []byte
+	var challengePrivateEncryptionKey *[32]byte
 
-	var outerResponseBuf bytes.Buffer
-	require.NoError(t, krypto.FromPng(bytes.NewBuffer(responseOuterbox), &outerResponseBuf))
+	//nolint: paralleltest
+	t.Run("challenger creates challenge", func(t *testing.T) {
+		// generate the challenge
+		challengeOuterBoxBytes, challengePrivateEncryptionKey, err = Generate(challengerPrivateKey, challengeId, challengeData, requestData)
+		require.NoError(t, err)
+	})
 
-	var outerResponse OuterResponse
-	require.NoError(t, msgpack.Unmarshal(outerResponseBuf.Bytes(), &outerResponse))
+	var outerResponsePngBytes []byte
 
-	innerResponse, err := OpenResponsePng(*challengePrivEncKey, responseOuterbox)
-	require.NoError(t, err)
+	//nolint: paralleltest
+	t.Run("responder receives challenge and creates response", func(t *testing.T) {
+		challengeOuterBox, err := UnmarshalOuterChallenge(challengeOuterBoxBytes)
+		require.NoError(t, err)
 
-	require.Equal(t, challenge, innerResponse.ChallengeData)
-	require.Equal(t, challengeId, outerResponse.ChallengeId)
-	require.Equal(t, responderData, innerResponse.ResponseData)
+		// verify the box is legit
+		require.NoError(t, challengeOuterBox.Verify(challengerPrivateKey.PublicKey))
+
+		challengeRequestData, err := challengeOuterBox.RequestData()
+		require.NoError(t, err)
+
+		require.Equal(t, requestData, challengeRequestData)
+
+		responderPrivateSigningKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		require.NoError(t, err)
+
+		outerResponsePngBytes, err = challengeOuterBox.RespondPng(responderPrivateSigningKey, responderData)
+		require.NoError(t, err)
+	})
+
+	//nolint: paralleltest
+	t.Run("challenger handles response", func(t *testing.T) {
+		outerResponse, err := UnmarshalOuterResponsePng(outerResponsePngBytes)
+		require.NoError(t, err)
+
+		require.Equal(t, challengeId, outerResponse.ChallengeId)
+
+		innerResponse, err := outerResponse.Open(*challengePrivateEncryptionKey)
+		require.NoError(t, err)
+
+		require.Equal(t, challengeData, innerResponse.ChallengeData)
+		require.Equal(t, responderData, innerResponse.ResponseData)
+	})
 }

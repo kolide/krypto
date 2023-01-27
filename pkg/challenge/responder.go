@@ -2,10 +2,7 @@ package challenge
 
 import (
 	"bytes"
-	"crypto"
-	"crypto/ecdsa"
 	"fmt"
-	"time"
 
 	"github.com/kolide/krypto"
 	"github.com/kolide/krypto/pkg/echelper"
@@ -21,6 +18,29 @@ type OuterResponse struct {
 	ChallengeId         []byte   `msgpack:"challengeId"`
 }
 
+func (o *OuterResponse) Open(privateEncryptionKey [32]byte) (*InnerResponse, error) {
+	innerResponseBytes, err := echelper.OpenNaCl(o.Msg, &o.PublicEncryptionKey, &privateEncryptionKey)
+	if err != nil {
+		return nil, fmt.Errorf("opening challenge response box: %w", err)
+	}
+
+	var innerResponse InnerResponse
+	if err := msgpack.Unmarshal(innerResponseBytes, &innerResponse); err != nil {
+		return nil, fmt.Errorf("unmarshaling inner box: %w", err)
+	}
+
+	counterPartyPubKey, err := echelper.PublicPemToEcdsaKey(innerResponse.PublicSigningKey)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshalling public ecdsa signing key from pem: %w", err)
+	}
+
+	if err := echelper.VerifySignature(*counterPartyPubKey, innerResponseBytes, o.Sig); err != nil {
+		return nil, fmt.Errorf("verifying challenge: %w", err)
+	}
+
+	return &innerResponse, nil
+}
+
 type InnerResponse struct {
 	PublicSigningKey []byte `msgpack:"publicSigningKey"`
 	ChallengeData    []byte `msgpack:"challengeData"`
@@ -28,65 +48,20 @@ type InnerResponse struct {
 	TimeStamp        int64  `msgpack:"timeStamp"`
 }
 
-func RespondPng(signer crypto.Signer, counterParty ecdsa.PublicKey, challengeOuter OuterChallenge, responseData []byte) ([]byte, error) {
-	response, err := Respond(signer, counterParty, challengeOuter, responseData)
-	if err != nil {
+func UnmarshalOuterResponse(outerResponseBytes []byte) (*OuterResponse, error) {
+	var outerResponse OuterResponse
+	if err := msgpack.Unmarshal(outerResponseBytes, &outerResponse); err != nil {
 		return nil, err
 	}
-
-	packedResponse, err := msgpack.Marshal(response)
-	if err != nil {
-		return nil, fmt.Errorf("marshaling response: %w", err)
-	}
-
-	var buf bytes.Buffer
-	if err := krypto.ToPng(&buf, packedResponse); err != nil {
-		return nil, fmt.Errorf("encoding data to png: %w", err)
-	}
-
-	return buf.Bytes(), nil
+	return &outerResponse, nil
 }
 
-func Respond(signer crypto.Signer, counterParty ecdsa.PublicKey, challengeOuter OuterChallenge, responseData []byte) (*OuterResponse, error) {
-	if err := echelper.VerifySignature(counterParty, challengeOuter.Msg, challengeOuter.Sig); err != nil {
-		return nil, fmt.Errorf("verifying challenge: %w", err)
+func UnmarshalOuterResponsePng(outerResponsePngBytes []byte) (*OuterResponse, error) {
+	var out bytes.Buffer
+	in := bytes.NewBuffer(outerResponsePngBytes)
+	if err := krypto.FromPng(in, &out); err != nil {
+		return nil, fmt.Errorf("decoding png data: %w", err)
 	}
 
-	var innerChallenge InnerChallenge
-	if err := msgpack.Unmarshal(challengeOuter.Msg, &innerChallenge); err != nil {
-		return nil, fmt.Errorf("unmarshaling inner box: %w", err)
-	}
-
-	pubSigningKeyPem, err := echelper.PublicEcdsaKeyToPem(signer.Public().(*ecdsa.PublicKey))
-	if err != nil {
-		return nil, fmt.Errorf("marshalling public signing key to pem: %w", err)
-	}
-
-	innerResponse, err := msgpack.Marshal(InnerResponse{
-		PublicSigningKey: pubSigningKeyPem,
-		ChallengeData:    innerChallenge.ChallengeData,
-		ResponseData:     responseData,
-		TimeStamp:        time.Now().Unix(),
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("marshaling inner box: %w", err)
-	}
-
-	signature, err := echelper.Sign(signer, innerResponse)
-	if err != nil {
-		return nil, fmt.Errorf("signing challenge: %w", err)
-	}
-
-	sealed, pub, err := echelper.SealNaCl(innerResponse, &innerChallenge.PublicEncryptionKey)
-	if err != nil {
-		return nil, fmt.Errorf("sealing challenge inner box: %w", err)
-	}
-
-	return &OuterResponse{
-		PublicEncryptionKey: *pub,
-		Sig:                 signature,
-		Msg:                 sealed,
-		ChallengeId:         innerChallenge.ChallengeId,
-	}, nil
+	return UnmarshalOuterResponse(out.Bytes())
 }
