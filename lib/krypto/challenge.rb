@@ -55,12 +55,18 @@ module Krypto
       end
     end
 
-    def self.respond(signing_key, counter_party, outer_challenge, response_data)
+    def self.respond(signing_key, counter_party, challenge_data)
+      # slice to remove any superfluous. These come from  handling multiple potential protocols
+      sliced = MessagePack.unpack(Base64.strict_decode64(challenge_data)).slice(*OUTER_RESPONSE_FIELDS.map(&:to_s))
+      outer_challenge = OuterResponse.new(sliced)
+
       if !verify(counter_party, outer_challenge.msg, outer_challenge.sig)
         raise "invalid signature"
       end
 
       challenge_msg = InnerChallenge.new(MessagePack.unpack(outer_challenge.msg))
+
+      response_data = yield(challenge_msg)
 
       msg = MessagePack.pack(
         InnerResponse.new(
@@ -85,13 +91,15 @@ module Krypto
       )
     end
 
-    def self.open_response_png(private_encryption_key, outer_response)
-      data = unpng(outer_response)
-      outer = OuterResponse.new(MessagePack.unpack(data))
-      open_response(private_encryption_key, outer)
+    def self.open_response_png(private_encryption_key, outer)
+      open_response(private_encryption_key, outer, png: true)
     end
 
-    def self.open_response(private_encryption_key, outer_response)
+    def self.open_response(private_encryption_key_bytes, outer_packed, png: false)
+      outer_packed = unpng(outer_packed) if png
+      outer_response = OuterResponse.new(MessagePack.unpack(outer_packed))
+
+      private_encryption_key = RbNaCl::PrivateKey.new(private_encryption_key_bytes)
       public_encryption_key = RbNaCl::PublicKey.new(outer_response.publicEncryptionKey)
       box = RbNaCl::SimpleBox.from_keypair(public_encryption_key, private_encryption_key)
       opened = box.open(outer_response.msg)
