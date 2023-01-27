@@ -15,20 +15,43 @@ import (
 )
 
 type OuterChallenge struct {
-	Sig []byte `msgpack:"sig"`
-	Msg []byte `msgpack:"msg"`
+	Sig            []byte `msgpack:"sig"`
+	Msg            []byte `msgpack:"msg"`
+	innerChallenge *InnerChallenge
 }
 
 func (o *OuterChallenge) Verify(counterParty ecdsa.PublicKey) error {
-	return echelper.VerifySignature(counterParty, o.Msg, o.Sig)
+	if err := echelper.VerifySignature(counterParty, o.Msg, o.Sig); err != nil {
+		return err
+	}
+
+	innerChallenge, err := o.inner()
+	if err != nil {
+		return err
+	}
+
+	o.innerChallenge = innerChallenge
+	return nil
 }
 
-func (o *OuterChallenge) RequestData() ([]byte, error) {
-	inner, err := o.inner()
-	if err != nil {
-		return nil, err
+func (o *OuterChallenge) RequestData() []byte {
+	if o.innerChallenge != nil {
+		return o.innerChallenge.RequestData
 	}
-	return inner.RequestData, nil
+
+	return nil
+}
+
+func (o *OuterChallenge) TimeStamp() int64 {
+	if o.innerChallenge != nil {
+		return o.innerChallenge.TimeStamp
+	}
+
+	return -1
+}
+
+func (o *OuterChallenge) Marshal() ([]byte, error) {
+	return msgpack.Marshal(o)
 }
 
 func (o *OuterChallenge) Respond(signer crypto.Signer, responseData []byte) ([]byte, error) {
@@ -95,16 +118,12 @@ func (o *OuterChallenge) RespondPng(signer crypto.Signer, responseData []byte) (
 	return buf.Bytes(), nil
 }
 
-func UnmarshalOuterChallenge(outerChallengeBytes []byte) (*OuterChallenge, error) {
+func UnmarshalChallenge(outerChallengeBytes []byte) (*OuterChallenge, error) {
 	var outerChallenge OuterChallenge
 	if err := msgpack.Unmarshal(outerChallengeBytes, &outerChallenge); err != nil {
 		return nil, err
 	}
 	return &outerChallenge, nil
-}
-
-func MarshalOuterChallenge(outerChallenge *OuterChallenge) ([]byte, error) {
-	return msgpack.Marshal(outerChallenge)
 }
 
 type InnerChallenge struct {
@@ -145,7 +164,7 @@ func Generate(signer crypto.Signer, challengeId []byte, challengeData []byte, re
 		Msg: inner,
 	}
 
-	outerChallengeBytes, err := MarshalOuterChallenge(outerChallenge)
+	outerChallengeBytes, err := outerChallenge.Marshal()
 	if err != nil {
 		return nil, nil, fmt.Errorf("marshaling outer challenge: %w", err)
 	}

@@ -48,7 +48,7 @@ type InnerResponse struct {
 	TimeStamp        int64  `msgpack:"timeStamp"`
 }
 
-func UnmarshalOuterResponse(outerResponseBytes []byte) (*OuterResponse, error) {
+func UnmarshalResponse(outerResponseBytes []byte) (*OuterResponse, error) {
 	var outerResponse OuterResponse
 	if err := msgpack.Unmarshal(outerResponseBytes, &outerResponse); err != nil {
 		return nil, err
@@ -56,12 +56,12 @@ func UnmarshalOuterResponse(outerResponseBytes []byte) (*OuterResponse, error) {
 	return &outerResponse, nil
 }
 
-func UnmarshalOuterResponsePng(outerResponsePngBytes []byte) (*OuterResponse, error) {
+func UnmarshalResponsePng(outerResponsePngBytes []byte) (*OuterResponse, error) {
 	var out bytes.Buffer
 	in := bytes.NewBuffer(outerResponsePngBytes)
 	if err := krypto.FromPng(in, &out); err != nil {
 		return nil, fmt.Errorf("decoding png data: %w", err)
 	}
 
-	return UnmarshalOuterResponse(out.Bytes())
+	return UnmarshalResponse(out.Bytes())
 }

@@ -5,8 +5,10 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/nacl/box"
 )
 
 func TestChallenge(t *testing.T) {
@@ -34,35 +36,53 @@ func TestChallenge(t *testing.T) {
 
 	//nolint: paralleltest
 	t.Run("responder receives challenge and creates response", func(t *testing.T) {
-		challengeOuterBox, err := UnmarshalOuterChallenge(challengeOuterBoxBytes)
+		challengeOuterBox, err := UnmarshalChallenge(challengeOuterBoxBytes)
 		require.NoError(t, err)
 
-		// verify the box is legit
+		// try to get info before verifying, shouldn't work
+		require.Empty(t, challengeOuterBox.RequestData())
+		require.Equal(t, challengeOuterBox.TimeStamp(), int64(-1))
+
+		// try to verify with bad key
+		malloryPrivateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		require.NoError(t, err)
+		require.Error(t, challengeOuterBox.Verify(malloryPrivateKey.PublicKey))
+
+		// verify with correct key
 		require.NoError(t, challengeOuterBox.Verify(challengerPrivateKey.PublicKey))
 
-		challengeRequestData, err := challengeOuterBox.RequestData()
-		require.NoError(t, err)
+		// verify data
+		require.WithinDuration(t, time.Now(), time.Unix(challengeOuterBox.TimeStamp(), 0), time.Second*5)
+		require.Equal(t, requestData, challengeOuterBox.RequestData())
 
-		require.Equal(t, requestData, challengeRequestData)
-
+		// generate response
 		responderPrivateSigningKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		require.NoError(t, err)
-
 		outerResponsePngBytes, err = challengeOuterBox.RespondPng(responderPrivateSigningKey, responderData)
 		require.NoError(t, err)
 	})
 
 	//nolint: paralleltest
 	t.Run("challenger handles response", func(t *testing.T) {
-		outerResponse, err := UnmarshalOuterResponsePng(outerResponsePngBytes)
+		outerResponse, err := UnmarshalResponsePng(outerResponsePngBytes)
 		require.NoError(t, err)
 
+		// verify id
 		require.Equal(t, challengeId, outerResponse.ChallengeId)
 
+		// try to open with a bad key
+		_, malloryPrivKey, err := box.GenerateKey(rand.Reader)
+		require.NoError(t, err)
+		_, err = outerResponse.Open(*malloryPrivKey)
+		require.Error(t, err)
+
+		// open with legit key
 		innerResponse, err := outerResponse.Open(*challengePrivateEncryptionKey)
 		require.NoError(t, err)
 
+		// verify data
 		require.Equal(t, challengeData, innerResponse.ChallengeData)
 		require.Equal(t, responderData, innerResponse.ResponseData)
+		require.WithinDuration(t, time.Now(), time.Unix(innerResponse.TimeStamp, 0), time.Second*5)
 	})
 }
