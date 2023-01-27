@@ -58,12 +58,12 @@ when "open_response_png"
   # read the encryption key from generate test
   private_encryption_key_bytes = Base64.strict_decode64(File.read(private_encryption_key_path))
   private_encryption_key = RbNaCl::PrivateKey.new(private_encryption_key_bytes)
-  challengeResponse = Krypto::ChallengeResponse.unmarshal(test_case["ResponsePack"], png: true, base64: false)
+  challenge_response = Krypto::ChallengeResponse.unmarshal(test_case["ResponsePack"], png: true, base64: false)
 
   puts(
     Base64.strict_encode64(
       MessagePack.pack(
-        challengeResponse.open(private_encryption_key)
+        challenge_response.open(private_encryption_key)
       )
     )
   )
