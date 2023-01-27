@@ -41,7 +41,7 @@ func TestChallenge(t *testing.T) {
 
 		// try to get info before verifying, shouldn't work
 		require.Empty(t, challengeOuterBox.RequestData())
-		require.Equal(t, challengeOuterBox.TimeStamp(), int64(-1))
+		require.Equal(t, challengeOuterBox.Timestamp(), int64(-1))
 
 		// try to verify with bad key
 		malloryPrivateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -52,7 +52,7 @@ func TestChallenge(t *testing.T) {
 		require.NoError(t, challengeOuterBox.Verify(challengerPrivateKey.PublicKey))
 
 		// verify data
-		require.WithinDuration(t, time.Now(), time.Unix(challengeOuterBox.TimeStamp(), 0), time.Second*5)
+		require.WithinDuration(t, time.Now(), time.Unix(challengeOuterBox.Timestamp(), 0), time.Second*5)
 		require.Equal(t, requestData, challengeOuterBox.RequestData())
 
 		// generate response
@@ -83,6 +83,6 @@ func TestChallenge(t *testing.T) {
 		// verify data
 		require.Equal(t, challengeData, innerResponse.ChallengeData)
 		require.Equal(t, responderData, innerResponse.ResponseData)
-		require.WithinDuration(t, time.Now(), time.Unix(innerResponse.TimeStamp, 0), time.Second*5)
+		require.WithinDuration(t, time.Now(), time.Unix(innerResponse.Timestamp, 0), time.Second*5)
 	})
 }

@@ -42,9 +42,9 @@ func (o *OuterChallenge) RequestData() []byte {
 	return nil
 }
 
-func (o *OuterChallenge) TimeStamp() int64 {
+func (o *OuterChallenge) Timestamp() int64 {
 	if o.innerChallenge != nil {
-		return o.innerChallenge.TimeStamp
+		return o.innerChallenge.Timestamp
 	}
 
 	return -1
@@ -69,7 +69,7 @@ func (o *OuterChallenge) Respond(signer crypto.Signer, responseData []byte) ([]b
 		PublicSigningKey: pubSigningKeyPem,
 		ChallengeData:    innerChallenge.ChallengeData,
 		ResponseData:     responseData,
-		TimeStamp:        time.Now().Unix(),
+		Timestamp:        time.Now().Unix(),
 	})
 
 	if err != nil {
@@ -132,7 +132,7 @@ type InnerChallenge struct {
 	PublicEncryptionKey [32]byte `msgpack:"publicEncryptionKey"`
 	ChallengeData       []byte   `msgpack:"challengeData"`
 	RequestData         []byte   `msgpack:"requestData"`
-	TimeStamp           int64    `msgpack:"timeStamp"`
+	Timestamp           int64    `msgpack:"timestamp"`
 	ChallengeId         []byte   `msgpack:"challengeId"`
 }
 
@@ -145,7 +145,7 @@ func Generate(signer crypto.Signer, challengeId []byte, challengeData []byte, re
 	inner, err := msgpack.Marshal(InnerChallenge{
 		PublicEncryptionKey: *pubEncKey,
 		ChallengeData:       challengeData,
-		TimeStamp:           time.Now().Unix(),
+		Timestamp:           time.Now().Unix(),
 		ChallengeId:         challengeId,
 		RequestData:         requestData,
 	})
