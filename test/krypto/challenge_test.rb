@@ -14,7 +14,7 @@ class TestKryptoChallenge < Minitest::Test
     challenge, private_encryption_key = ::Krypto::Challenge.generate(CHALLENGER_KEY, CHALLENGE_ID, CHALLENGE_DATA)
 
     challenger_public_key = OpenSSL::PKey::EC.new(CHALLENGER_KEY.public_to_pem)
-    response = ::Krypto::Challenge.respond(RESPONDER_KEY, challenger_public_key, challenge, RESPONDER_DATA)
+    response = ::Krypto::Challenge.respond(RESPONDER_KEY, challenger_public_key, challenge) { RESPONDER_DATA }
 
     assert_equal(response.challengeId, CHALLENGE_ID)
 
