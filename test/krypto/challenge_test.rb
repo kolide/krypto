@@ -2,25 +2,41 @@ require "test_helper"
 require "openssl"
 
 class TestKryptoChallenge < Minitest::Test
-  CHALLENGER_KEY = OpenSSL::PKey::EC.generate("prime256v1")
-  RESPONDER_KEY = OpenSSL::PKey::EC.generate("prime256v1")
+  CHALLENGER_KEY = Krypto::Ec.random_key
+  CHALLENGER_PUB = OpenSSL::PKey::EC.new(CHALLENGER_KEY.public_to_pem)
 
-  CHALLENGE_DATA = "this is a challenge"
-  RESPONDER_DATA = "this is some responder data"
+  RESPONDER_KEY = Krypto::Ec.random_key
+  RESPONDER_PUB = OpenSSL::PKey::EC.new(RESPONDER_KEY.public_to_pem)
 
-  CHALLENGE_ID = "this is a challenge id"
+  # Challenge ID and challenge data are used internally by the challenger
+  CHALLENGE_ID = SecureRandom.uuid
+  CHALLENGE_DATA = SecureRandom.uuid
+
+  # request and response are expect to be examined and tinkered with
+  REQUEST_DATA = SecureRandom.uuid
+  RESPONDER_DATA = SecureRandom.uuid
 
   def test_challenge
-    challenge, private_encryption_key = ::Krypto::Challenge.generate(CHALLENGER_KEY, CHALLENGE_ID, CHALLENGE_DATA)
+    # First, the challenger generates a challenge, and stashes the private key somewhere for future retrivial
+    challenge, private_encryption_key = ::Krypto::Challenge.generate(CHALLENGER_KEY, CHALLENGE_ID, CHALLENGE_DATA, REQUEST_DATA)
 
-    challenger_public_key = OpenSSL::PKey::EC.new(CHALLENGER_KEY.public_to_pem)
-    response = ::Krypto::Challenge.respond(RESPONDER_KEY, challenger_public_key, challenge, RESPONDER_DATA)
+    # Next, the responder, having recieved the challenge, verifies it, and examines it.
+    assert(challenge.verify(CHALLENGER_PUB))
+    assert_equal(REQUEST_DATA, challenge.request_data)
 
-    assert_equal(response.challengeId, CHALLENGE_ID)
+    # satisfied, the responder now crafts a response.
+    response = challenge.respond(RESPONDER_KEY, RESPONDER_DATA)
 
-    opened_response = ::Krypto::Challenge.open_response(private_encryption_key, response)
+    # The challenger uses the challengeId to find the ephemeral encrytion key, and opens the response.
+    assert_equal(CHALLENGE_ID, response.challengeId)
+    opened = response.open(private_encryption_key)
+    refute_nil(opened)
 
-    assert_equal(CHALLENGE_DATA, opened_response.challengeData)
-    assert_equal(RESPONDER_DATA, opened_response.responseData)
+    # We've passed the encryption, does the challenge data match what we expect?
+    # (in real usage, this would be a rails authenticator)
+    assert_equal(CHALLENGE_DATA, opened.challengeData)
+
+    # And finally, the challenger does something with the results.
+    assert_equal(RESPONDER_DATA, opened.responseData)
   end
 end

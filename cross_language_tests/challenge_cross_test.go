@@ -28,6 +28,7 @@ type rubyChallengeCmd struct {
 	ChallengerPublicKey   []byte
 	ChallengeId           []byte
 	ChallengeData         []byte
+	RequestData           []byte
 	ResponsePack          []byte
 	ResponseData          []byte
 }
@@ -58,25 +59,34 @@ func TestChallengeRuby(t *testing.T) {
 			dir := t.TempDir()
 
 			challengeId := []byte(ulid.New())
+			requestData := []byte(ulid.New())
 
 			rubyChallengeCmdData := rubyChallengeCmd{
 				RubyPrivateSigningKey: privateEcKeyToPem(t, rubyPrivateSigningKey),
 				ChallengeData:         testChallenge,
 				ChallengeId:           challengeId,
+				RequestData:           requestData,
 			}
 
 			out, err := rubyChallengeExec("generate", dir, rubyChallengeCmdData)
 			require.NoError(t, err, string(out))
 
-			var rubyChallengeOuter challenge.OuterChallenge
-			require.NoError(t, msgpack.Unmarshal(out, &rubyChallengeOuter))
+			challengeBox, err := challenge.UnmarshalChallenge(out)
+			require.NoError(t, err, string(out))
 
-			response, err := challenge.RespondPng(responderKey, rubyPrivateSigningKey.PublicKey, rubyChallengeOuter, responderData)
+			require.NoError(t, challengeBox.Verify(rubyPrivateSigningKey.PublicKey))
+
+			response, err := challengeBox.RespondPng(responderKey, responderData)
 			require.NoError(t, err)
 
 			rubyChallengeCmdData = rubyChallengeCmd{
 				ResponsePack: response,
 			}
+
+			// make sure the challenge id persisted
+			responseBox, err := challenge.UnmarshalResponsePng(response)
+			require.NoError(t, err, string(response))
+			require.Equal(t, challengeId, responseBox.ChallengeId)
 
 			out, err = rubyChallengeExec("open_response_png", dir, rubyChallengeCmdData)
 			require.NoError(t, err, string(out))
@@ -86,7 +96,7 @@ func TestChallengeRuby(t *testing.T) {
 
 			require.Equal(t, testChallenge, innerResponse.ChallengeData)
 			require.Equal(t, responderData, innerResponse.ResponseData)
-			require.WithinDuration(t, time.Now(), time.Unix(innerResponse.TimeStamp, 0), time.Second*5)
+			require.WithinDuration(t, time.Now(), time.Unix(innerResponse.Timestamp, 0), time.Second*5)
 		})
 
 		t.Run("Go challenges, Ruby responds", func(t *testing.T) {
@@ -96,32 +106,30 @@ func TestChallengeRuby(t *testing.T) {
 			dir := t.TempDir()
 
 			challengeId := []byte(ulid.New())
+			requestData := []byte(ulid.New())
 
-			generatedChallenge, privEncryptionKey, err := challenge.Generate(challengerKey, challengeId, testChallenge)
-			require.NoError(t, err)
-
-			challengePack, err := msgpack.Marshal(generatedChallenge)
+			generatedChallenge, privEncryptionKey, err := challenge.Generate(challengerKey, challengeId, testChallenge, requestData)
 			require.NoError(t, err)
 
 			rubyChallengeCmdData := rubyChallengeCmd{
 				ChallengerPublicKey: publicEcKeyToPem(t, &challengerKey.PublicKey),
-				ChallengePack:       challengePack,
+				ChallengePack:       generatedChallenge,
 				ResponseData:        responderData,
 			}
 
 			out, err := rubyChallengeExec("respond", dir, rubyChallengeCmdData)
 			require.NoError(t, err, string(out))
 
-			var rubyResponseOuter challenge.OuterResponse
-			require.NoError(t, msgpack.Unmarshal(out, &rubyResponseOuter))
+			responseBox, err := challenge.UnmarshalResponse(out)
+			require.NoError(t, err, string(out))
 
-			innerResponse, err := challenge.OpenResponse(*privEncryptionKey, rubyResponseOuter)
+			innerResponse, err := responseBox.Open(*privEncryptionKey)
 			require.NoError(t, err)
 
 			require.Equal(t, testChallenge, innerResponse.ChallengeData)
 			require.Equal(t, responderData, innerResponse.ResponseData)
-			require.Equal(t, challengeId, rubyResponseOuter.ChallengeId)
-			require.WithinDuration(t, time.Now(), time.Unix(innerResponse.TimeStamp, 0), time.Second*5)
+			require.Equal(t, challengeId, responseBox.ChallengeId)
+			require.WithinDuration(t, time.Now(), time.Unix(innerResponse.Timestamp, 0), time.Second*5)
 		})
 	}
 }
@@ -136,19 +144,23 @@ func TestChallengeRubyTampering(t *testing.T) {
 		t.Parallel()
 
 		rubyPrivateSignignKey := ecdsaKey(t)
-		responderKey := ecdsaKey(t)
 		dir := t.TempDir()
+		challengeId := []byte(ulid.New())
+		requestData := []byte(ulid.New())
 
 		rubyChallengeCmdData := rubyChallengeCmd{
 			RubyPrivateSigningKey: privateEcKeyToPem(t, rubyPrivateSignignKey),
 			ChallengeData:         testChallenge,
+			ChallengeId:           challengeId,
+			RequestData:           requestData,
 		}
 
 		out, err := rubyChallengeExec("generate", dir, rubyChallengeCmdData)
 		require.NoError(t, err, string(out))
 
-		var rubyChallengeOuter challenge.OuterChallenge
-		require.NoError(t, msgpack.Unmarshal(out, &rubyChallengeOuter))
+		// open up the box and change the inner message
+		challengeBox, err := challenge.UnmarshalChallenge(out)
+		require.NoError(t, err, string(out))
 
 		tamperPub, _, err := box.GenerateKey(rand.Reader)
 		require.NoError(t, err)
@@ -159,10 +171,10 @@ func TestChallengeRubyTampering(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		rubyChallengeOuter.Msg = tamperedInner
+		challengeBox.Msg = tamperedInner
 
-		_, err = challenge.Respond(responderKey, rubyPrivateSignignKey.PublicKey, rubyChallengeOuter, responderData)
-		require.ErrorContains(t, err, "invalid signature")
+		// should fail verification now
+		require.Error(t, challengeBox.Verify(rubyPrivateSignignKey.PublicKey))
 	})
 
 	t.Run("Go challenges, Ruby responds, Tamper With Challenge", func(t *testing.T) {
@@ -171,7 +183,7 @@ func TestChallengeRubyTampering(t *testing.T) {
 		challengerKey := ecdsaKey(t)
 		dir := t.TempDir()
 
-		generatedChallenge, _, err := challenge.Generate(challengerKey, []byte(ulid.New()), testChallenge)
+		challengeBytes, _, err := challenge.Generate(challengerKey, []byte(ulid.New()), testChallenge, []byte(ulid.New()))
 		require.NoError(t, err)
 
 		tamperPub, _, err := box.GenerateKey(rand.Reader)
@@ -183,20 +195,24 @@ func TestChallengeRubyTampering(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		generatedChallenge.Msg = tamperedInner
+		// open up the box and add a new inner message
+		challengeBox, err := challenge.UnmarshalChallenge(challengeBytes)
+		require.NoError(t, err, string(challengeBytes))
 
-		challengePack, err := msgpack.Marshal(generatedChallenge)
+		challengeBox.Msg = tamperedInner
+
+		challengeBytes, err = challengeBox.Marshal()
 		require.NoError(t, err)
 
 		rubyChallengeCmdData := rubyChallengeCmd{
 			ChallengerPublicKey: publicEcKeyToPem(t, &challengerKey.PublicKey),
-			ChallengePack:       challengePack,
+			ChallengePack:       challengeBytes,
 			ResponseData:        responderData,
 		}
 
 		out, err := rubyChallengeExec("respond", dir, rubyChallengeCmdData)
 		require.Error(t, err, string(out))
-		require.Contains(t, string(out), "invalid signature")
+		require.Contains(t, string(out), "challenge verification failed")
 	})
 }
 
