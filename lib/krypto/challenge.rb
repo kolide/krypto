@@ -28,6 +28,12 @@ module Krypto
       [outer, private_encryption_key.to_bytes]
     end
 
+    def self.unmarshal(data, png: false, base64: true)
+      data = ::Krypto::Png.decode_blob(data) if png
+      data = Base64.strict_decode64(data) if base64
+      OuterChallenge.new(MessagePack.unpack(data).slice(*OUTER_CHALLENGE_FIELDS.map(&:to_s)))
+    end
+
     # OuterChallenge is meant as the main challenge entry point. It is a simple wrapper over an internal message.
     OUTER_CHALLENGE_FIELDS = %i[sig msg].freeze
     class OuterChallenge < Struct.new(*OUTER_CHALLENGE_FIELDS, keyword_init: true)
