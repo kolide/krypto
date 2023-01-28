@@ -96,6 +96,10 @@ func (o *OuterChallenge) Respond(signer crypto.Signer, responseData []byte) ([]b
 }
 
 func (o *OuterChallenge) inner() (*InnerChallenge, error) {
+	if o.Msg == nil {
+		return nil, fmt.Errorf("inner is nil")
+	}
+
 	var inner InnerChallenge
 	if err := msgpack.Unmarshal(o.Msg, &inner); err != nil {
 		return nil, fmt.Errorf("unmarshaling inner challenge: %w", err)
