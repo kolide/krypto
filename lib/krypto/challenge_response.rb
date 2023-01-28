@@ -8,7 +8,7 @@ module Krypto
   class ChallengeResponse
     def self.unmarshal(data, png: false, base64: true)
       data = ::Krypto::Png.decode_blob(data) if png
-      data = Base64.strict_decode(data) if base64
+      data = Base64.strict_decode64(data) if base64
 
       OuterResponse.new(MessagePack.unpack(data))
     end
@@ -20,7 +20,7 @@ module Krypto
       end
 
       # Use our key to open the response. This is akin to unsealing
-      def open(private_encryption_key, png: false)
+      def open(private_encryption_key)
         # Use the public key in the box, and the provided private key to derive a new key. And open the box with it.
         public_encryption_key = RbNaCl::PublicKey.new(publicEncryptionKey)
         box = RbNaCl::SimpleBox.from_keypair(public_encryption_key, private_encryption_key)
