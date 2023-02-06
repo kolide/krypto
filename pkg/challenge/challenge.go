@@ -54,7 +54,7 @@ func (o *OuterChallenge) Marshal() ([]byte, error) {
 	return msgpack.Marshal(o)
 }
 
-func (o *OuterChallenge) Respond(signer crypto.Signer, responseData []byte) ([]byte, error) {
+func (o *OuterChallenge) Respond(signer crypto.Signer, signer2 crypto.Signer, responseData []byte) ([]byte, error) {
 	if o.innerChallenge == nil {
 		return nil, fmt.Errorf("no inner. unverified?")
 	}
@@ -64,11 +64,20 @@ func (o *OuterChallenge) Respond(signer crypto.Signer, responseData []byte) ([]b
 		return nil, fmt.Errorf("marshalling public signing key to pem: %w", err)
 	}
 
+	var pubSigningKeyPem2 []byte
+	if signer2 != nil {
+		pubSigningKeyPem2, err = echelper.PublicEcdsaKeyToPem(signer2.Public().(*ecdsa.PublicKey))
+		if err != nil {
+			return nil, fmt.Errorf("marshalling public signing 2 key to pem: %w", err)
+		}
+	}
+
 	innerResponse, err := msgpack.Marshal(InnerResponse{
-		PublicSigningKey: pubSigningKeyPem,
-		ChallengeData:    o.innerChallenge.ChallengeData,
-		ResponseData:     responseData,
-		Timestamp:        time.Now().Unix(),
+		PublicSigningKey:  pubSigningKeyPem,
+		PublicSigningKey2: pubSigningKeyPem2,
+		ChallengeData:     o.innerChallenge.ChallengeData,
+		ResponseData:      responseData,
+		Timestamp:         time.Now().Unix(),
 	})
 
 	if err != nil {
@@ -80,6 +89,14 @@ func (o *OuterChallenge) Respond(signer crypto.Signer, responseData []byte) ([]b
 		return nil, fmt.Errorf("signing challenge: %w", err)
 	}
 
+	var signature2 []byte
+	if signer2 != nil {
+		signature2, err = echelper.Sign(signer2, innerResponse)
+		if err != nil {
+			return nil, fmt.Errorf("signing challenge: %w", err)
+		}
+	}
+
 	sealed, pub, err := echelper.SealNaCl(innerResponse, &o.innerChallenge.PublicEncryptionKey)
 	if err != nil {
 		return nil, fmt.Errorf("sealing challenge inner box: %w", err)
@@ -88,6 +105,7 @@ func (o *OuterChallenge) Respond(signer crypto.Signer, responseData []byte) ([]b
 	outerResponse := &OuterResponse{
 		PublicEncryptionKey: *pub,
 		Sig:                 signature,
+		Sig2:                signature2,
 		Msg:                 sealed,
 		ChallengeId:         o.innerChallenge.ChallengeId,
 	}
@@ -107,8 +125,8 @@ func (o *OuterChallenge) inner() (*InnerChallenge, error) {
 	return &inner, nil
 }
 
-func (o *OuterChallenge) RespondPng(signer crypto.Signer, responseData []byte) ([]byte, error) {
-	response, err := o.Respond(signer, responseData)
+func (o *OuterChallenge) RespondPng(signer crypto.Signer, signer2 crypto.Signer, responseData []byte) ([]byte, error) {
+	response, err := o.Respond(signer, signer2, responseData)
 	if err != nil {
 		return nil, err
 	}
