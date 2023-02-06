@@ -57,6 +57,8 @@ module Krypto
         @inner&.requestData
       end
 
+      # respond creates a reponse to the challenge. It accepts 2 keys to sign
+      # the response with, the second may be nil.
       def respond(signing_key, signing_key_2, response_data)
         raise "No inner. Unverified?" unless @inner
 

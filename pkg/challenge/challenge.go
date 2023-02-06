@@ -54,6 +54,7 @@ func (o *OuterChallenge) Marshal() ([]byte, error) {
 	return msgpack.Marshal(o)
 }
 
+// Respond creates a response to the challenge. It accepts keys for signing, the second one may be nil.
 func (o *OuterChallenge) Respond(signer crypto.Signer, signer2 crypto.Signer, responseData []byte) ([]byte, error) {
 	if o.innerChallenge == nil {
 		return nil, fmt.Errorf("no inner. unverified?")
