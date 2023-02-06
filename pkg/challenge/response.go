@@ -34,17 +34,12 @@ func (o *OuterResponse) Open(privateEncryptionKey [32]byte) (*InnerResponse, err
 		return nil, fmt.Errorf("verifying challenge signature: %w", err)
 	}
 
-	// neither signature 2 nor public signing key 2 was provided, return what we have
-	if (o.Sig2 == nil || len(o.Sig2) <= 0) && (innerResponse.PublicSigningKey2 == nil || len(innerResponse.PublicSigningKey2) <= 0) {
+	// no sig 2 provided, return what we have
+	if o.Sig2 == nil || len(o.Sig2) <= 0 {
 		return &innerResponse, nil
 	}
 
-	// public key 2, no signature 2
-	if o.Sig2 == nil || len(o.Sig2) <= 0 {
-		return nil, fmt.Errorf("have public siging key 2 but no signature 2")
-	}
-
-	// signature 2, no public key 2
+	// got a signature 2, no public key 2
 	if innerResponse.PublicSigningKey2 == nil || len(innerResponse.PublicSigningKey2) <= 0 {
 		return nil, fmt.Errorf("have signature 2 but no public signing key 2")
 	}
