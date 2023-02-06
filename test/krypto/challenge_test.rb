@@ -37,20 +37,20 @@ class TestKryptoChallenge < Minitest::Test
   end
 
   def validate_response(private_encryption_key, response)
-        # The challenger uses the challengeId to find the ephemeral encrytion key, and opens the response.
-        assert_equal(CHALLENGE_ID, response.challengeId)
+    # The challenger uses the challengeId to find the ephemeral encrytion key, and opens the response.
+    assert_equal(CHALLENGE_ID, response.challengeId)
 
-        # The challenger uses the challengeId to find the ephemeral encrytion key, and opens the response.
-        assert_equal(CHALLENGE_ID, response.challengeId)
+    # The challenger uses the challengeId to find the ephemeral encrytion key, and opens the response.
+    assert_equal(CHALLENGE_ID, response.challengeId)
 
-        opened = response.open(private_encryption_key)
-        refute_nil(opened)
+    opened = response.open(private_encryption_key)
+    refute_nil(opened)
 
-        # We've passed the encryption, does the challenge data match what we expect?
-        # (in real usage, this would be a rails authenticator)
-        assert_equal(CHALLENGE_DATA, opened.challengeData)
+    # We've passed the encryption, does the challenge data match what we expect?
+    # (in real usage, this would be a rails authenticator)
+    assert_equal(CHALLENGE_DATA, opened.challengeData)
 
-        # And finally, the challenger does something with the results.
-        assert_equal(RESPONDER_DATA, opened.responseData)
+    # And finally, the challenger does something with the results.
+    assert_equal(RESPONDER_DATA, opened.responseData)
   end
 end
