@@ -1,11 +1,14 @@
 package challenge
 
 import (
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
+	"io"
 	"testing"
 	"time"
 
@@ -154,6 +157,56 @@ func TestVerifyWithKeyBytes(t *testing.T) {
 
 			keyBytes, msg, sig := tt.testFunc()
 			require.NoError(t, verifyWithKeyBytes(keyBytes, msg, sig))
+		})
+	}
+}
+
+type timeoutSigner struct{}
+
+func (t timeoutSigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) (signature []byte, err error) {
+	return nil, errors.New("TEST ERROR")
+}
+
+func (t timeoutSigner) Public() crypto.PublicKey {
+	return nil
+}
+
+func TestSignWithTimeout(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		signerFunc func() crypto.Signer
+		errString  string
+	}{
+		{
+			name: "happy path",
+			signerFunc: func() crypto.Signer {
+				key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+				require.NoError(t, err)
+				return key
+			},
+		},
+		{
+			name: "timeout",
+			signerFunc: func() crypto.Signer {
+				return timeoutSigner{}
+			},
+			errString: "signing timed out after 4 attempts, last error: signing data: TEST ERROR",
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := signWithTimeout(tt.signerFunc(), []byte(ulid.New()))
+			if tt.errString == "" {
+				require.NoError(t, err)
+				return
+			}
+
+			require.ErrorContains(t, err, tt.errString)
 		})
 	}
 }
