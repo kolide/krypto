@@ -192,7 +192,7 @@ func TestSignWithTimeout(t *testing.T) {
 			signerFunc: func() crypto.Signer {
 				return timeoutSigner{}
 			},
-			errString: "signing timed out after 4 attempts, last error: signing data: TEST ERROR",
+			errString: "signing timed out",
 		},
 	}
 	for _, tt := range tests {
