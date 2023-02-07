@@ -32,6 +32,9 @@ module Krypto
 
         # If we don't have a signature 2 or a public signing key 2, return what we have
         if sig2.nil? || sig2.empty?
+          # if there is no sig2, set public signing key 2 to nil just in case so that
+          # the consumer does not fasly assume it was used to perform a signature
+          inner.publicSigningKey2 = nil
           return inner
         end
 

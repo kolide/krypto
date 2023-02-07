@@ -38,6 +38,9 @@ func (o *OuterResponse) Open(privateEncryptionKey [32]byte) (*InnerResponse, err
 
 	// no sig 2 provided, return what we have
 	if o.Sig2 == nil || len(o.Sig2) <= 0 {
+		// if there is no sig2, set public signing key 2 to nil just in case so that
+		// the consumer does not fasly assume it was used to perform a signature
+		innerResponse.PublicSigningKey2 = nil
 		return &innerResponse, nil
 	}
 
