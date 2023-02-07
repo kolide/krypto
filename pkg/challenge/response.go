@@ -2,7 +2,9 @@ package challenge
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
+	"strings"
 
 	"github.com/kolide/krypto"
 	"github.com/kolide/krypto/pkg/echelper"
@@ -52,7 +54,20 @@ func (o *OuterResponse) Open(privateEncryptionKey [32]byte) (*InnerResponse, err
 }
 
 func verifyWithKeyBytes(keyBytes []byte, msg []byte, sig []byte) error {
-	key, err := echelper.PublicPemToEcdsaKey(keyBytes)
+	if strings.HasPrefix(string(keyBytes), "-----BEGIN PUBLIC KEY-----") {
+		key, err := echelper.PublicPemToEcdsaKey(keyBytes)
+		if err != nil {
+			return err
+		}
+		return echelper.VerifySignature(*key, msg, sig)
+	}
+
+	keyStr, err := base64.StdEncoding.DecodeString(string(keyBytes))
+	if err != nil {
+		return fmt.Errorf("base64 decoding public der key: %w", err)
+	}
+
+	key, err := echelper.PublicDerToEcdsaKey(keyStr)
 	if err != nil {
 		return err
 	}

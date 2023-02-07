@@ -5,6 +5,8 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/rand"
+	"crypto/x509"
+	"encoding/base64"
 	"fmt"
 	"time"
 
@@ -60,22 +62,22 @@ func (o *OuterChallenge) Respond(signer crypto.Signer, signer2 crypto.Signer, re
 		return nil, fmt.Errorf("no inner. unverified?")
 	}
 
-	pubSigningKeyPem, err := echelper.PublicEcdsaKeyToPem(signer.Public().(*ecdsa.PublicKey))
+	pubSigningDer, err := publicEcdsaToDer(signer.Public().(*ecdsa.PublicKey))
 	if err != nil {
-		return nil, fmt.Errorf("marshalling public signing key to pem: %w", err)
+		return nil, fmt.Errorf("marshalling public signing key to der: %w", err)
 	}
 
-	var pubSigningKeyPem2 []byte
+	var pubSigningKey2Der []byte
 	if signer2 != nil {
-		pubSigningKeyPem2, err = echelper.PublicEcdsaKeyToPem(signer2.Public().(*ecdsa.PublicKey))
+		pubSigningKey2Der, err = publicEcdsaToDer(signer2.Public().(*ecdsa.PublicKey))
 		if err != nil {
-			return nil, fmt.Errorf("marshalling public signing 2 key to pem: %w", err)
+			return nil, fmt.Errorf("marshalling public signing 2 key to der: %w", err)
 		}
 	}
 
 	innerResponse, err := msgpack.Marshal(InnerResponse{
-		PublicSigningKey:  pubSigningKeyPem,
-		PublicSigningKey2: pubSigningKeyPem2,
+		PublicSigningKey:  pubSigningDer,
+		PublicSigningKey2: pubSigningKey2Der,
 		ChallengeData:     o.innerChallenge.ChallengeData,
 		ResponseData:      responseData,
 		Timestamp:         time.Now().Unix(),
@@ -192,4 +194,13 @@ func Generate(signer crypto.Signer, challengeId []byte, challengeData []byte, re
 	}
 
 	return outerChallengeBytes, privEncKey, nil
+}
+
+func publicEcdsaToDer(key *ecdsa.PublicKey) ([]byte, error) {
+	der, err := x509.MarshalPKIXPublicKey(key)
+	if err != nil {
+		return nil, err
+	}
+
+	return []byte(base64.StdEncoding.EncodeToString(der)), nil
 }

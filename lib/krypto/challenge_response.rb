@@ -28,17 +28,11 @@ module Krypto
         inner = InnerResponse.new(MessagePack.unpack(opened))
 
         # Now that we've opened the box, we can verify that the internal key matches the external signature.
-        public_signing_key = OpenSSL::PKey::EC.new(inner.publicSigningKey)
-        raise "invalid signature" unless Krypto::Ec.verify(public_signing_key, sig, opened)
+        OuterResponse.verify_with_key_bytes(inner.publicSigningKey, sig, opened)
 
         # If we don't have a signature 2 or a public signing key 2, return what we have
-        if (sig2.nil? || sig2.empty?) && (inner.publicSigningKey2.nil? || inner.publicSigningKey2.empty?)
-          return inner
-        end
-
-        # have key but no signature
         if sig2.nil? || sig2.empty?
-          raise "have public siging key 2, but no signature 2"
+          return inner
         end
 
         # have signature but no key
@@ -46,13 +40,24 @@ module Krypto
           raise "have signature 2, but no public signing key 2"
         end
 
-        # now verify signature 2
-        public_signing_key_2 = OpenSSL::PKey::EC.new(inner.publicSigningKey2)
-        raise "invalid signature" unless Krypto::Ec.verify(public_signing_key_2, sig2, opened)
+        OuterResponse.verify_with_key_bytes(inner.publicSigningKey2, sig2, opened)
 
         inner
       end
+
+      def self.verify_with_key_bytes(key_bytes, signature, data)
+        if key_bytes.start_with?("-----BEGIN PUBLIC KEY-----")
+          key = OpenSSL::PKey::EC.new(key_bytes)
+          raise "invalid signature" unless Krypto::Ec.verify(key, signature, data)
+          return
+        end
+
+        key = OpenSSL::PKey::EC.new(Base64.strict_decode64(key_bytes))
+        raise "invalid signature" unless Krypto::Ec.verify(key, signature, data)
+        return
+      end
     end
+
 
     INNER_RESPONSE_FIELDS = %i[publicSigningKey publicSigningKey2 challengeData responseData timestamp].freeze
     class InnerResponse < Struct.new(*INNER_RESPONSE_FIELDS, keyword_init: true)

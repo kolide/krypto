@@ -312,8 +312,10 @@ func tamperWithChallenge(t *testing.T, challengeBytes []byte) []byte {
 func tamperWithResponse(t *testing.T, challengeBytes, responseBytes []byte) []byte {
 	malloryKey := ecdsaKey(t)
 
-	publicPem, err := echelper.PublicEcdsaKeyToPem(&malloryKey.PublicKey)
+	malloryKeyDerBytes, err := x509.MarshalPKIXPublicKey(&malloryKey.PublicKey)
 	require.NoError(t, err)
+
+	malloryB64Der := base64.StdEncoding.EncodeToString(malloryKeyDerBytes)
 
 	outerChallenge, err := challenge.UnmarshalChallenge(challengeBytes)
 	require.NoError(t, err)
@@ -322,8 +324,8 @@ func tamperWithResponse(t *testing.T, challengeBytes, responseBytes []byte) []by
 	require.NoError(t, msgpack.Unmarshal(outerChallenge.Msg, &innerChallenge))
 
 	innerResponseBytes, err := msgpack.Marshal(challenge.InnerResponse{
-		PublicSigningKey:  publicPem,
-		PublicSigningKey2: publicPem,
+		PublicSigningKey:  []byte(malloryB64Der),
+		PublicSigningKey2: []byte(malloryB64Der),
 		ChallengeData:     innerChallenge.ChallengeData,
 		ResponseData:      []byte("evil response data"),
 		Timestamp:         time.Now().Unix(),

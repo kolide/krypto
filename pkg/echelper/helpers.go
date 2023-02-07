@@ -70,19 +70,13 @@ func OpenNaCl(sealed []byte, counterPartyPublicKey, privateKey *[32]byte) ([]byt
 	return opened, nil
 }
 
-func PublicEcdsaKeyToPem(pub *ecdsa.PublicKey) ([]byte, error) {
-	bytes, err := x509.MarshalPKIXPublicKey(pub)
-	if err != nil {
-		return nil, err
-	}
-
-	return pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: bytes}), nil
-}
-
 func PublicPemToEcdsaKey(keyBytes []byte) (*ecdsa.PublicKey, error) {
 	block, _ := pem.Decode(keyBytes)
+	return PublicDerToEcdsaKey(block.Bytes)
+}
 
-	key, err := x509.ParsePKIXPublicKey(block.Bytes)
+func PublicDerToEcdsaKey(der []byte) (*ecdsa.PublicKey, error) {
+	key, err := x509.ParsePKIXPublicKey(der)
 	if err != nil {
 		return nil, fmt.Errorf("parsing pkix public key: %w", err)
 	}

@@ -62,15 +62,15 @@ module Krypto
       def respond(signing_key, signing_key_2, response_data)
         raise "No inner. Unverified?" unless @inner
 
-        public_signing_key_2_pem = ""
+        public_signing_key_2_der = ""
         if !signing_key_2.nil?
-          public_signing_key_2_pem = signing_key_2.public_to_pem
+          public_signing_key_2_der = Base64.strict_encode64(signing_key_2.public_to_der)
         end
 
         msg = MessagePack.pack(
           Krypto::ChallengeResponse::InnerResponse.new(
-            publicSigningKey: signing_key.public_to_pem,
-            publicSigningKey2: public_signing_key_2_pem,
+            publicSigningKey: Base64.strict_encode64(signing_key.public_to_der),
+            publicSigningKey2: public_signing_key_2_der,
             challengeData: @inner.challengeData,
             responseData: response_data,
             timestamp: Time.now.to_i

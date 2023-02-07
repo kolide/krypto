@@ -4,10 +4,13 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/x509"
+	"encoding/pem"
 	"testing"
 	"time"
 
 	"github.com/kolide/kit/ulid"
+	"github.com/kolide/krypto/pkg/echelper"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/nacl/box"
 )
@@ -101,4 +104,56 @@ func TestChallengeHappyPath(t *testing.T) {
 			require.WithinDuration(t, time.Now(), time.Unix(innerResponse.Timestamp, 0), time.Second*5)
 		}
 	})
+}
+
+// TestVerifyWithKeyBytes makes sure krypto can handle pem and b64 der format
+func TestVerifyWithKeyBytes(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		testFunc func() (keyBytes, msg, sig []byte)
+	}{
+		{
+			name: "pem format",
+			testFunc: func() (keyBytes, msg, sig []byte) {
+				key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+				require.NoError(t, err)
+
+				bytes, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
+				require.NoError(t, err)
+
+				keyBytes = pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: bytes})
+				msg = []byte(ulid.New())
+				sig, err = echelper.Sign(key, msg)
+				require.NoError(t, err)
+				return
+			},
+		},
+		{
+			name: "der format",
+			testFunc: func() (keyBytes, msg, sig []byte) {
+				key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+				require.NoError(t, err)
+
+				keyBytes, err = publicEcdsaToDer(&key.PublicKey)
+				require.NoError(t, err)
+
+				msg = []byte(ulid.New())
+				sig, err = echelper.Sign(key, msg)
+				require.NoError(t, err)
+				return
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			keyBytes, msg, sig := tt.testFunc()
+			require.NoError(t, verifyWithKeyBytes(keyBytes, msg, sig))
+		})
+	}
 }
