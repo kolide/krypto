@@ -34,6 +34,10 @@ func TestChallengeHappyPath(t *testing.T) {
 
 	//nolint: paralleltest
 	t.Run("challenger creates challenge", func(t *testing.T) {
+		// can't generate challenge without good signer
+		_, _, err := Generate(timeoutSigner{}, challengeId, challengeData, requestData)
+		require.Error(t, err)
+
 		// generate the challenge
 		challengeOuterBoxBytes, challengePrivateEncryptionKey, err = Generate(challengerPrivateKey, challengeId, challengeData, requestData)
 		require.NoError(t, err)
@@ -72,6 +76,10 @@ func TestChallengeHappyPath(t *testing.T) {
 		// verify data
 		require.WithinDuration(t, time.Now(), time.Unix(challengeOuterBox.Timestamp(), 0), time.Second*5)
 		require.Equal(t, requestData, challengeOuterBox.RequestData())
+
+		// can't generate response without a good signer
+		_, err = challengeOuterBox.RespondPng(timeoutSigner{}, nil, responderData)
+		require.Error(t, err)
 
 		// generate response with nil signer2
 		challengeResponsePngBytesSingleSigner, err = challengeOuterBox.RespondPng(responderPrivateSigningKey, nil, responderData)
@@ -168,7 +176,8 @@ func (t timeoutSigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpt
 }
 
 func (t timeoutSigner) Public() crypto.PublicKey {
-	return nil
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	return &key.PublicKey
 }
 
 func TestSignWithTimeout(t *testing.T) {
