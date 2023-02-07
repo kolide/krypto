@@ -54,10 +54,9 @@ module Krypto
 
         key = OpenSSL::PKey::EC.new(Base64.strict_decode64(key_bytes))
         raise "invalid signature" unless Krypto::Ec.verify(key, signature, data)
-        return
+        nil
       end
     end
-
 
     INNER_RESPONSE_FIELDS = %i[publicSigningKey publicSigningKey2 challengeData responseData timestamp].freeze
     class InnerResponse < Struct.new(*INNER_RESPONSE_FIELDS, keyword_init: true)
