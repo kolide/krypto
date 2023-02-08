@@ -28,9 +28,10 @@ func TestChallengeHappyPath(t *testing.T) {
 	challengeData := []byte(ulid.New())
 	requestData := []byte(ulid.New())
 
-	var challengeOuterBoxBytes []byte
-	var challengeResponsePngBytesSingleSigner []byte
-	var challengePrivateEncryptionKey *[32]byte
+	var (
+		challengeOuterBoxBytes        []byte
+		challengePrivateEncryptionKey *[32]byte
+	)
 
 	//nolint: paralleltest
 	t.Run("challenger creates challenge", func(t *testing.T) {
@@ -43,7 +44,11 @@ func TestChallengeHappyPath(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	var outerResponsePngBytesDoubleSigner []byte
+	var (
+		challengeResponsePngBytesSingleSigner []byte
+		challengeResponsePngBytesDoubleSigner []byte
+	)
+
 	responderData := []byte(ulid.New())
 
 	//nolint: paralleltest
@@ -86,13 +91,13 @@ func TestChallengeHappyPath(t *testing.T) {
 		require.NoError(t, err)
 
 		// generate response
-		outerResponsePngBytesDoubleSigner, err = challengeOuterBox.RespondPng(responderPrivateSigningKey, responderPrivateSigningKey2, responderData)
+		challengeResponsePngBytesDoubleSigner, err = challengeOuterBox.RespondPng(responderPrivateSigningKey, responderPrivateSigningKey2, responderData)
 		require.NoError(t, err)
 	})
 
 	//nolint: paralleltest
 	t.Run("challenger handles response", func(t *testing.T) {
-		for _, responsePngBytes := range [][]byte{challengeResponsePngBytesSingleSigner, outerResponsePngBytesDoubleSigner} {
+		for _, responsePngBytes := range [][]byte{challengeResponsePngBytesSingleSigner, challengeResponsePngBytesDoubleSigner} {
 			outerResponse, err := UnmarshalResponsePng(responsePngBytes)
 			require.NoError(t, err)
 
