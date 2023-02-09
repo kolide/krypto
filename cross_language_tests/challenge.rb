@@ -34,6 +34,7 @@ when "generate"
 
 when "respond"
   signing_key = OpenSSL::PKey::EC.generate("prime256v1")
+  signing_key_2 = OpenSSL::PKey::EC.generate("prime256v1")
   counter_party = OpenSSL::PKey::EC.new(test_case["ChallengerPublicKey"])
   outer_challenge = Krypto::Challenge::OuterChallenge.new(MessagePack.unpack(test_case["ChallengePack"]))
 
@@ -48,6 +49,7 @@ when "respond"
       MessagePack.pack(
         outer_challenge.respond(
           signing_key,
+          signing_key_2,
           data
         )
       )

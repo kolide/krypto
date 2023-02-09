@@ -57,12 +57,21 @@ module Krypto
         @inner&.requestData
       end
 
-      def respond(signing_key, response_data)
+      # respond creates a reponse to the challenge. It accepts 2 keys to sign
+      # the response with, the second may be nil.
+      def respond(signing_key, signing_key_2, response_data)
         raise "No inner. Unverified?" unless @inner
+
+        public_signing_key_2_der = if !signing_key_2.nil?
+          Base64.strict_encode64(signing_key_2.public_to_der)
+        else
+          ""
+        end
 
         msg = MessagePack.pack(
           Krypto::ChallengeResponse::InnerResponse.new(
-            publicSigningKey: signing_key.public_to_pem,
+            publicSigningKey: Base64.strict_encode64(signing_key.public_to_der),
+            publicSigningKey2: public_signing_key_2_der,
             challengeData: @inner.challengeData,
             responseData: response_data,
             timestamp: Time.now.to_i
@@ -72,11 +81,18 @@ module Krypto
         sig = Krypto::Ec.sign(signing_key, msg)
         private_encryption_key = RbNaCl::PrivateKey.generate
 
+        sig2 = if !signing_key_2.nil?
+          Krypto::Ec.sign(signing_key_2, msg)
+        else
+          ""
+        end
+
         box = RbNaCl::SimpleBox.from_keypair(@inner.publicEncryptionKey, private_encryption_key)
         sealed = box.encrypt(msg)
 
         Krypto::ChallengeResponse::OuterResponse.new(
           sig: sig,
+          sig2: sig2,
           publicEncryptionKey: private_encryption_key.public_key.to_bytes,
           msg: sealed,
           challengeId: @inner.challengeId

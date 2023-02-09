@@ -13,7 +13,7 @@ module Krypto
       OuterResponse.new(MessagePack.unpack(data))
     end
 
-    OUTER_RESPONSE_FIELDS = %i[publicEncryptionKey sig msg challengeId].freeze
+    OUTER_RESPONSE_FIELDS = %i[publicEncryptionKey sig sig2 msg challengeId].freeze
     class OuterResponse < Struct.new(*OUTER_RESPONSE_FIELDS, keyword_init: true)
       def to_msgpack(out = "")
         to_h.to_msgpack(out)
@@ -28,14 +28,34 @@ module Krypto
         inner = InnerResponse.new(MessagePack.unpack(opened))
 
         # Now that we've opened the box, we can verify that the internal key matches the external signature.
-        public_signing_key = OpenSSL::PKey::EC.new(inner.publicSigningKey)
-        raise "invalid signature" unless Krypto::Ec.verify(public_signing_key, sig, opened)
+        OuterResponse.verify_with_key_bytes(inner.publicSigningKey, sig, opened)
+
+        # If we don't have a signature 2 or a public signing key 2, return what we have
+        if sig2.nil? || sig2.empty?
+          # if there is no sig2, set public signing key 2 to nil just in case so that
+          # the consumer does not falsely assume it was used to perform a signature
+          inner.publicSigningKey2 = nil
+          return inner
+        end
+
+        # have signature but no key
+        if inner.publicSigningKey2.nil? || inner.publicSigningKey2.empty?
+          raise "have signature 2, but no public signing key 2"
+        end
+
+        OuterResponse.verify_with_key_bytes(inner.publicSigningKey2, sig2, opened)
 
         inner
       end
+
+      def self.verify_with_key_bytes(key_bytes, signature, data)
+        key_bytes = Base64.strict_decode64(key_bytes) unless key_bytes.start_with?("-----BEGIN PUBLIC KEY-----")
+        key = OpenSSL::PKey::EC.new(key_bytes)
+        raise "invalid signature" unless Krypto::Ec.verify(key, signature, data)
+      end
     end
 
-    INNER_RESPONSE_FIELDS = %i[publicSigningKey challengeData responseData timestamp].freeze
+    INNER_RESPONSE_FIELDS = %i[publicSigningKey publicSigningKey2 challengeData responseData timestamp].freeze
     class InnerResponse < Struct.new(*INNER_RESPONSE_FIELDS, keyword_init: true)
       def to_msgpack(out = "")
         to_h.to_msgpack(out)

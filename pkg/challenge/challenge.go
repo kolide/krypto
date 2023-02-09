@@ -14,6 +14,11 @@ import (
 	"golang.org/x/crypto/nacl/box"
 )
 
+const (
+	signingTimeoutDuration = 1 * time.Second
+	signingTimeoutInterval = 250 * time.Millisecond
+)
+
 type OuterChallenge struct {
 	Sig            []byte `msgpack:"sig"`
 	Msg            []byte `msgpack:"msg"`
@@ -54,30 +59,46 @@ func (o *OuterChallenge) Marshal() ([]byte, error) {
 	return msgpack.Marshal(o)
 }
 
-func (o *OuterChallenge) Respond(signer crypto.Signer, responseData []byte) ([]byte, error) {
+// Respond creates a response to the challenge. It accepts keys for signing, the second one may be nil.
+func (o *OuterChallenge) Respond(signer crypto.Signer, signer2 crypto.Signer, responseData []byte) ([]byte, error) {
 	if o.innerChallenge == nil {
 		return nil, fmt.Errorf("no inner. unverified?")
 	}
 
-	pubSigningKeyPem, err := echelper.PublicEcdsaKeyToPem(signer.Public().(*ecdsa.PublicKey))
+	pubSigningDer, err := echelper.PublicEcdsaToB64Der(signer.Public().(*ecdsa.PublicKey))
 	if err != nil {
-		return nil, fmt.Errorf("marshalling public signing key to pem: %w", err)
+		return nil, fmt.Errorf("marshalling public signing key to der: %w", err)
+	}
+
+	var pubSigningKey2Der []byte
+	if signer2 != nil {
+		pubSigningKey2Der, err = echelper.PublicEcdsaToB64Der(signer2.Public().(*ecdsa.PublicKey))
+		if err != nil {
+			return nil, fmt.Errorf("marshalling public signing 2 key to der: %w", err)
+		}
 	}
 
 	innerResponse, err := msgpack.Marshal(InnerResponse{
-		PublicSigningKey: pubSigningKeyPem,
-		ChallengeData:    o.innerChallenge.ChallengeData,
-		ResponseData:     responseData,
-		Timestamp:        time.Now().Unix(),
+		PublicSigningKey:  pubSigningDer,
+		PublicSigningKey2: pubSigningKey2Der,
+		ChallengeData:     o.innerChallenge.ChallengeData,
+		ResponseData:      responseData,
+		Timestamp:         time.Now().Unix(),
 	})
 
 	if err != nil {
 		return nil, fmt.Errorf("marshaling inner box: %w", err)
 	}
 
-	signature, err := echelper.Sign(signer, innerResponse)
+	signature, err := echelper.SignWithTimeout(signer, innerResponse, signingTimeoutDuration, signingTimeoutInterval)
 	if err != nil {
 		return nil, fmt.Errorf("signing challenge: %w", err)
+	}
+
+	var signature2 []byte
+	if signer2 != nil {
+		//nolint: errcheck - we allow nil signer2
+		signature2, _ = echelper.SignWithTimeout(signer2, innerResponse, signingTimeoutDuration, signingTimeoutInterval)
 	}
 
 	sealed, pub, err := echelper.SealNaCl(innerResponse, &o.innerChallenge.PublicEncryptionKey)
@@ -88,6 +109,7 @@ func (o *OuterChallenge) Respond(signer crypto.Signer, responseData []byte) ([]b
 	outerResponse := &OuterResponse{
 		PublicEncryptionKey: *pub,
 		Sig:                 signature,
+		Sig2:                signature2,
 		Msg:                 sealed,
 		ChallengeId:         o.innerChallenge.ChallengeId,
 	}
@@ -107,8 +129,8 @@ func (o *OuterChallenge) inner() (*InnerChallenge, error) {
 	return &inner, nil
 }
 
-func (o *OuterChallenge) RespondPng(signer crypto.Signer, responseData []byte) ([]byte, error) {
-	response, err := o.Respond(signer, responseData)
+func (o *OuterChallenge) RespondPng(signer crypto.Signer, signer2 crypto.Signer, responseData []byte) ([]byte, error) {
+	response, err := o.Respond(signer, signer2, responseData)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +179,7 @@ func Generate(signer crypto.Signer, challengeId []byte, challengeData []byte, re
 		return nil, nil, fmt.Errorf("marshaling inner challenge box: %w", err)
 	}
 
-	signature, err := echelper.Sign(signer, inner)
+	signature, err := echelper.SignWithTimeout(signer, inner, signingTimeoutDuration, signingTimeoutInterval)
 	if err != nil {
 		return nil, nil, fmt.Errorf("signing challenge: %w", err)
 	}

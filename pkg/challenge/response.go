@@ -2,7 +2,9 @@ package challenge
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"fmt"
+	"strings"
 
 	"github.com/kolide/krypto"
 	"github.com/kolide/krypto/pkg/echelper"
@@ -14,6 +16,7 @@ type OuterResponse struct {
 	// ECDH the challenger provided PublicEncryptionKey
 	PublicEncryptionKey [32]byte `msgpack:"publicEncryptionKey"`
 	Sig                 []byte   `msgpack:"sig"`
+	Sig2                []byte   `msgpack:"sig2"`
 	Msg                 []byte   `msgpack:"msg"`
 	ChallengeId         []byte   `msgpack:"challengeId"`
 }
@@ -29,23 +32,55 @@ func (o *OuterResponse) Open(privateEncryptionKey [32]byte) (*InnerResponse, err
 		return nil, fmt.Errorf("unmarshaling inner box: %w", err)
 	}
 
-	counterPartyPubKey, err := echelper.PublicPemToEcdsaKey(innerResponse.PublicSigningKey)
-	if err != nil {
-		return nil, fmt.Errorf("unmarshalling public ecdsa signing key from pem: %w", err)
+	if err := verifyWithKeyBytes(innerResponse.PublicSigningKey, innerResponseBytes, o.Sig); err != nil {
+		return nil, fmt.Errorf("verifying challenge signature: %w", err)
 	}
 
-	if err := echelper.VerifySignature(*counterPartyPubKey, innerResponseBytes, o.Sig); err != nil {
-		return nil, fmt.Errorf("verifying challenge: %w", err)
+	// no sig 2 provided, return what we have
+	if o.Sig2 == nil || len(o.Sig2) <= 0 {
+		// if there is no sig2, set public signing key 2 to nil just in case so that
+		// the consumer does not falsely assume it was used to perform a signature
+		innerResponse.PublicSigningKey2 = nil
+		return &innerResponse, nil
+	}
+
+	// got a signature 2, no public key 2
+	if innerResponse.PublicSigningKey2 == nil || len(innerResponse.PublicSigningKey2) <= 0 {
+		return nil, fmt.Errorf("have signature 2 but no public signing key 2")
+	}
+
+	if err := verifyWithKeyBytes(innerResponse.PublicSigningKey2, innerResponseBytes, o.Sig2); err != nil {
+		return nil, fmt.Errorf("verifying challenge signature 2: %w", err)
 	}
 
 	return &innerResponse, nil
 }
 
+func verifyWithKeyBytes(keyBytes []byte, msg []byte, sig []byte) error {
+	var (
+		key *ecdsa.PublicKey
+		err error
+	)
+
+	if strings.HasPrefix(string(keyBytes), "-----BEGIN PUBLIC KEY-----") {
+		key, err = echelper.PublicPemToEcdsaKey(keyBytes)
+	} else {
+		key, err = echelper.PublicB64DerToEcdsaKey(keyBytes)
+	}
+
+	if err != nil {
+		return fmt.Errorf("parsing public key: %w", err)
+	}
+
+	return echelper.VerifySignature(*key, msg, sig)
+}
+
 type InnerResponse struct {
-	PublicSigningKey []byte `msgpack:"publicSigningKey"`
-	ChallengeData    []byte `msgpack:"challengeData"`
-	ResponseData     []byte `msgpack:"responseData"`
-	Timestamp        int64  `msgpack:"timestamp"`
+	PublicSigningKey  []byte `msgpack:"publicSigningKey"`
+	PublicSigningKey2 []byte `msgpack:"publicSigningKey2"`
+	ChallengeData     []byte `msgpack:"challengeData"`
+	ResponseData      []byte `msgpack:"responseData"`
+	Timestamp         int64  `msgpack:"timestamp"`
 }
 
 func UnmarshalResponse(outerResponseBytes []byte) (*OuterResponse, error) {
