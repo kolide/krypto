@@ -5,8 +5,6 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/rand"
-	"crypto/x509"
-	"encoding/base64"
 	"fmt"
 	"time"
 
@@ -14,6 +12,11 @@ import (
 	"github.com/kolide/krypto/pkg/echelper"
 	"github.com/vmihailenco/msgpack/v5"
 	"golang.org/x/crypto/nacl/box"
+)
+
+const (
+	signingTimeoutDuration = 1 * time.Second
+	signingTimeoutInterval = 250 * time.Millisecond
 )
 
 type OuterChallenge struct {
@@ -62,14 +65,14 @@ func (o *OuterChallenge) Respond(signer crypto.Signer, signer2 crypto.Signer, re
 		return nil, fmt.Errorf("no inner. unverified?")
 	}
 
-	pubSigningDer, err := publicEcdsaToDer(signer.Public().(*ecdsa.PublicKey))
+	pubSigningDer, err := echelper.PublicEcdsaToB64Der(signer.Public().(*ecdsa.PublicKey))
 	if err != nil {
 		return nil, fmt.Errorf("marshalling public signing key to der: %w", err)
 	}
 
 	var pubSigningKey2Der []byte
 	if signer2 != nil {
-		pubSigningKey2Der, err = publicEcdsaToDer(signer2.Public().(*ecdsa.PublicKey))
+		pubSigningKey2Der, err = echelper.PublicEcdsaToB64Der(signer2.Public().(*ecdsa.PublicKey))
 		if err != nil {
 			return nil, fmt.Errorf("marshalling public signing 2 key to der: %w", err)
 		}
@@ -87,7 +90,7 @@ func (o *OuterChallenge) Respond(signer crypto.Signer, signer2 crypto.Signer, re
 		return nil, fmt.Errorf("marshaling inner box: %w", err)
 	}
 
-	signature, err := signWithTimeout(signer, innerResponse)
+	signature, err := echelper.SignWithTimeout(signer, innerResponse, signingTimeoutDuration, signingTimeoutInterval)
 	if err != nil {
 		return nil, fmt.Errorf("signing challenge: %w", err)
 	}
@@ -95,7 +98,7 @@ func (o *OuterChallenge) Respond(signer crypto.Signer, signer2 crypto.Signer, re
 	var signature2 []byte
 	if signer2 != nil {
 		//nolint: errcheck - we allow nil signer2
-		signature2, _ = signWithTimeout(signer2, innerResponse)
+		signature2, _ = echelper.SignWithTimeout(signer2, innerResponse, signingTimeoutDuration, signingTimeoutInterval)
 	}
 
 	sealed, pub, err := echelper.SealNaCl(innerResponse, &o.innerChallenge.PublicEncryptionKey)
@@ -176,7 +179,7 @@ func Generate(signer crypto.Signer, challengeId []byte, challengeData []byte, re
 		return nil, nil, fmt.Errorf("marshaling inner challenge box: %w", err)
 	}
 
-	signature, err := signWithTimeout(signer, inner)
+	signature, err := echelper.SignWithTimeout(signer, inner, signingTimeoutDuration, signingTimeoutInterval)
 	if err != nil {
 		return nil, nil, fmt.Errorf("signing challenge: %w", err)
 	}
@@ -192,35 +195,4 @@ func Generate(signer crypto.Signer, challengeId []byte, challengeData []byte, re
 	}
 
 	return outerChallengeBytes, privEncKey, nil
-}
-
-func publicEcdsaToDer(key *ecdsa.PublicKey) ([]byte, error) {
-	der, err := x509.MarshalPKIXPublicKey(key)
-	if err != nil {
-		return nil, err
-	}
-
-	return []byte(base64.StdEncoding.EncodeToString(der)), nil
-}
-
-func signWithTimeout(signer crypto.Signer, data []byte) ([]byte, error) {
-	timeout := time.NewTimer(1 * time.Second)
-	intervalTicker := time.NewTicker(250 * time.Millisecond)
-	attempts := 0
-
-	for {
-		signature, err := echelper.Sign(signer, data)
-		if err == nil {
-			return signature, nil
-		}
-
-		attempts++
-
-		select {
-		case <-timeout.C:
-			return nil, fmt.Errorf("signing timed out after %d attempts, last error: %w", attempts, err)
-		case <-intervalTicker.C:
-			continue
-		}
-	}
 }

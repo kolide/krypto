@@ -62,9 +62,10 @@ module Krypto
       def respond(signing_key, signing_key_2, response_data)
         raise "No inner. Unverified?" unless @inner
 
-        public_signing_key_2_der = ""
-        if !signing_key_2.nil?
-          public_signing_key_2_der = Base64.strict_encode64(signing_key_2.public_to_der)
+        public_signing_key_2_der = if !signing_key_2.nil?
+          Base64.strict_encode64(signing_key_2.public_to_der)
+        else
+          ""
         end
 
         msg = MessagePack.pack(
@@ -80,9 +81,10 @@ module Krypto
         sig = Krypto::Ec.sign(signing_key, msg)
         private_encryption_key = RbNaCl::PrivateKey.generate
 
-        sig2 = ""
-        if !signing_key_2.nil?
-          sig2 = Krypto::Ec.sign(signing_key_2, msg)
+        sig2 = if !signing_key_2.nil?
+          Krypto::Ec.sign(signing_key_2, msg)
+        else
+          ""
         end
 
         box = RbNaCl::SimpleBox.from_keypair(@inner.publicEncryptionKey, private_encryption_key)

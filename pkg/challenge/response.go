@@ -2,7 +2,7 @@ package challenge
 
 import (
 	"bytes"
-	"encoding/base64"
+	"crypto/ecdsa"
 	"fmt"
 	"strings"
 
@@ -39,7 +39,7 @@ func (o *OuterResponse) Open(privateEncryptionKey [32]byte) (*InnerResponse, err
 	// no sig 2 provided, return what we have
 	if o.Sig2 == nil || len(o.Sig2) <= 0 {
 		// if there is no sig2, set public signing key 2 to nil just in case so that
-		// the consumer does not fasly assume it was used to perform a signature
+		// the consumer does not falsely assume it was used to perform a signature
 		innerResponse.PublicSigningKey2 = nil
 		return &innerResponse, nil
 	}
@@ -57,22 +57,19 @@ func (o *OuterResponse) Open(privateEncryptionKey [32]byte) (*InnerResponse, err
 }
 
 func verifyWithKeyBytes(keyBytes []byte, msg []byte, sig []byte) error {
+	var (
+		key *ecdsa.PublicKey
+		err error
+	)
+
 	if strings.HasPrefix(string(keyBytes), "-----BEGIN PUBLIC KEY-----") {
-		key, err := echelper.PublicPemToEcdsaKey(keyBytes)
-		if err != nil {
-			return err
-		}
-		return echelper.VerifySignature(*key, msg, sig)
+		key, err = echelper.PublicPemToEcdsaKey(keyBytes)
+	} else {
+		key, err = echelper.PublicB64DerToEcdsaKey(keyBytes)
 	}
 
-	keyStr, err := base64.StdEncoding.DecodeString(string(keyBytes))
 	if err != nil {
-		return fmt.Errorf("base64 decoding public der key: %w", err)
-	}
-
-	key, err := echelper.PublicDerToEcdsaKey(keyStr)
-	if err != nil {
-		return err
+		return fmt.Errorf("parsing public key: %w", err)
 	}
 
 	return echelper.VerifySignature(*key, msg, sig)

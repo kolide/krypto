@@ -7,10 +7,12 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"golang.org/x/crypto/nacl/box"
 )
@@ -75,6 +77,14 @@ func PublicPemToEcdsaKey(keyBytes []byte) (*ecdsa.PublicKey, error) {
 	return PublicDerToEcdsaKey(block.Bytes)
 }
 
+func PublicB64DerToEcdsaKey(keyBytes []byte) (*ecdsa.PublicKey, error) {
+	decoded, err := base64.StdEncoding.DecodeString(string(keyBytes))
+	if err != nil {
+		return nil, err
+	}
+	return PublicDerToEcdsaKey(decoded)
+}
+
 func PublicDerToEcdsaKey(der []byte) (*ecdsa.PublicKey, error) {
 	key, err := x509.ParsePKIXPublicKey(der)
 	if err != nil {
@@ -88,8 +98,39 @@ func PublicDerToEcdsaKey(der []byte) (*ecdsa.PublicKey, error) {
 	return pub, nil
 }
 
+func PublicEcdsaToB64Der(key *ecdsa.PublicKey) ([]byte, error) {
+	der, err := x509.MarshalPKIXPublicKey(key)
+	if err != nil {
+		return nil, err
+	}
+
+	return []byte(base64.StdEncoding.EncodeToString(der)), nil
+}
+
 func GenerateEcdsaKey() (*ecdsa.PrivateKey, error) {
 	return ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+}
+
+func SignWithTimeout(signer crypto.Signer, data []byte, duration, interval time.Duration) ([]byte, error) {
+	timeout := time.NewTimer(duration)
+	intervalTicker := time.NewTicker(interval)
+	attempts := 0
+
+	for {
+		signature, err := Sign(signer, data)
+		if err == nil {
+			return signature, nil
+		}
+
+		attempts++
+
+		select {
+		case <-timeout.C:
+			return nil, fmt.Errorf("signing timed out after %d attempts, last error: %w", attempts, err)
+		case <-intervalTicker.C:
+			continue
+		}
+	}
 }
 
 func hashForSignature(data []byte) ([]byte, error) {

@@ -152,7 +152,7 @@ func TestVerifyWithKeyBytes(t *testing.T) {
 				key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 				require.NoError(t, err)
 
-				keyBytes, err = publicEcdsaToDer(&key.PublicKey)
+				keyBytes, err = echelper.PublicEcdsaToB64Der(&key.PublicKey)
 				require.NoError(t, err)
 
 				msg = []byte(ulid.New())
@@ -214,7 +214,7 @@ func TestSignWithTimeout(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			_, err := signWithTimeout(tt.signerFunc(), []byte(ulid.New()))
+			_, err := echelper.SignWithTimeout(tt.signerFunc(), []byte(ulid.New()), signingTimeoutDuration, signingTimeoutInterval)
 			if tt.errString == "" {
 				require.NoError(t, err)
 				return
