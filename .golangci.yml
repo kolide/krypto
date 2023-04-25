@@ -6,7 +6,6 @@ run:
 linters:
   enable:
     - bodyclose
-    - deadcode
     - errcheck
     - gofmt
     - gosec
@@ -19,9 +18,11 @@ linters:
     - paralleltest
     - sqlclosecheck
     - staticcheck
-    - structcheck
     - unconvert
     - unused
+  disable:
+    - deadcode
+    - structcheck
     - varcheck
 
 linters-settings:
