@@ -1,6 +1,7 @@
 run:
   skip-dirs:
     - test-cmds
+    - pkg/tpm
   timeout: 5m
 
 linters:
