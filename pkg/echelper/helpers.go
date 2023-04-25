@@ -113,7 +113,9 @@ func GenerateEcdsaKey() (*ecdsa.PrivateKey, error) {
 
 func SignWithTimeout(signer crypto.Signer, data []byte, duration, interval time.Duration) ([]byte, error) {
 	timeout := time.NewTimer(duration)
+	defer timeout.Stop()
 	intervalTicker := time.NewTicker(interval)
+	defer intervalTicker.Stop()
 	attempts := 0
 
 	for {
