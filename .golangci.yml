@@ -1,6 +1,7 @@
 run:
   skip-dirs:
     - test-cmds
+    - simulator
   timeout: 5m
 
 linters:
@@ -25,9 +26,6 @@ linters:
     - varcheck
 
 linters-settings:
-  goanalysis_metalinter:
-    exclude:
-      - github.com/google/go-tpm-tools/simulator/internal
   errcheck:
     ignore: github.com/go-kit/kit/log:Log
   gofmt:
