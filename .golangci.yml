@@ -1,7 +1,7 @@
 run:
   skip-dirs:
     - test-cmds
-    - simulator
+    - github.com/google/go-tpm-tools/simulator/internal
   timeout: 5m
 
 linters:
