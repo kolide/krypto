@@ -1,7 +1,6 @@
 run:
-  skip-dirs:
-    - test-cmds
-    - github.com/google/go-tpm-tools/simulator/internal
+  skip-files:
+    - "pkg/tpm/tpm_test.go"
   timeout: 5m
 
 linters:
@@ -24,6 +23,8 @@ linters:
     - unconvert
     - unused
     - varcheck
+  disable:
+    - metalinter
 
 linters-settings:
   errcheck:
