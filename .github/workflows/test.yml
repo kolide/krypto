@@ -57,6 +57,7 @@ jobs:
         go-version: ${{ matrix.go }}
         cache: true
     - name: Other openssl
+      if: runner.os == 'Windows'
       run: vcpkg --triplet x64-windows install openssl
 
     - name: Install OpenSSL on Windows
