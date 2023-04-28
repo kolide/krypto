@@ -3,6 +3,9 @@ run:
     - test-cmds
   timeout: 5m
 
+output:
+  print-linter-name: true
+
 linters:
   enable:
     - bodyclose
@@ -24,6 +27,7 @@ linters:
     - deadcode
     - structcheck
     - varcheck
+    - paralleltest # https://github.com/kunwardeep/paralleltest/issues/8
 
 linters-settings:
   errcheck:
@@ -33,7 +37,7 @@ linters-settings:
 
 issues:
   exclude-rules:
-    # False positive: https://github.com/kunwardeep/paralleltest/issues/8.
-    - linters:
-      - paralleltest
-      text: "does not use range value in test Run"
+    - path: pkg/tpm/
+      text: "Weird issues"
+      linters:
+        - goanalysis_metalinter
