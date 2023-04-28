@@ -61,12 +61,10 @@ jobs:
       # this is required to be able to run the TPM simulator on Windows
       # https://github.com/google/go-tpm-tools#openssl-errors-when-building-simulator
       run: choco install openssl
-      shell: bash
     - name: Lint
       uses: golangci/golangci-lint-action@v3
     - name: Test
       run: go test $(go list ./... | grep -v cross_language_tests) -race
-      shell: bash
 
   cross:
     name: Cross - Go ${{ matrix.go }} Ruby ${{ matrix.ruby }} ${{ matrix.os }}
