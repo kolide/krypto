@@ -27,7 +27,7 @@ linters:
     - deadcode
     - structcheck
     - varcheck
-    - paralleltest # https://github.com/kunwardeep/paralleltest/issues/8
+    #- paralleltest # https://github.com/kunwardeep/paralleltest/issues/8
 
 linters-settings:
   errcheck:
