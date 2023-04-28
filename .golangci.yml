@@ -1,6 +1,4 @@
 run:
-  skip-files:
-    - "pkg/tpm/tpm_test.go"
   timeout: 5m
 
 linters:
@@ -23,8 +21,6 @@ linters:
     - unconvert
     - unused
     - varcheck
-  disable:
-    - metalinter
 
 linters-settings:
   errcheck:
