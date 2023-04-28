@@ -2,6 +2,7 @@ run:
   skip-dirs:
     - test-cmds
   timeout: 5m
+  tests: false # https://github.com/kolide/launcher/issues/1166
 
 output:
   print-linter-name: true
@@ -27,17 +28,9 @@ linters:
     - deadcode
     - structcheck
     - varcheck
-    #- paralleltest # https://github.com/kunwardeep/paralleltest/issues/8
 
 linters-settings:
   errcheck:
     ignore: github.com/go-kit/kit/log:Log
   gofmt:
     simplify: false
-
-issues:
-  exclude-rules:
-    - path: pkg/tpm/
-      text: "Weird issues"
-      linters:
-        - goanalysis_metalinter
