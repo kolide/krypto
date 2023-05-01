@@ -20,7 +20,7 @@ case cmd
 when "generate"
   # write the private encryption key to the test directory to retrieve in later tests
   key = OpenSSL::PKey::EC.new(test_case["RubyPrivateSigningKey"])
-  result = Krypto::Challenge.generate(key, test_case["ChallengeId"], test_case["ChallengeData"], test_case["RequestData"])
+  result = Krypto::Challenge.generate(key, test_case["ChallengeId"], test_case["ChallengeData"], test_case["RequestData"], timestamp: Time.now)
   File.write(private_encryption_key_path, Base64.strict_encode64(result[1]))
 
   # return the challenge
