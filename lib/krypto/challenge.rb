@@ -6,7 +6,7 @@ require "openssl"
 
 module Krypto
   class Challenge
-    def self.generate(signing_key, challenge_id, challenge_data, request_data, unix_timestamp)
+    def self.generate(signing_key, challenge_id, challenge_data, request_data, timestamp: Time.now)
       private_encryption_key = RbNaCl::PrivateKey.generate
       public_encryption_key = private_encryption_key.public_key
 
@@ -15,7 +15,7 @@ module Krypto
           publicEncryptionKey: public_encryption_key.to_bytes,
           challengeData: challenge_data,
           requestData: request_data,
-          timestamp: unix_timestamp,
+          timestamp: timestamp.to_i,
           challengeId: challenge_id
         )
       )
