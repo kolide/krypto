@@ -22,7 +22,7 @@ class TestKryptoChallenge < Minitest::Test
 
   def test_challenge
     # First, the challenger generates a challenge, and stashes the private key somewhere for future retrivial
-    challenge, private_encryption_key = ::Krypto::Challenge.generate(CHALLENGER_KEY, CHALLENGE_ID, CHALLENGE_DATA, REQUEST_DATA, Time.now.to_i)
+    challenge, private_encryption_key = ::Krypto::Challenge.generate(CHALLENGER_KEY, CHALLENGE_ID, CHALLENGE_DATA, REQUEST_DATA)
 
     # Next, the responder, having recieved the challenge, verifies it, and examines it.
     assert(challenge.verify(CHALLENGER_PUB))
