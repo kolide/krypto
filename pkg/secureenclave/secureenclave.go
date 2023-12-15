@@ -29,8 +29,17 @@ type SecureEnclaveSigner struct {
 
 // New verifies that the provided public key already exists in the secure enclave.
 // Then returns a new Secure Enclave Keyer using the provided public key.
-func New(publicKeySha1 []byte) (*SecureEnclaveSigner, error) {
-	pubKey, err := findKey(publicKeySha1)
+func New(pubKey *ecdsa.PublicKey) (*SecureEnclaveSigner, error) {
+	if pubKey == nil {
+		return nil, errors.New("nil public key")
+	}
+
+	lookUp, err := publicKeyLookUpHash(pubKey)
+	if err != nil {
+		return nil, err
+	}
+
+	pubKey, err = findKey(lookUp)
 	if err != nil {
 		return nil, fmt.Errorf("finding existing public key: %w", err)
 	}
@@ -73,18 +82,14 @@ func (s *SecureEnclaveSigner) Sign(rand io.Reader, digest []byte, opts crypto.Si
 }
 
 // CreateKey creates a new secure enclave key and returns the hash used to access it.
-func CreateKey() ([]byte, error) {
+func CreateKey() (*ecdsa.PublicKey, error) {
 	wrapper := C.wrapCreateKey()
 	result, err := unwrap(wrapper)
 	if err != nil {
 		return nil, err
 	}
 
-	sha1 := sha1.New()
-	if _, err := sha1.Write(result); err != nil {
-		return nil, fmt.Errorf("hashing secure enclave create key result to sha1: %w", err)
-	}
-	return sha1.Sum(nil), nil
+	return rawToEcdsa(result), nil
 }
 
 // unwrap a Wrapper struct to a Go byte slice

@@ -26,7 +26,7 @@ type OuterChallenge struct {
 }
 
 func (o *OuterChallenge) Verify(counterParty ecdsa.PublicKey) error {
-	if err := echelper.VerifySignature(counterParty, o.Msg, o.Sig); err != nil {
+	if err := echelper.VerifySignature(&counterParty, o.Msg, o.Sig); err != nil {
 		return err
 	}
 

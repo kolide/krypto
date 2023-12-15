@@ -18,7 +18,7 @@ import (
 )
 
 func Sign(signer crypto.Signer, data []byte) ([]byte, error) {
-	digest, err := hashForSignature(data)
+	digest, err := HashForSignature(data)
 	if err != nil {
 		return nil, fmt.Errorf("hashing data: %w", err)
 	}
@@ -31,13 +31,13 @@ func Sign(signer crypto.Signer, data []byte) ([]byte, error) {
 	return signature, nil
 }
 
-func VerifySignature(counterParty ecdsa.PublicKey, data []byte, signature []byte) error {
-	digest, err := hashForSignature(data)
+func VerifySignature(counterParty *ecdsa.PublicKey, data []byte, signature []byte) error {
+	digest, err := HashForSignature(data)
 	if err != nil {
 		return fmt.Errorf("hashing inner box: %w", err)
 	}
 
-	if !ecdsa.VerifyASN1(&counterParty, digest, signature) {
+	if !ecdsa.VerifyASN1(counterParty, digest, signature) {
 		return fmt.Errorf("invalid signature")
 	}
 
@@ -135,7 +135,7 @@ func SignWithTimeout(signer crypto.Signer, data []byte, duration, interval time.
 	}
 }
 
-func hashForSignature(data []byte) ([]byte, error) {
+func HashForSignature(data []byte) ([]byte, error) {
 	hash := sha256.New()
 	_, err := hash.Write(data)
 	if err != nil {
