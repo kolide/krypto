@@ -35,7 +35,7 @@ func TestTpmSigning(t *testing.T) {
 
 	publicKey := tpmSigner.Public().(*ecdsa.PublicKey)
 
-	require.NoError(t, echelper.VerifySignature(*publicKey, dataToSign, signature))
+	require.NoError(t, echelper.VerifySignature(publicKey, dataToSign, signature))
 }
 
 func TestTpmErrors(t *testing.T) {

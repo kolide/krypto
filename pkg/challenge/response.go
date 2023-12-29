@@ -72,7 +72,7 @@ func verifyWithKeyBytes(keyBytes []byte, msg []byte, sig []byte) error {
 		return fmt.Errorf("parsing public key: %w", err)
 	}
 
-	return echelper.VerifySignature(*key, msg, sig)
+	return echelper.VerifySignature(key, msg, sig)
 }
 
 type InnerResponse struct {
