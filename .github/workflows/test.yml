@@ -56,17 +56,19 @@ jobs:
       with:
         go-version: ${{ matrix.go }}
         cache: true
+    - name: Other openssl
+      if: runner.os == 'Windows'
+      run: vcpkg --triplet x64-windows install openssl
+
     - name: Install OpenSSL on Windows
       if: runner.os == 'Windows'
       # this is required to be able to run the TPM simulator on Windows
       # https://github.com/google/go-tpm-tools#openssl-errors-when-building-simulator
       run: choco install openssl
-      shell: bash
     - name: Lint
       uses: golangci/golangci-lint-action@v3
     - name: Test
       run: go test $(go list ./... | grep -v cross_language_tests) -race
-      shell: bash
 
   cross:
     name: Cross - Go ${{ matrix.go }} Ruby ${{ matrix.ruby }} ${{ matrix.os }}
@@ -96,6 +98,7 @@ jobs:
       # https://github.com/google/go-tpm-tools#openssl-errors-when-building-simulator
       run: choco install openssl
       shell: bash
+
     - name: Install Libsodium on Windows
       if: runner.os == 'Windows'
       # this is a dependency of the ruby rbnacl library
