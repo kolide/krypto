@@ -1,6 +1,4 @@
-//go:build !windows
-// +build !windows
-
+//nolint:all
 package tpm
 
 import (
