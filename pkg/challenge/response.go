@@ -84,6 +84,10 @@ type InnerResponse struct {
 }
 
 func UnmarshalResponse(outerResponseBytes []byte) (*OuterResponse, error) {
+	if len(outerResponseBytes) > krypto.V0MaxSize {
+		return nil, fmt.Errorf("response to large: is %d, max is %d", len(outerResponseBytes), krypto.V0MaxSize)
+	}
+
 	var outerResponse OuterResponse
 	if err := msgpack.Unmarshal(outerResponseBytes, &outerResponse); err != nil {
 		return nil, err

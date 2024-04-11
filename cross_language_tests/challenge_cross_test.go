@@ -225,6 +225,40 @@ func TestChallenge_GoGenerate_RubyRespond(t *testing.T) {
 	}
 }
 
+func TestChallenge_MaxSize(t *testing.T) {
+	t.Parallel()
+
+	tooBigBytes := mkrand(t, krypto.V0MaxSize+1)
+
+	t.Run("max size enforced in go", func(t *testing.T) {
+		t.Parallel()
+		_, err := challenge.UnmarshalChallenge(tooBigBytes)
+		require.ErrorContains(t, err, "exceeds max size", "should get an error due to size")
+	})
+
+	t.Run("max size enforced in ruby", func(t *testing.T) {
+		t.Parallel()
+
+		dir := t.TempDir()
+		rubyPrivateSigningKey := ecdsaKey(t)
+
+		rubyChallengeCmdData := rubyChallengeCmd{
+			RubyPrivateSigningKey: privateEcKeyToPem(t, rubyPrivateSigningKey),
+		}
+
+		out, err := rubyChallengeExec("generate", dir, rubyChallengeCmdData)
+		require.NoError(t, err, string(out))
+
+		rubyChallengeCmdData = rubyChallengeCmd{
+			ResponsePack: tooBigBytes,
+		}
+
+		out, err = rubyChallengeExec("open_response_png", dir, rubyChallengeCmdData)
+		require.Error(t, err, string(out))
+		require.Contains(t, string(out), "response too large", "should get an error due to size")
+	})
+}
+
 // #nosec G306 -- Need readable files
 func rubyChallengeExec(rubyCmd, dir string, inputData rubyChallengeCmd) ([]byte, error) {
 	testCaseBytes, err := msgpack.Marshal(inputData)

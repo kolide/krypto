@@ -5,6 +5,9 @@ require "msgpack"
 require "openssl"
 
 module Krypto
+
+  MAX_CHALLENGE_SIZE = 4 * 1024 * 1024
+
   class Challenge
     def self.generate(signing_key, challenge_id, challenge_data, request_data, timestamp: Time.now)
       private_encryption_key = RbNaCl::PrivateKey.generate
@@ -29,6 +32,10 @@ module Krypto
     end
 
     def self.unmarshal(data, png: false, base64: true)
+      if data.size > MAX_CHALLENGE_SIZE
+        raise "challenge too large"
+      end
+
       data = ::Krypto::Png.decode_blob(data) if png
       data = Base64.strict_decode64(data) if base64
       OuterChallenge.new(MessagePack.unpack(data).slice(*OUTER_CHALLENGE_FIELDS.map(&:to_s)))

@@ -47,8 +47,6 @@ type boxMaker struct {
 	counterparty *rsa.PublicKey
 }
 
-const maxBoxSize = 4 * 1024 * 1024
-
 func NewBoxer(key *rsa.PrivateKey, counterparty *rsa.PublicKey) boxMaker {
 	return boxMaker{
 		key:          key,
@@ -172,6 +170,10 @@ func (boxer boxMaker) DecodeUnverified(b64 string) (*Box, error) {
 		return nil, fmt.Errorf("decoding base64: %w", err)
 	}
 
+	if len(data) > V0MaxSize {
+		return nil, fmt.Errorf("data too big, is %d, max is %d", len(data), V0MaxSize)
+	}
+
 	return boxer.DecodeRawUnverified(data)
 }
 
@@ -199,7 +201,7 @@ func (boxer boxMaker) DecodePngUnverified(r io.Reader) (*Box, error) {
 		return nil, fmt.Errorf("decoding png: %w", err)
 	}
 
-	if data.Len() > maxBoxSize {
+	if data.Len() > V0MaxSize {
 		return nil, errors.New("looks to be larger than max box size")
 	}
 
@@ -207,6 +209,10 @@ func (boxer boxMaker) DecodePngUnverified(r io.Reader) (*Box, error) {
 }
 
 func (boxer boxMaker) DecodeRaw(data []byte) (*Box, error) {
+	if len(data) > V0MaxSize {
+		return nil, fmt.Errorf("data too big, is %d, max is %d", len(data), V0MaxSize)
+	}
+
 	var outer outerBox
 	if err := msgpack.Unmarshal(data, &outer); err != nil {
 		return nil, fmt.Errorf("unmarshalling outer: %w", err)

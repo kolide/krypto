@@ -16,16 +16,10 @@ const (
 	pixelsInHeader      = 2
 	alphaValue          = 0xFF
 
-	v0MaxSize = 1 << 24
+	V0MaxSize = 4 * 1024 * 1024
 )
 
-func ToPng(w io.Writer, data []byte) error {
-	dataSize := len(data)
-
-	if dataSize > v0MaxSize {
-		return fmt.Errorf("data too big: %d is bigger than %d", dataSize, v0MaxSize)
-	}
-
+func ToPngNoMaxSize(w io.Writer, data []byte) error {
 	pixelCount := divCeil(len(data), usableBytesPerPixel)
 	pixelCount = pixelCount + pixelsInHeader + 1
 
@@ -63,6 +57,16 @@ func ToPng(w io.Writer, data []byte) error {
 
 	encoder := &png.Encoder{}
 	return encoder.Encode(w, img)
+}
+
+func ToPng(w io.Writer, data []byte) error {
+	dataSize := len(data)
+
+	if dataSize > V0MaxSize {
+		return fmt.Errorf("data too big: %d is bigger than %d", dataSize, V0MaxSize)
+	}
+
+	return ToPngNoMaxSize(w, data)
 }
 
 func FromPng(r io.Reader, w io.Writer) error {
