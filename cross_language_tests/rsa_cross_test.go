@@ -37,7 +37,7 @@ func TestRsaRuby(t *testing.T) {
 		{Plaintext: mkrand(t, 128)},
 	}
 
-	// #nosec G306 -- Need readable files
+	//#nosec G306 -- Need readable files
 	for _, tt := range tests {
 		tt := tt
 		t.Run("", func(t *testing.T) {
