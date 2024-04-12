@@ -5,6 +5,7 @@ require "msgpack"
 require "openssl"
 
 module Krypto
+  # Limit size to prevent garbage from filling memory
   MAX_CHALLENGE_SIZE = 4 * 1024 * 1024
 
   class Challenge

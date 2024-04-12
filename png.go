@@ -16,6 +16,7 @@ const (
 	pixelsInHeader      = 2
 	alphaValue          = 0xFF
 
+	// Limit size to prevent garbage from filling memory
 	V0MaxSize = 4 * 1024 * 1024
 )
 
@@ -61,8 +62,6 @@ func ToPngNoMaxSize(w io.Writer, data []byte) error {
 
 func ToPng(w io.Writer, data []byte) error {
 	dataSize := len(data)
-
-	// Limit size to prevent garbage from filling memory
 	if dataSize > V0MaxSize {
 		return fmt.Errorf("data too big: %d is bigger than %d", dataSize, V0MaxSize)
 	}
