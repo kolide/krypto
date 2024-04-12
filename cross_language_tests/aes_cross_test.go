@@ -59,6 +59,7 @@ func TestAesRuby(t *testing.T) {
 				require.NoError(t, err)
 
 				b, err := msgpack.Marshal(tt)
+
 				require.NoError(t, err)
 				require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 			})
