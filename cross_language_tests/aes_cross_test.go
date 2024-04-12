@@ -49,6 +49,7 @@ func TestAesRuby(t *testing.T) {
 			dir := t.TempDir()
 			testfile := path.Join(dir, "testcase.msgpack")
 
+			// #nosec G306 -- Need readable files
 			t.Run("setup", func(t *testing.T) {
 				if tt.Key == nil {
 					tt.Key = mkrand(t, 32)
@@ -61,7 +62,7 @@ func TestAesRuby(t *testing.T) {
 				b, err := msgpack.Marshal(tt)
 				require.NoError(t, err)
 
-				require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644)) // #nosec G306 -- Need readable files
+				require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 			})
 
 			t.Run("ruby decrypt go", func(t *testing.T) {
