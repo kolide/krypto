@@ -25,6 +25,7 @@ var (
 	aesRB = "./aes.rb"
 )
 
+// #nosec G306 -- Need readable files
 func TestAesRuby(t *testing.T) {
 	t.Parallel()
 
@@ -49,7 +50,6 @@ func TestAesRuby(t *testing.T) {
 			dir := t.TempDir()
 			testfile := path.Join(dir, "testcase.msgpack")
 
-			// #nosec G306 -- Need readable files
 			t.Run("setup", func(t *testing.T) {
 				if tt.Key == nil {
 					tt.Key = mkrand(t, 32)
