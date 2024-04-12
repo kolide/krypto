@@ -60,8 +60,8 @@ func TestAesRuby(t *testing.T) {
 
 				b, err := msgpack.Marshal(tt)
 				require.NoError(t, err)
-				//#nosec G306 -- Need readable files
-				require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
+
+				require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644)) // #nosec G306 -- Need readable files
 			})
 
 			t.Run("ruby decrypt go", func(t *testing.T) {
