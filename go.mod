@@ -1,6 +1,6 @@
 module github.com/kolide/krypto
 
-go 1.19
+go 1.21
 
 require (
 	github.com/kolide/kit v0.0.0-20221107170827-fb85e3d59eab
