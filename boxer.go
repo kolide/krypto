@@ -170,6 +170,7 @@ func (boxer boxMaker) DecodeUnverified(b64 string) (*Box, error) {
 		return nil, fmt.Errorf("decoding base64: %w", err)
 	}
 
+	// Limit size to prevent garbage from filling memory
 	if len(data) > V0MaxSize {
 		return nil, fmt.Errorf("data too big, is %d, max is %d", len(data), V0MaxSize)
 	}
@@ -201,6 +202,7 @@ func (boxer boxMaker) DecodePngUnverified(r io.Reader) (*Box, error) {
 		return nil, fmt.Errorf("decoding png: %w", err)
 	}
 
+	// Limit size to prevent garbage from filling memory
 	if data.Len() > V0MaxSize {
 		return nil, errors.New("looks to be larger than max box size")
 	}
@@ -209,6 +211,7 @@ func (boxer boxMaker) DecodePngUnverified(r io.Reader) (*Box, error) {
 }
 
 func (boxer boxMaker) DecodeRaw(data []byte) (*Box, error) {
+	// Limit size to prevent garbage from filling memory
 	if len(data) > V0MaxSize {
 		return nil, fmt.Errorf("data too big, is %d, max is %d", len(data), V0MaxSize)
 	}

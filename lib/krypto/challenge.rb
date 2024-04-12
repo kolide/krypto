@@ -32,6 +32,7 @@ module Krypto
     end
 
     def self.unmarshal(data, png: false, base64: true)
+      # Limit size to prevent garbage from filling memory
       if data.size > MAX_CHALLENGE_SIZE
         raise "challenge too large"
       end

@@ -84,6 +84,7 @@ type InnerResponse struct {
 }
 
 func UnmarshalResponse(outerResponseBytes []byte) (*OuterResponse, error) {
+	// Limit size to prevent garbage from filling memory
 	if len(outerResponseBytes) > krypto.V0MaxSize {
 		return nil, fmt.Errorf("response to large: is %d, max is %d", len(outerResponseBytes), krypto.V0MaxSize)
 	}

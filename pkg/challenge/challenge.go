@@ -144,6 +144,7 @@ func (o *OuterChallenge) RespondPng(signer crypto.Signer, signer2 crypto.Signer,
 }
 
 func UnmarshalChallenge(outerChallengeBytes []byte) (*OuterChallenge, error) {
+	// Limit size to prevent garbage from filling memory
 	if len(outerChallengeBytes) > krypto.V0MaxSize {
 		return nil, fmt.Errorf("challenge exceeds max size: %d, max is %d", len(outerChallengeBytes), krypto.V0MaxSize)
 	}
