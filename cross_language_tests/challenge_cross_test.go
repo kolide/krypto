@@ -259,7 +259,6 @@ func TestChallenge_MaxSize(t *testing.T) {
 	})
 }
 
-// #nosec G306 -- Need readable files
 func rubyChallengeExec(rubyCmd, dir string, inputData rubyChallengeCmd) ([]byte, error) {
 	testCaseBytes, err := msgpack.Marshal(inputData)
 	if err != nil {
@@ -270,7 +269,9 @@ func rubyChallengeExec(rubyCmd, dir string, inputData rubyChallengeCmd) ([]byte,
 
 	inFilePath := filepath.Join(dir, "in")
 
-	if err := os.WriteFile(inFilePath, testCaseBytesBase64, 0644); err != nil {
+	//#nosec G306 -- Need readable files
+	err = os.WriteFile(inFilePath, testCaseBytesBase64, 0644)
+	if err != nil {
 		return nil, err
 	}
 

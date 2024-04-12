@@ -1,6 +1,4 @@
 run:
-  skip-dirs:
-    - test-cmds
   timeout: 5m
 
 linters:
