@@ -345,20 +345,14 @@ func TestBoxerMaxSize(t *testing.T) {
 		t.Parallel()
 		dir := t.TempDir()
 
-		responseTo := ulid.New()
-		ciphertext, err := aliceBoxer.Encode(responseTo, tooBigBytes)
-		require.NoError(t, err)
-
-		var png bytes.Buffer
 		pngFile := path.Join(dir, ulid.New()+".png")
-		require.NoError(t, krypto.ToPngNoMaxSize(&png, tooBigBytes))
 		//#nosec G306 -- Need readable files
-		require.NoError(t, os.WriteFile(pngFile, png.Bytes(), 0644))
+		require.NoError(t, os.WriteFile(pngFile, []byte(tooBigBytesB64), 0644))
 
 		tests := []boxerCrossTestCase{
-			{Key: bobPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: ciphertext, cmd: "decode"},
-			{Key: bobPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: ciphertext, cmd: "decodeunverified"},
-			{Key: bobPem.Bytes(), Ciphertext: ciphertext, cmd: "decodeunverified"},
+			{Key: bobPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: tooBigBytesB64, cmd: "decode"},
+			{Key: bobPem.Bytes(), Counterparty: alicePubPem.Bytes(), Ciphertext: tooBigBytesB64, cmd: "decodeunverified"},
+			{Key: bobPem.Bytes(), Ciphertext: tooBigBytesB64, cmd: "decodeunverified"},
 			{Key: bobPem.Bytes(), Counterparty: alicePubPem.Bytes(), PngFile: pngFile, cmd: "decodepng"},
 		}
 
