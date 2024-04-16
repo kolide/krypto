@@ -70,7 +70,6 @@ func TestBoxerRuby(t *testing.T) {
 	}
 
 	// Ruby Decrypt Tests
-	//#nosec G306 -- Need readable files
 	for _, message := range testMessages {
 		message := message
 
@@ -93,6 +92,7 @@ func TestBoxerRuby(t *testing.T) {
 
 				b, err := msgpack.Marshal(rubyCommand)
 				require.NoError(t, err)
+				//#nosec G306 -- Need readable files
 				require.NoError(t, os.WriteFile(rubyInFile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -160,6 +160,7 @@ func TestBoxerRuby(t *testing.T) {
 			var png bytes.Buffer
 			pngFile := path.Join(dir, ulid.New()+".png")
 			require.NoError(t, aliceBoxer.EncodePng(responseTo, message, &png))
+			//#nosec G306 -- Need readable files
 			require.NoError(t, os.WriteFile(pngFile, png.Bytes(), 0644))
 
 			tests := []boxerCrossTestCase{
@@ -200,6 +201,7 @@ func TestBoxerRuby(t *testing.T) {
 					//
 					b, err := msgpack.Marshal(tt)
 					require.NoError(t, err)
+					//#nosec G306 -- Need readable files
 					require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
 					ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -248,6 +250,7 @@ func TestBoxerRuby(t *testing.T) {
 
 				b, err := msgpack.Marshal(rubyCommand)
 				require.NoError(t, err)
+				//#nosec G306 -- Need readable files
 				require.NoError(t, os.WriteFile(rubyInFile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)

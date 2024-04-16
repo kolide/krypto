@@ -37,7 +37,6 @@ func TestRsaRuby(t *testing.T) {
 		{Plaintext: mkrand(t, 128)},
 	}
 
-	//#nosec G306 -- Need readable files
 	for _, tt := range tests {
 		tt := tt
 		t.Run("", func(t *testing.T) {
@@ -72,6 +71,7 @@ func TestRsaRuby(t *testing.T) {
 
 				b, err := msgpack.Marshal(tt)
 				require.NoError(t, err)
+				//#nosec G306 -- Need readable files
 				require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
 				cmd := exec.CommandContext(ctx, "ruby", rsaRB, "decrypt", testfile, path.Join(dir, "ruby-decrypt"))
@@ -98,6 +98,7 @@ func TestRsaRuby(t *testing.T) {
 
 				b, err := msgpack.Marshal(tt)
 				require.NoError(t, err)
+				//#nosec G306 -- Need readable files
 				require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
 				cmd := exec.CommandContext(ctx, "ruby", rsaRB, "encrypt", testfile, path.Join(dir, "ruby-encrypt"))
@@ -130,6 +131,7 @@ func TestRsaRuby(t *testing.T) {
 
 				b, err := msgpack.Marshal(tt)
 				require.NoError(t, err)
+				//#nosec G306 -- Need readable files
 				require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
 				cmd := exec.CommandContext(ctx, "ruby", rsaRB, "verify", testfile, path.Join(dir, "ruby-verify"))
@@ -157,6 +159,7 @@ func TestRsaRuby(t *testing.T) {
 
 				b, err := msgpack.Marshal(tt)
 				require.NoError(t, err)
+				//#nosec G306 -- Need readable files
 				require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
 				cmd := exec.CommandContext(ctx, "ruby", rsaRB, "sign", testfile, path.Join(dir, "ruby-signed"))
