@@ -30,6 +30,8 @@ linters-settings:
     simplify: false
 
 issues:
+  exclude-dirs:
+    - test-cmds
   exclude-rules:
     # False positive: https://github.com/kunwardeep/paralleltest/issues/8.
     - linters:
