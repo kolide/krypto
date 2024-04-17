@@ -133,6 +133,9 @@ func findKey(publicKeySha1 []byte) (*ecdsa.PublicKey, error) {
 func rawToEcdsa(raw []byte) *ecdsa.PublicKey {
 	ecKey := new(ecdsa.PublicKey)
 	ecKey.Curve = elliptic.P256()
+	// lint here suggestest using ecdh package, but we are using ecdsa key through out the code
+	// have found a straight forward to go from ecdh.P256().NewPublicKey(raw) -> ecdsa.PublicKey
+	//nolint:staticcheck
 	ecKey.X, ecKey.Y = elliptic.Unmarshal(ecKey.Curve, raw)
 	return ecKey
 }
@@ -142,6 +145,9 @@ func publicKeyLookUpHash(key *ecdsa.PublicKey) ([]byte, error) {
 		return nil, errors.New("public key has nil XY coordinates")
 	}
 
+	// lint here suggestest using ecdh package, but we are using ecdsa key through out the code
+	// have found a straight forward to go from ecdh.P256().NewPublicKey(raw) -> ecdsa.PublicKey
+	//nolint:staticcheck
 	keyBytes := elliptic.Marshal(elliptic.P256(), key.X, key.Y)
 	hash := sha1.New()
 	hash.Write(keyBytes)

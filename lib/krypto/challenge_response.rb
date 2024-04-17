@@ -7,6 +7,10 @@ require "openssl"
 module Krypto
   class ChallengeResponse
     def self.unmarshal(data, png: false, base64: true)
+      if data.size > MAX_CHALLENGE_SIZE
+        raise "response too large"
+      end
+
       data = ::Krypto::Png.decode_blob(data) if png
       data = Base64.strict_decode64(data) if base64
 

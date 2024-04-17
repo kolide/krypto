@@ -16,14 +16,14 @@ const (
 	pixelsInHeader      = 2
 	alphaValue          = 0xFF
 
-	v0MaxSize = 1 << 24
+	// Limit size to prevent garbage from filling memory
+	V0MaxSize = 4 * 1024 * 1024
 )
 
 func ToPng(w io.Writer, data []byte) error {
 	dataSize := len(data)
-
-	if dataSize > v0MaxSize {
-		return fmt.Errorf("data too big: %d is bigger than %d", dataSize, v0MaxSize)
+	if dataSize > V0MaxSize {
+		return fmt.Errorf("data too big: %d is bigger than %d", dataSize, V0MaxSize)
 	}
 
 	pixelCount := divCeil(len(data), usableBytesPerPixel)

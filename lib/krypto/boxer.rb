@@ -82,6 +82,11 @@ module Krypto
     end
 
     def decode(data, verify: true, raw: false, png: false)
+      # Limit size to prevent garbage from filling memory
+      if data.size > MAX_CHALLENGE_SIZE
+        raise "box too large"
+      end
+
       data = unpng(data) if png
       data = Base64.strict_decode64(data) unless raw || png
       outer = Outer.new(MessagePack.unpack(data).slice(*OUTER_FIELDS.map(&:to_s)))
