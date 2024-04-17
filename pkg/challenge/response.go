@@ -21,8 +21,8 @@ type OuterResponse struct {
 	ChallengeId         []byte   `msgpack:"challengeId"`
 }
 
-func (o *OuterResponse) Open(privateEncryptionKey [32]byte) (*InnerResponse, error) {
-	innerResponseBytes, err := echelper.OpenNaCl(o.Msg, &o.PublicEncryptionKey, &privateEncryptionKey)
+func (o *OuterResponse) Open(privateEncryptionKey *[32]byte) (*InnerResponse, error) {
+	innerResponseBytes, err := echelper.OpenNaCl(o.Msg, &o.PublicEncryptionKey, privateEncryptionKey)
 	if err != nil {
 		return nil, fmt.Errorf("opening challenge response box: %w", err)
 	}
