@@ -40,7 +40,6 @@ func TestAesRuby(t *testing.T) {
 		{AuthData: mkrand(t, 32), Plaintext: mkrand(t, 1024)},
 	}
 
-	//#nosec G306 -- Need readable files
 	for _, tt := range tests {
 		tt := tt
 		t.Run("", func(t *testing.T) {
@@ -60,6 +59,7 @@ func TestAesRuby(t *testing.T) {
 
 				b, err := msgpack.Marshal(tt)
 				require.NoError(t, err)
+				//#nosec G306 -- Need readable files
 				require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 			})
 

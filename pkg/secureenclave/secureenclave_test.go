@@ -111,14 +111,13 @@ func TestSecureEnclaveErrors(t *testing.T) {
 	require.Error(t, err, "new secure enclave keyer should error with nil existing key")
 }
 
-// #nosec G306 -- Need readable files
 func copyFile(t *testing.T, source, destination string) {
 	bytes, err := os.ReadFile(source)
 	require.NoError(t, err)
+	// #nosec G306 -- Need readable files
 	require.NoError(t, os.WriteFile(destination, bytes, 0700))
 }
 
-// #nosec G204 -- This triggers due to using env var in cmd, making exception for test
 func signApp(t *testing.T, appRootDir string) {
 	codeSignId := os.Getenv("MACOS_CODESIGN_IDENTITY")
 	require.NotEmpty(t, codeSignId, "need MACOS_CODESIGN_IDENTITY env var to sign app, such as [Mac Developer: Jane Doe (ABCD123456)]")
@@ -126,6 +125,7 @@ func signApp(t *testing.T, appRootDir string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	// #nosec G204 -- This triggers due to using env var in cmd, making exception for test
 	cmd := exec.CommandContext(
 		ctx,
 		"codesign",

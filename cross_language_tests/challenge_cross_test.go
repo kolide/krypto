@@ -196,7 +196,7 @@ func TestChallenge_GoGenerate_RubyRespond(t *testing.T) {
 			outerResponse, err := challenge.UnmarshalResponse(tamperWithResponse(t, challengeOuterBoxBytes, outerResponseBytes))
 			require.NoError(t, err)
 
-			_, err = outerResponse.Open(*challengePrivateEncryptionKey)
+			_, err = outerResponse.Open(challengePrivateEncryptionKey)
 			require.Error(t, err)
 		})
 
@@ -210,11 +210,11 @@ func TestChallenge_GoGenerate_RubyRespond(t *testing.T) {
 			// try to open with a bad key
 			_, malloryPrivKey, err := box.GenerateKey(rand.Reader)
 			require.NoError(t, err)
-			_, err = outerResponse.Open(*malloryPrivKey)
+			_, err = outerResponse.Open(malloryPrivKey)
 			require.Error(t, err)
 
 			// open with legit key
-			innerResponse, err := outerResponse.Open(*challengePrivateEncryptionKey)
+			innerResponse, err := outerResponse.Open(challengePrivateEncryptionKey)
 			require.NoError(t, err)
 
 			// verify data
@@ -225,7 +225,6 @@ func TestChallenge_GoGenerate_RubyRespond(t *testing.T) {
 	}
 }
 
-// #nosec G306 -- Need readable files
 func rubyChallengeExec(rubyCmd, dir string, inputData rubyChallengeCmd) ([]byte, error) {
 	testCaseBytes, err := msgpack.Marshal(inputData)
 	if err != nil {
@@ -236,7 +235,9 @@ func rubyChallengeExec(rubyCmd, dir string, inputData rubyChallengeCmd) ([]byte,
 
 	inFilePath := filepath.Join(dir, "in")
 
-	if err := os.WriteFile(inFilePath, testCaseBytesBase64, 0644); err != nil {
+	//#nosec G306 -- Need readable files
+	err = os.WriteFile(inFilePath, testCaseBytesBase64, 0644)
+	if err != nil {
 		return nil, err
 	}
 

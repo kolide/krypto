@@ -107,11 +107,11 @@ func TestChallengeHappyPath(t *testing.T) {
 			// try to open with a bad key
 			_, malloryPrivKey, err := box.GenerateKey(rand.Reader)
 			require.NoError(t, err)
-			_, err = outerResponse.Open(*malloryPrivKey)
+			_, err = outerResponse.Open(malloryPrivKey)
 			require.Error(t, err)
 
 			// open with legit key
-			innerResponse, err := outerResponse.Open(*challengePrivateEncryptionKey)
+			innerResponse, err := outerResponse.Open(challengePrivateEncryptionKey)
 			require.NoError(t, err)
 
 			// verify data

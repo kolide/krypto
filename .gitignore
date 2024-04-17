@@ -7,3 +7,4 @@
 coverage.out
 /Gemfile.lock
 /.vscode
+/test-cmds/
