@@ -59,7 +59,10 @@ func (o *OuterChallenge) Marshal() ([]byte, error) {
 	return msgpack.Marshal(o)
 }
 
-// Respond creates a response to the challenge. It accepts keys for signing, the second one may be nil.
+// Respond creates a response to the challenge. It accepts crypto.Signer for signing, the second one may be nil.
+// If the second signer is not nil and produces an error while signing, it will not be included nor will an error
+// be returned. This is because the second signer is intended to be a TPM or Secure Enclave which we have found to be
+// unreliable in testing.
 func (o *OuterChallenge) Respond(signer crypto.Signer, signer2 crypto.Signer, responseData []byte) ([]byte, error) {
 	if o.innerChallenge == nil {
 		return nil, fmt.Errorf("no inner. unverified?")
@@ -97,6 +100,8 @@ func (o *OuterChallenge) Respond(signer crypto.Signer, signer2 crypto.Signer, re
 
 	var signature2 []byte
 	if signer2 != nil {
+		// Intentionally ignoring errors here because we use the second signature to sign with a TPM or Secure Enclave,
+		// we have found both of these to be unreliable in testing and we are not using them in any meaningful way.
 		//nolint: errcheck - we allow nil signer2
 		signature2, _ = echelper.SignWithTimeout(signer2, innerResponse, signingTimeoutDuration, signingTimeoutInterval)
 	}
