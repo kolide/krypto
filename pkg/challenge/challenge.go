@@ -97,8 +97,10 @@ func (o *OuterChallenge) Respond(signer crypto.Signer, signer2 crypto.Signer, re
 
 	var signature2 []byte
 	if signer2 != nil {
-		//nolint: errcheck - we allow nil signer2
-		signature2, _ = echelper.SignWithTimeout(signer2, innerResponse, signingTimeoutDuration, signingTimeoutInterval)
+		signature2, err = echelper.SignWithTimeout(signer2, innerResponse, signingTimeoutDuration, signingTimeoutInterval)
+		if err != nil {
+			return nil, fmt.Errorf("signing challenge 2: %w", err)
+		}
 	}
 
 	sealed, pub, err := echelper.SealNaCl(innerResponse, &o.innerChallenge.PublicEncryptionKey)
