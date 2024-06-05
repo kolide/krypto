@@ -60,7 +60,7 @@ jobs:
       if: runner.os == 'Windows'
       # this is required to be able to run the TPM simulator on Windows
       # https://github.com/google/go-tpm-tools#openssl-errors-when-building-simulator
-      run: choco install openssl --version=3.3.1 -y
+      run: choco install openssl --version=3.3.1
       shell: bash
     - name: Lint
       uses: golangci/golangci-lint-action@v3
@@ -99,7 +99,7 @@ jobs:
       if: runner.os == 'Windows'
       # this is required to be able to run the TPM simulator on Windows
       # https://github.com/google/go-tpm-tools#openssl-errors-when-building-simulator
-      run: choco install openssl
+      run: choco install openssl --version=3.3.1
       shell: bash
     - name: Install Libsodium on Windows
       if: runner.os == 'Windows'
