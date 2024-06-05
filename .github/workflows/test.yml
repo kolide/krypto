@@ -62,10 +62,6 @@ jobs:
       # https://github.com/google/go-tpm-tools#openssl-errors-when-building-simulator
       run: choco install openssl
       shell: bash
-    - name: Install OpenSSL on Macos
-      if: runner.os == 'macOS'
-      run: |
-        brew install openssl
     - name: Lint
       uses: golangci/golangci-lint-action@v3
     - name: Test
