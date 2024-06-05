@@ -56,12 +56,6 @@ jobs:
       with:
         go-version: ${{ matrix.go }}
         cache: true
-    - name: Install OpenSSL on Windows
-      if: runner.os == 'Windows'
-      # this is required to be able to run the TPM simulator on Windows
-      # https://github.com/google/go-tpm-tools#openssl-errors-when-building-simulator
-      run: choco install openssl
-      shell: bash
     - name: Lint
       uses: golangci/golangci-lint-action@v3
     - name: Test
