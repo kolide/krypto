@@ -67,8 +67,13 @@ jobs:
     - name: Test
       run: go test $(go list ./... | grep -v cross_language_tests) -race
       shell: bash
-    - name: Test skiplint tagged
-      run: CGO_CFLAGS="-I$(brew --prefix openssl)/include" CGO_LDFLAGS="-L$(brew --prefix openssl)/lib" go test -tags skiplint $(go list ./... | grep -v cross_language_tests) -race
+    - name: set macos cgo flags
+      if: runner.os == 'macos'
+      run: |
+        export CGO_CFLAGS="-I$(brew --prefix openssl)/include"
+        export CGO_LDFLAGS="-L$(brew --prefix openssl)/lib"
+    - name: Test
+      run: go test -tags skiplint $(go list ./... | grep -v cross_language_tests) -race -cover
       shell: bash
 
   cross:
