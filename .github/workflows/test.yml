@@ -67,6 +67,9 @@ jobs:
     - name: Test
       run: go test $(go list ./... | grep -v cross_language_tests) -race
       shell: bash
+    - name: Test skiplint tagged
+      run: go test -tags skiplint $(go list ./... | grep -v cross_language_tests) -race
+      shell: bash
 
   cross:
     name: Cross - Go ${{ matrix.go }} Ruby ${{ matrix.ruby }} ${{ matrix.os }}
