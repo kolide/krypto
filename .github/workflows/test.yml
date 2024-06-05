@@ -70,8 +70,8 @@ jobs:
     - name: set macos cgo flags
       if: runner.os == 'macos'
       run: |
-        export CGO_CFLAGS="-I$(brew --prefix openssl)/include"
-        export CGO_LDFLAGS="-L$(brew --prefix openssl)/lib"
+        echo CGO_CFLAGS="-I$(brew --prefix openssl)/include" >> $GITHUB_ENV
+        echo CGO_LDFLAGS="-L$(brew --prefix openssl)/lib" >> $GITHUB_ENV
     - name: Test
       run: go test -tags skiplint $(go list ./... | grep -v cross_language_tests) -race -cover
       shell: bash
