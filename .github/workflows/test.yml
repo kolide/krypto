@@ -60,6 +60,7 @@ jobs:
       uses: golangci/golangci-lint-action@v3
     - name: set windows cgo flags
       if: runner.os == 'Windows'
+      shell: bash
       run: |
         echo "CGO_CFLAGS=-IC:\Progra~1\OpenSSL-Win64\include" >> "$GITHUB_ENV"
         echo "CGO_LDFLAGS=-LC:\Progra~1\OpenSSL-Win64\lib" >> "$GITHUB_ENV"
@@ -96,6 +97,7 @@ jobs:
         bundler-cache: true
     - name: set windows cgo flags
       if: runner.os == 'Windows'
+      shell: bash
       run: |
         echo "CGO_CFLAGS=-IC:\Progra~1\OpenSSL-Win64\include" >> "$GITHUB_ENV"
         echo "CGO_LDFLAGS=-LC:\Progra~1\OpenSSL-Win64\lib" >> "$GITHUB_ENV"s
