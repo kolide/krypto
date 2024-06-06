@@ -62,7 +62,7 @@ jobs:
       if: runner.os == 'Windows'
       shell: bash
       run: |
-        echo "CGO_CFLAGS=-IC:\msys64\ucrt64\include\openssl" >> "$GITHUB_ENV"
+        echo "CGO_CFLAGS=-IC:\msys64\ucrt64\include" >> "$GITHUB_ENV"
     - name: set macos cgo flags
       if: runner.os == 'macos'
       run: |
@@ -98,7 +98,7 @@ jobs:
       if: runner.os == 'Windows'
       shell: bash
       run: |
-        echo "CGO_CFLAGS=-IC:\msys64\ucrt64\include\openssl" >> "$GITHUB_ENV"
+        echo "CGO_CFLAGS=-IC:\msys64\ucrt64\include" >> "$GITHUB_ENV"
     - name: Install Libsodium on Windows
       if: runner.os == 'Windows'
       # this is a dependency of the ruby rbnacl library
