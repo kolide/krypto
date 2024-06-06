@@ -62,8 +62,8 @@ jobs:
       if: runner.os == 'Windows'
       shell: bash
       run: |
-        echo "CGO_CFLAGS=-IC:\msys64\ucrt64\include" >> "$GITHUB_ENV"
-        echo "CGO_LDFLAGS=-LC:\msys64\ucrt64\lib" >> "$GITHUB_ENV"
+        echo "CGO_CFLAGS=-IC:\mingw64\opt\include" >> "$GITHUB_ENV"
+        echo "CGO_LDFLAGS=-LC:\mingw64\opt\lib" >> "$GITHUB_ENV"
     - name: set macos cgo flags
       if: runner.os == 'macos'
       run: |
