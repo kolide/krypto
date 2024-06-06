@@ -56,8 +56,6 @@ jobs:
       with:
         go-version: ${{ matrix.go }}
         cache: true
-    - name: Lint
-      uses: golangci/golangci-lint-action@v3
     - name: set windows cgo flags
       if: runner.os == 'Windows'
       shell: bash
@@ -69,6 +67,8 @@ jobs:
       run: |
         echo CGO_CFLAGS="-I$(brew --prefix openssl)/include" >> "$GITHUB_ENV"
         echo CGO_LDFLAGS="-L$(brew --prefix openssl)/lib" >> "$GITHUB_ENV"
+    - name: Lint
+      uses: golangci/golangci-lint-action@v3
     - name: Test
       run: go test -tags skiplint $(go list ./... | grep -v cross_language_tests) -race -cover
       shell: bash

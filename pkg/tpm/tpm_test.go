@@ -1,6 +1,3 @@
-//go:build skiplint
-// +build skiplint
-
 package tpm
 
 import (
