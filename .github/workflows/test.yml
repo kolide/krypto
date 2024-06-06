@@ -70,7 +70,7 @@ jobs:
     - name: Lint
       uses: golangci/golangci-lint-action@v3
     - name: Test
-      run: go test -tags skiplint $(go list ./... | grep -v cross_language_tests) -race -cover
+      run: go test $(go list ./... | grep -v cross_language_tests) -race -cover
       shell: bash
 
   cross:
