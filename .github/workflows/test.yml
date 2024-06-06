@@ -95,6 +95,11 @@ jobs:
       with:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: true
+    - name: set findopenssl
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        ls C:\ aes.h -Recurse -ErrorAction silentlycontinue
     - name: set windows cgo flags
       if: runner.os == 'Windows'
       shell: bash
