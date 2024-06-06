@@ -56,14 +56,13 @@ jobs:
       with:
         go-version: ${{ matrix.go }}
         cache: true
-    - name: Install OpenSSL on Windows
-      if: runner.os == 'Windows'
-      # this is required to be able to run the TPM simulator on Windows
-      # https://github.com/google/go-tpm-tools#openssl-errors-when-building-simulator
-      run: choco install openssl --version=3.3.1
-      shell: bash
     - name: Lint
       uses: golangci/golangci-lint-action@v3
+    - name: set windows cgo flags
+      if: runner.os == 'Windows'
+      run: |
+        echo CGO_CFLAGS="-IC:\Program Files\OpenSSL-Win64\include" >> "$GITHUB_ENV"
+        echo CGO_LDFLAGS="-LC:\Program Files\OpenSSL-Win64\lib" >> "$GITHUB_ENV"
     - name: set macos cgo flags
       if: runner.os == 'macos'
       run: |
@@ -95,12 +94,11 @@ jobs:
       with:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: true
-    - name: Install OpenSSL on Windows
+    - name: set windows cgo flags
       if: runner.os == 'Windows'
-      # this is required to be able to run the TPM simulator on Windows
-      # https://github.com/google/go-tpm-tools#openssl-errors-when-building-simulator
-      run: choco install openssl --version=3.3.1
-      shell: bash
+      run: |
+        echo CGO_CFLAGS="-IC:\Program Files\OpenSSL-Win64\include" >> "$GITHUB_ENV"
+        echo CGO_LDFLAGS="-LC:\Program Files\OpenSSL-Win64\lib" >> "$GITHUB_ENV"
     - name: Install Libsodium on Windows
       if: runner.os == 'Windows'
       # this is a dependency of the ruby rbnacl library
