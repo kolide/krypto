@@ -42,12 +42,7 @@ func ToPng(w io.Writer, data []byte) error {
 	pixelBytes[2] = 0x0
 	pixelBytes[3] = alphaValue
 
-	dataLenInt24, err := intToInt24(len(data))
-	if err != nil {
-		return fmt.Errorf("converting data length to int24: %w", err)
-	}
-
-	copy(pixelBytes[4:], dataLenInt24)
+	copy(pixelBytes[4:], intToInt24(len(data)))
 	pixelBytes[7] = alphaValue
 
 	pixelBytesStart := pixelsInHeader * bytesPerPixel
@@ -141,21 +136,12 @@ func int24ToInt(i24 []byte) int {
 	return int(uint32(i24[2]) | uint32(i24[1])<<8 | uint32(i24[0])<<16)
 }
 
-func intToInt24(i int) ([]byte, error) {
-	// Define the range for a signed 24-bit integer
-	const minInt24 = -8388608
-	const maxInt24 = 8388607
-
-	// Validate that the input is within the range
-	if i < minInt24 || i > maxInt24 {
-		return nil, fmt.Errorf("value %d is out of range for a 24-bit signed integer", i)
-	}
-
+func intToInt24(i int) []byte {
 	// Extract bytes directly as `byte`
 	highByte := byte((i >> 16) & 0xFF)
 	midByte := byte((i >> 8) & 0xFF)
 	lowByte := byte(i & 0xFF)
 
 	// Return the bytes as a slice
-	return []byte{highByte, midByte, lowByte}, nil
+	return []byte{highByte, midByte, lowByte}
 }
