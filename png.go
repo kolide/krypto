@@ -151,10 +151,19 @@ func intToInt24(i int) ([]byte, error) {
 		return nil, fmt.Errorf("value %d is out of range for a 24-bit signed integer", i)
 	}
 
-	// Convert to a 24-bit integer representation
+	// Extract bytes safely and explicitly check for overflow
+	highByte := (i >> 16) & 0xFF
+	midByte := (i >> 8) & 0xFF
+	lowByte := i & 0xFF
+
+	if highByte < 0 || highByte > 255 || midByte < 0 || midByte > 255 || lowByte < 0 || lowByte > 255 {
+		return nil, fmt.Errorf("value %d caused an unexpected overflow during conversion", i)
+	}
+
+	// Return the bytes as a slice
 	return []byte{
-		uint8(i >> 16 & 0xFF), // Extract the highest 8 bits
-		uint8(i >> 8 & 0xFF),  // Extract the middle 8 bits
-		uint8(i & 0xFF),       // Extract the lowest 8 bits
+		uint8(highByte),
+		uint8(midByte),
+		uint8(lowByte),
 	}, nil
 }
