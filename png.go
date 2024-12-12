@@ -137,11 +137,9 @@ func int24ToInt(i24 []byte) int {
 }
 
 func intToInt24(i int) []byte {
-	// Extract bytes directly as `byte`
-	highByte := byte((i >> 16) & 0xFF)
-	midByte := byte((i >> 8) & 0xFF)
-	lowByte := byte(i & 0xFF)
-
-	// Return the bytes as a slice
-	return []byte{highByte, midByte, lowByte}
+	return []byte{
+		byte((i >> 16) & 0xFF),
+		byte((i >> 8) & 0xFF),
+		byte(i & 0xFF),
+	}
 }
