@@ -17,7 +17,7 @@ jobs:
           - '3.1.2'
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
@@ -50,9 +50,9 @@ jobs:
           - '1.19'
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Go
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.go }}
         cache: true
@@ -68,7 +68,7 @@ jobs:
         echo CGO_CFLAGS="-I$(brew --prefix openssl)/include" >> "$GITHUB_ENV"
         echo CGO_LDFLAGS="-L$(brew --prefix openssl)/lib" >> "$GITHUB_ENV"
     - name: Lint
-      uses: golangci/golangci-lint-action@v3
+      uses: golangci/golangci-lint-action@v4
     - name: Test
       run: go test $(go list ./... | grep -v cross_language_tests) -race -cover
       shell: bash
@@ -84,9 +84,9 @@ jobs:
           - '3.1.2'
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Go
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.go }}
         cache: true
@@ -109,7 +109,7 @@ jobs:
     - name: Set go C compiler on Windows
       if: runner.os == 'Windows'
       # the ruby installation adds a gcc and sets a path not compatible with tpm simulator
-      run: echo "CC=C:\ProgramData\chocolatey\bin\gcc.exe" >> "$GITHUB_ENV"
+      run: printf "CC=C:\ProgramData\chocolatey\bin\gcc.exe" >> "$GITHUB_ENV"
       shell: bash
     - name: Cross Language Tests
       # ruby bundler leaves a `vendor` director here, which confuses go mod, so we need to explicitly disable it.

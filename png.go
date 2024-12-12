@@ -138,8 +138,8 @@ func int24ToInt(i24 []byte) int {
 
 func intToInt24(i int) []byte {
 	return []byte{
-		uint8(i >> 16),
-		uint8(i >> 8),
-		uint8(i),
+		byte((i >> 16) & 0xFF),
+		byte((i >> 8) & 0xFF),
+		byte(i & 0xFF),
 	}
 }
