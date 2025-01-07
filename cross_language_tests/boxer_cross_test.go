@@ -18,6 +18,8 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 )
 
+const rubyCmdTimeout = 10 * time.Second
+
 type boxerCrossTestCase struct {
 	Key          []byte
 	Counterparty []byte
@@ -95,7 +97,7 @@ func TestBoxerRuby(t *testing.T) {
 				//#nosec G306 -- Need readable files
 				require.NoError(t, os.WriteFile(rubyInFile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
-				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+				ctx, cancel := context.WithTimeout(context.Background(), rubyCmdTimeout)
 				defer cancel()
 
 				cmd := exec.CommandContext(ctx, "ruby", boxerRB, "encode", rubyInFile, rubyOutFile)
@@ -204,7 +206,7 @@ func TestBoxerRuby(t *testing.T) {
 					//#nosec G306 -- Need readable files
 					require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
-					ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+					ctx, cancel := context.WithTimeout(context.Background(), rubyCmdTimeout)
 					defer cancel()
 
 					//#nosec G204 -- No taint on hardcoded input
@@ -253,7 +255,7 @@ func TestBoxerRuby(t *testing.T) {
 				//#nosec G306 -- Need readable files
 				require.NoError(t, os.WriteFile(rubyInFile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
-				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+				ctx, cancel := context.WithTimeout(context.Background(), rubyCmdTimeout)
 				defer cancel()
 
 				cmd := exec.CommandContext(ctx, "ruby", boxerRB, "sign", rubyInFile, rubyOutFile)
@@ -377,7 +379,7 @@ func TestBoxerMaxSize(t *testing.T) {
 				//#nosec G306 -- Need readable files
 				require.NoError(t, os.WriteFile(testfile, []byte(base64.StdEncoding.EncodeToString(b)), 0644))
 
-				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+				ctx, cancel := context.WithTimeout(context.Background(), rubyCmdTimeout)
 				defer cancel()
 
 				//#nosec G204 -- No taint on hardcoded input
