@@ -139,7 +139,7 @@ func TestChallenge_RubyGenerate_GoRespondPng(t *testing.T) {
 
 			require.Equal(t, challengeData, innerResponse.ChallengeData)
 			require.Equal(t, responderData, innerResponse.ResponseData)
-			require.WithinDuration(t, time.Now(), time.Unix(innerResponse.Timestamp, 0), time.Second*5)
+			require.WithinDuration(t, time.Now(), time.Unix(innerResponse.Timestamp, 0), rubyCmdTimeout)
 		})
 	}
 }

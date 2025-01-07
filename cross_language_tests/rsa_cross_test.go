@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"path"
 	"testing"
-	"time"
 
 	"github.com/kolide/krypto"
 	"github.com/stretchr/testify/require"
@@ -59,7 +58,7 @@ func TestRsaRuby(t *testing.T) {
 				t.Parallel()
 				tt := tt
 
-				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+				ctx, cancel := context.WithTimeout(context.Background(), rubyCmdTimeout)
 				defer cancel()
 
 				dir := t.TempDir()
@@ -90,7 +89,7 @@ func TestRsaRuby(t *testing.T) {
 				t.Parallel()
 				tt := tt
 
-				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+				ctx, cancel := context.WithTimeout(context.Background(), rubyCmdTimeout)
 				defer cancel()
 
 				dir := t.TempDir()
@@ -119,7 +118,7 @@ func TestRsaRuby(t *testing.T) {
 				t.Parallel()
 				tt := tt
 
-				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+				ctx, cancel := context.WithTimeout(context.Background(), rubyCmdTimeout)
 				defer cancel()
 
 				dir := t.TempDir()
@@ -151,7 +150,7 @@ func TestRsaRuby(t *testing.T) {
 				t.Parallel()
 				tt := tt
 
-				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+				ctx, cancel := context.WithTimeout(context.Background(), rubyCmdTimeout)
 				defer cancel()
 
 				dir := t.TempDir()

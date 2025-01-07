@@ -8,7 +8,6 @@ import (
 	"path"
 	"runtime"
 	"testing"
-	"time"
 
 	"github.com/kolide/kit/ulid"
 	"github.com/kolide/krypto"
@@ -64,7 +63,7 @@ func TestPngRuby(t *testing.T) {
 						t.Skip("skip png decode test on windows because ruby library chunky_png is looking for CRLF png signature")
 					}
 
-					ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+					ctx, cancel := context.WithTimeout(context.Background(), rubyCmdTimeout)
 					defer cancel()
 
 					resultFile := path.Join(dir, ulid.New()+".dat")
