@@ -2,7 +2,6 @@ package krypto
 
 import (
 	"crypto/rand"
-	"encoding/base64"
 	"io"
 	"math/big"
 	"strings"
@@ -32,10 +31,4 @@ func mkrand(t *testing.T, size int) []byte {
 	_, err := io.ReadFull(rand.Reader, r)
 	require.NoError(t, err)
 	return r
-}
-
-func base64Decode(t *testing.T, raw string) []byte {
-	d, err := base64.StdEncoding.DecodeString(raw)
-	require.NoError(t, err)
-	return d
 }
