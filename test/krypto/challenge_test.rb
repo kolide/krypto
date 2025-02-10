@@ -1,6 +1,7 @@
 require "test_helper"
 require "openssl"
 require "base64"
+require "securerandom"
 
 class TestKryptoChallenge < Minitest::Test
   CHALLENGER_KEY = Krypto::Ec.random_key
