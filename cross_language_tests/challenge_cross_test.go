@@ -25,6 +25,8 @@ import (
 	"golang.org/x/crypto/nacl/box"
 )
 
+const rubyCmdTimeout = 10 * time.Second
+
 type rubyChallengeCmd struct {
 	RubyPrivateSigningKey []byte
 	ChallengePack         []byte
