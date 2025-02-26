@@ -85,10 +85,8 @@ func TestSecureEnclaveSigning(t *testing.T) {
 	pubKeyLookup, err := CreateKey()
 	require.NoError(t, err)
 
-	// test that delete key works
 	require.NoError(t, DeleteKey(pubKeyLookup), "should be able to delete key")
 
-	// try to delet again, should get error
 	require.Error(t, DeleteKey(pubKeyLookup), "should error when trying to delete key again")
 
 	pubKeyLookup, err = CreateKey()
