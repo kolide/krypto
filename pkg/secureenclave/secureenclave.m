@@ -287,7 +287,7 @@ void deleteKey(unsigned char* hash, char** retErr) {
     attributes = NULL;
 
     if (status != 0) {
-      NSString *msg = [NSString stringWithFormat:@"finding key: status %i", (int)status];
+      NSString *msg = [NSString stringWithFormat:@"deleting key: status %i", (int)status];
       *retErr = CFStringToCString((__bridge CFStringRef)msg);
       CFRelease(msg);
       msg = NULL;
