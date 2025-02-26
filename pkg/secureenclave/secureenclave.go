@@ -82,16 +82,36 @@ func (s *SecureEnclaveSigner) Sign(rand io.Reader, digest []byte, opts crypto.Si
 }
 
 // CreateKey creates a new secure enclave key and returns the public key.
-// Passing false for isPermenant will create a temporary key and provides
-// a way to tell if the secure enclave is actually available
-func CreateKey(isPermenant bool) (*ecdsa.PublicKey, error) {
-	wrapper := C.wrapCreateKey(C.bool(isPermenant))
+func CreateKey() (*ecdsa.PublicKey, error) {
+	wrapper := C.wrapCreateKey()
 	result, err := unwrap(wrapper)
 	if err != nil {
 		return nil, err
 	}
 
 	return rawToEcdsa(result), nil
+}
+
+func DeleteKey(key *ecdsa.PublicKey) error {
+	lookupHash, err := publicKeyLookUpHash(key)
+	if err != nil {
+		return err
+	}
+
+	cHash := C.CBytes(lookupHash)
+	defer C.free(cHash)
+
+	wrapper := C.wrapDeleteKey(cHash)
+	result, err := unwrap(wrapper)
+	if err != nil {
+		return err
+	}
+
+	if len(result) > 0 {
+		return errors.New("failed to delete key")
+	}
+
+	return nil
 }
 
 // unwrap a Wrapper struct to a Go byte slice

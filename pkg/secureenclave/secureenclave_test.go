@@ -82,13 +82,14 @@ func TestSecureEnclaveSigning(t *testing.T) {
 
 	t.Log("\nrunning wrapped tests with codesigned app and entitlements")
 
-	tempKeyLookup, err := CreateKey(false)
+	pubKeyLookup, err := CreateKey()
 	require.NoError(t, err)
 
-	_, err = New(tempKeyLookup)
-	require.Error(t, err, "should be not be able to create a secure enclave keyer from temp key")
+	require.NoError(t, DeleteKey(pubKeyLookup), "should be able to delete key")
 
-	pubKeyLookup, err := CreateKey(true)
+	require.Error(t, DeleteKey(pubKeyLookup), "should error when trying to delete key again")
+
+	pubKeyLookup, err = CreateKey()
 	require.NoError(t, err)
 
 	seSigner, err := New(pubKeyLookup)
