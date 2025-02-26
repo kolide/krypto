@@ -262,6 +262,38 @@ size_t sign(unsigned char* hash, unsigned char* data, int dataSize, unsigned cha
     return size;
 }
 
+void deleteKey(unsigned char* hash, char** retErr) {
+    #define sha1HashSize 20
+    CFDataRef cfHash = CFDataCreateWithBytesNoCopy(kCFAllocatorDefault, (UInt8*)hash, sha1HashSize, kCFAllocatorNull);
+
+    NSDictionary* attributes =
+    @{ (id)kSecClass: (id)kSecClassKey,
+        (id)kSecAttrKeyType: (id)kSecAttrKeyTypeEC,
+        (id)kSecAttrTokenID: (id)kSecAttrTokenIDSecureEnclave,
+        (id)kSecAttrKeyClass: (id)kSecAttrKeyClassPrivate,
+        (id)kSecReturnRef: (id)kCFBooleanTrue,
+        (id)kSecMatchLimit: (id)kSecMatchLimitOne,
+        (id)kSecAttrApplicationLabel: (__bridge id)cfHash,
+    };
+
+    OSStatus status = SecItemDelete((__bridge CFDictionaryRef)attributes);
+
+    if (cfHash != NULL) {
+      CFRelease(cfHash);
+    }
+    cfHash = NULL;
+
+    CFRelease(attributes);
+    attributes = NULL;
+
+    if (status != 0) {
+      NSString *msg = [NSString stringWithFormat:@"finding key: status %i", (int)status];
+      *retErr = CFStringToCString((__bridge CFStringRef)msg);
+      CFRelease(msg);
+      msg = NULL;
+    }
+}
+
 Wrapper *wrapCreateKey() {
 	Wrapper *res = (Wrapper *)malloc(sizeof(Wrapper));
 	if (!res)
@@ -278,6 +310,15 @@ Wrapper *wrapFindKey(void *hash) {
 	memset(res, 0, sizeof(Wrapper));
 	res->size = findKey((unsigned char *)hash, &res->buf, &res->error);
 	return res;
+}
+
+Wrapper *wrapDeleteKey(void *hash) {
+    Wrapper *res = (Wrapper *)malloc(sizeof(Wrapper));
+    if (!res)
+        return NULL;
+    memset(res, 0, sizeof(Wrapper));
+    deleteKey((unsigned char *)hash, &res->error);
+    return res;
 }
 
 Wrapper *wrapSign(void *hash, void *data, int dataSize) {

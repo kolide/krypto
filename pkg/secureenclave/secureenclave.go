@@ -92,6 +92,28 @@ func CreateKey() (*ecdsa.PublicKey, error) {
 	return rawToEcdsa(result), nil
 }
 
+func DeleteKey(key *ecdsa.PublicKey) error {
+	lookupHash, err := publicKeyLookUpHash(key)
+	if err != nil {
+		return err
+	}
+
+	cHash := C.CBytes(lookupHash)
+	defer C.free(cHash)
+
+	wrapper := C.wrapDeleteKey(cHash)
+	result, err := unwrap(wrapper)
+	if err != nil {
+		return err
+	}
+
+	if len(result) > 0 {
+		return errors.New("failed to delete key")
+	}
+
+	return nil
+}
+
 // unwrap a Wrapper struct to a Go byte slice
 // Free the underlying bufs so caller won't have to deal with them
 func unwrap(w *C.Wrapper) ([]byte, error) {

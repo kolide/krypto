@@ -13,4 +13,5 @@ typedef struct wrapper {
 
 Wrapper *wrapCreateKey();
 Wrapper *wrapFindKey(void *hash);
+Wrapper *wrapDeleteKey(void *hash);
 Wrapper *wrapSign(void *hash, void *data, int dataSize);
