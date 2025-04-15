@@ -42,19 +42,17 @@ jobs:
       shell: bash
 
   go:
-    name: Go ${{ matrix.go }} ${{ matrix.os }}
+    name: Go (from go.mod) ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        go:
-          - '1.22'
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
     - uses: actions/checkout@v4
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: ${{ matrix.go }}
+        go-version-file: go.mod
         cache: true
     - name: set windows cgo flags
       if: runner.os == 'Windows'
@@ -74,12 +72,10 @@ jobs:
       shell: bash
 
   cross:
-    name: Cross - Go ${{ matrix.go }} Ruby ${{ matrix.ruby }} ${{ matrix.os }}
+    name: Cross - Go (from go.mod) Ruby ${{ matrix.ruby }} ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        go:
-          - '1.22'
         ruby:
           - '3.1.2'
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -88,7 +84,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: ${{ matrix.go }}
+        go-version-file: go.mod
         cache: true
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
