@@ -68,14 +68,24 @@ func (o *OuterChallenge) Respond(signer crypto.Signer, signer2 crypto.Signer, re
 		return nil, fmt.Errorf("no inner. unverified?")
 	}
 
-	pubSigningDer, err := echelper.PublicEcdsaToB64Der(signer.Public().(*ecdsa.PublicKey))
+	ecdsaPubKey, ok := signer.Public().(*ecdsa.PublicKey)
+	if !ok {
+		return nil, fmt.Errorf("signer pubkey in unexpected format (expected ECDSA, got %T)", signer.Public())
+	}
+
+	pubSigningDer, err := echelper.PublicEcdsaToB64Der(ecdsaPubKey)
 	if err != nil {
 		return nil, fmt.Errorf("marshalling public signing key to der: %w", err)
 	}
 
 	var pubSigningKey2Der []byte
 	if signer2 != nil {
-		pubSigningKey2Der, err = echelper.PublicEcdsaToB64Der(signer2.Public().(*ecdsa.PublicKey))
+		ecdsaPubKey2, ok := signer2.Public().(*ecdsa.PublicKey)
+		if !ok {
+			return nil, fmt.Errorf("signer pubkey 2 in unexpected format (expected ECDSA, got %T)", signer2.Public())
+		}
+
+		pubSigningKey2Der, err = echelper.PublicEcdsaToB64Der(ecdsaPubKey2)
 		if err != nil {
 			return nil, fmt.Errorf("marshalling public signing 2 key to der: %w", err)
 		}
