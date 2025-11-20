@@ -200,7 +200,12 @@ func loadSignerHandle(tpm io.ReadWriter, parentHandle tpmutil.Handle, publicBlob
 		return 0, nil, fmt.Errorf("decoding public key: %w", err)
 	}
 
-	return handle, cryptoPub.(*ecdsa.PublicKey), nil
+	ecdsaPubKey, ok := cryptoPub.(*ecdsa.PublicKey)
+	if !ok {
+		return 0, nil, fmt.Errorf("signer pubkey in unexpected format (expected ECDSA, got %T)", cryptoPub)
+	}
+
+	return handle, ecdsaPubKey, nil
 }
 
 func (t *TpmSigner) closeInternalTpm(tpm io.ReadWriteCloser) error {
