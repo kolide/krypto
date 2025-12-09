@@ -33,7 +33,7 @@ func Sign(signer crypto.Signer, data []byte) ([]byte, error) {
 
 func VerifySignature(counterParty *ecdsa.PublicKey, data []byte, signature []byte) error {
 	if counterParty.Curve != elliptic.P256() {
-		return fmt.Errorf("key is not p256")
+		return fmt.Errorf("counter party key is not p256, curve: %s", counterParty.Curve.Params().Name)
 	}
 
 	digest, err := HashForSignature(data)
