@@ -14,6 +14,10 @@ module Krypto
     module_function :sign
 
     def verify(key, signature, data)
+      if key.group.curve_name != "prime256v1"
+        raise "key is not p256"
+      end
+
       key.dsa_verify_asn1(OpenSSL::Digest.new("SHA256").digest(data), signature)
     end
     module_function :verify
