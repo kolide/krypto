@@ -17,7 +17,7 @@ jobs:
         with:
           go-version: 1.24
       - name: install actionlint
-        run: go install github.com/rhysd/actionlint/cmd/actionlint@latest
+        run: go install github.com/rhysd/actionlint/cmd/actionlint@393031adb9afb225ee52ae2ccd7a5af5525e03e8 # v1.7.11
       - name: actionlint
         run: |
           echo "::add-matcher::.github/actionlint-matcher.json"
