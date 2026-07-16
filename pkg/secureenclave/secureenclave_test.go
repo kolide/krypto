@@ -121,8 +121,7 @@ func TestSecureEnclaveErrors(t *testing.T) {
 func copyFile(t *testing.T, source, destination string) {
 	bytes, err := os.ReadFile(source)
 	require.NoError(t, err)
-	// #nosec G306 -- Need readable files
-	require.NoError(t, os.WriteFile(destination, bytes, 0700))
+	require.NoError(t, os.WriteFile(destination, bytes, 0700)) //nolint:gosec
 }
 
 func signApp(t *testing.T, appRootDir string) {
@@ -132,8 +131,7 @@ func signApp(t *testing.T, appRootDir string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// #nosec G204 -- This triggers due to using env var in cmd, making exception for test
-	cmd := exec.CommandContext(
+	cmd := exec.CommandContext( //nolint:gosec
 		ctx,
 		"codesign",
 		"--deep",
