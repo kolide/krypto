@@ -19,7 +19,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Set up Ruby
-      uses: ruby/setup-ruby@v1.319.0
+      uses: ruby/setup-ruby@003a5c4d8d6321bd302e38f6f0ec593f77f06600 # v1.319.0
       with:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: true
@@ -66,7 +66,7 @@ jobs:
         echo CGO_CFLAGS="-I$(brew --prefix openssl)/include" >> "$GITHUB_ENV"
         echo CGO_LDFLAGS="-L$(brew --prefix openssl)/lib" >> "$GITHUB_ENV"
     - name: Lint
-      uses: golangci/golangci-lint-action@v9.3.0
+      uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
     - name: Test
       run: go test $(go list ./... | grep -v cross_language_tests) -race -cover
       shell: bash
@@ -87,7 +87,7 @@ jobs:
         go-version-file: go.mod
         cache: true
     - name: Set up Ruby
-      uses: ruby/setup-ruby@v1.319.0
+      uses: ruby/setup-ruby@003a5c4d8d6321bd302e38f6f0ec593f77f06600 # v1.319.0
       with:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: true
