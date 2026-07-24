@@ -15,7 +15,7 @@ jobs:
       - name: Set up Go 1.x
         uses: actions/setup-go@v7
         with:
-          go-version: 1.24
+          go-version-file: go.mod
       - name: install actionlint
         run: go install github.com/rhysd/actionlint/cmd/actionlint@393031adb9afb225ee52ae2ccd7a5af5525e03e8 # v1.7.11
       - name: actionlint
