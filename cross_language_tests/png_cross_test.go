@@ -45,13 +45,9 @@ func TestPngRuby(t *testing.T) {
 			t.Parallel()
 
 			pngfile := path.Join(dir, ulid.New()+".png")
-
-			t.Run("setup", func(t *testing.T) {
-				var pngBuf bytes.Buffer
-				require.NoError(t, krypto.ToPng(&pngBuf, tt.in))
-
-				require.NoError(t, os.WriteFile(pngfile, pngBuf.Bytes(), 0600))
-			})
+			var pngBuf bytes.Buffer
+			require.NoError(t, krypto.ToPng(&pngBuf, tt.in))
+			require.NoError(t, os.WriteFile(pngfile, pngBuf.Bytes(), 0600))
 
 			for _, routine := range []string{"decode-file", "decode-blob", "decode-io"} {
 				routine := routine

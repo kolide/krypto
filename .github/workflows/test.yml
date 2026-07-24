@@ -17,9 +17,9 @@ jobs:
           - '3.1.2'
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Set up Ruby
-      uses: ruby/setup-ruby@v1
+      uses: ruby/setup-ruby@003a5c4d8d6321bd302e38f6f0ec593f77f06600 # v1.319.0
       with:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: true
@@ -48,9 +48,9 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v7
       with:
         go-version-file: go.mod
         cache: true
@@ -66,7 +66,7 @@ jobs:
         echo CGO_CFLAGS="-I$(brew --prefix openssl)/include" >> "$GITHUB_ENV"
         echo CGO_LDFLAGS="-L$(brew --prefix openssl)/lib" >> "$GITHUB_ENV"
     - name: Lint
-      uses: golangci/golangci-lint-action@v4
+      uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
     - name: Test
       run: go test $(go list ./... | grep -v cross_language_tests) -race -cover
       shell: bash
@@ -80,14 +80,14 @@ jobs:
           - '3.1.2'
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v7
       with:
         go-version-file: go.mod
         cache: true
     - name: Set up Ruby
-      uses: ruby/setup-ruby@v1
+      uses: ruby/setup-ruby@003a5c4d8d6321bd302e38f6f0ec593f77f06600 # v1.319.0
       with:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: true
@@ -98,7 +98,7 @@ jobs:
       # https://github.com/RubyCrypto/rbnacl/wiki/Installing-libsodium#windows
       run: |
         cd "$env:temp"
-        Invoke-WebRequest "https://download.libsodium.org/libsodium/releases/libsodium-1.0.18-stable-msvc.zip" -OutFile "./libsodium.zip"
+        Invoke-WebRequest "https://github.com/jedisct1/libsodium/releases/download/1.0.18-RELEASE/libsodium-1.0.18-msvc.zip" -OutFile "./libsodium.zip"
         Expand-Archive ".\libsodium.zip"
         Copy-Item ".\libsodium\libsodium\x64\Release\v142\dynamic\libsodium.dll" -Destination "C:\Windows\System32\sodium.dll"
       shell: pwsh
