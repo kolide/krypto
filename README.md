@@ -11,6 +11,18 @@ This project has a variety of languages all stored in a big pile.
 
 Enjoy!
 
+## Setup
+### MacOS
+To run tests or lint on MacOS, you will need Go, brew, and `openssl@v3`:
+
+```shell
+brew install openssl@3
+export CGO_CFLAGS="-I$(brew --prefix openssl)/include"
+export CGO_LDFLAGS="-L$(brew --prefix openssl)/lib"
+```
+
+Additional steps are required to successfully run the secure enclave tests, [see documentation here](./pkg/secureenclave/test_app_resources/readme.md).
+
 ## FAQ
 
 ### 1. But Why?
@@ -36,7 +48,7 @@ this. (They are go tests, and can be run as `go test
 ## Thanks and References
 
 This wouldn't be possible without the work of various people. As code,
-blog posts, and stackoverflow posts. 
+blog posts, and stackoverflow posts.
 
 * Huge thanks to the go crypto maintainers
 * https://stelfox.net/blog/2014/calculating-rsa-key-fingerprints-in-ruby/ is a short reference about various bits of fingering printing in ruby

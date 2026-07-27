@@ -89,7 +89,7 @@ func CreateKey() (*ecdsa.PublicKey, error) {
 		return nil, err
 	}
 
-	return rawToEcdsa(result), nil
+	return rawToEcdsa(result)
 }
 
 func DeleteKey(key *ecdsa.PublicKey) error {
@@ -149,28 +149,26 @@ func findKey(publicKeySha1 []byte) (*ecdsa.PublicKey, error) {
 		return nil, err
 	}
 
-	return rawToEcdsa(result), nil
+	return rawToEcdsa(result)
 }
 
-func rawToEcdsa(raw []byte) *ecdsa.PublicKey {
-	ecKey := new(ecdsa.PublicKey)
-	ecKey.Curve = elliptic.P256()
-	// lint here suggestest using ecdh package, but we are using ecdsa key through out the code
-	// have found a straight forward to go from ecdh.P256().NewPublicKey(raw) -> ecdsa.PublicKey
-	//nolint:staticcheck
-	ecKey.X, ecKey.Y = elliptic.Unmarshal(ecKey.Curve, raw)
-	return ecKey
+func rawToEcdsa(raw []byte) (*ecdsa.PublicKey, error) {
+	return ecdsa.ParseUncompressedPublicKey(elliptic.P256(), raw)
 }
 
 func publicKeyLookUpHash(key *ecdsa.PublicKey) ([]byte, error) {
+	// PublicKey.Bytes below panics on nil coordinates This is fully cargo culted:
+	// I don't know if this actually occurs in production use.
+	//nolint:staticcheck
 	if key.X == nil || key.Y == nil {
 		return nil, errors.New("public key has nil XY coordinates")
 	}
 
-	// lint here suggestest using ecdh package, but we are using ecdsa key through out the code
-	// have found a straight forward to go from ecdh.P256().NewPublicKey(raw) -> ecdsa.PublicKey
-	//nolint:staticcheck
-	keyBytes := elliptic.Marshal(elliptic.P256(), key.X, key.Y)
+	keyBytes, err := key.Bytes()
+	if err != nil {
+		return nil, fmt.Errorf("encoding public key: %w", err)
+	}
+
 	hash := sha1.New()
 	hash.Write(keyBytes)
 	return hash.Sum(nil), nil
