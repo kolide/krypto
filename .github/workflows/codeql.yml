@@ -8,6 +8,9 @@ on:
   schedule:
     - cron: "12 3 * * 6"
 
+permissions:
+  contents: read
+
 jobs:
   analyze:
     name: Analyze
@@ -23,8 +26,13 @@ jobs:
         language: [ go ]
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: audit # Audit network and disk activity
+
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
