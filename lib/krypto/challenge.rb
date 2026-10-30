@@ -9,7 +9,7 @@ module Krypto
   MAX_CHALLENGE_SIZE = 4 * 1024 * 1024
 
   class Challenge
-    def self.generate(signing_key, challenge_id, challenge_data, request_data, timestamp: Time.now)
+    def self.generate(signing_key, challenge_id, challenge_data, request_data, timestamp = Time.now)
       private_encryption_key = RbNaCl::PrivateKey.generate
       public_encryption_key = private_encryption_key.public_key
 
